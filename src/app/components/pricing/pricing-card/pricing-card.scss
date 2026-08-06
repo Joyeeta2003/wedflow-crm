@@ -1,0 +1,189 @@
+.card-shell {
+    position: relative;
+    transition: transform 300ms ease;
+
+    &:hover {
+        transform: translateY(-10px);
+    }
+
+    &.card-shell-highlight {
+        box-shadow: 0 0 50px rgba(212, 175, 55, 0.35);
+        border-radius: 24px;
+    }
+
+    .price-card {
+        position: relative;
+        z-index: 1;
+        padding: 36px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(212, 175, 55, 0.15);
+        border-radius: 22.5px;
+        overflow: hidden;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 18% 0%, rgba(245, 197, 24, 0.22) 0%, transparent 34%),
+                linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.08) 44%, transparent 58%);
+            opacity: 0;
+            transition: opacity 220ms ease;
+            pointer-events: none;
+        }
+
+        &.wf-price-card-highlight {
+            padding: 56px 36px 36px;
+            border-radius: 22px;
+            background: rgb(6, 6, 6);
+            border: none;
+        }
+
+        .card-header {
+            margin-bottom: 28px;
+
+            .card-tag {
+                font-size: 11px;
+                color: rgba(245, 240, 232, 0.28);
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+
+                .card-name {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 4px;
+                }
+            }
+        }
+
+        .badge {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55));
+            color: rgb(0, 0, 0);
+            font-size: 11px;
+            font-weight: 900;
+            padding: 6px 22px;
+            border-radius: 100px;
+            letter-spacing: 0.1em;
+            box-shadow: rgba(212, 175, 55, 0.333) 0px 0px 24px;
+            white-space: nowrap;
+        }
+    }
+
+    &:hover .price-card::before {
+        opacity: 1;
+    }
+}
+
+.card-style {
+    font-size: clamp(1.85rem, 3vw, 2.45rem);
+    line-height: 1.05;
+    font-weight: 900;
+    background: none;
+    -webkit-text-fill-color: rgb(245, 240, 232);
+    color: rgb(245, 240, 232);
+}
+
+.card-deco {
+    color: rgba(245, 240, 232, 0.28);
+    font-size: 13px;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0px;
+    margin: 0px 0px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.65);
+    }
+}
+
+.wf-button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 11px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
+    color: rgb(0, 0, 0);
+    box-shadow: rgba(212, 175, 55, 0.21) 0px 0px 32px;
+    letter-spacing: 0.02em;
+   animation: wedflowGlowPulse 2.4s ease-in-out infinite;
+
+}
+
+@keyframes wedflowGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.28),
+                0 8px 28px rgba(0, 0, 0, 0.52);
+  }
+  50% {
+    box-shadow: 0 0 48px rgba(245, 197, 24, 0.52),
+                0 10px 34px rgba(0, 0, 0, 0.58);
+  }
+}
+
+.wf-button ::after { 
+    content: "";
+    position: absolute;
+    inset: -45% auto -45% -55%;
+    width: 44%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+    pointer-events: none;
+}
+
+@keyframes wedflowButtonShine {
+  0% {
+    transform: translateX(-145%) skewX(-18deg);
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 0.55;
+  }
+
+  42% {
+    transform: translateX(145%) skewX(-18deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(145%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.border-light {
+    position: absolute;
+    inset: 0;
+     z-index: 2; 
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(135deg, #8b6914, #d4af37);
+
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+
+    box-shadow: 0 0 40px rgba(212, 175, 55, .35);
+}

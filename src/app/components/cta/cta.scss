@@ -1,0 +1,118 @@
+.cta{
+        order: 6;
+    padding: 0px 2rem 120px;
+
+    .cta-container{
+            max-width: 780px;
+    margin: 0px auto;
+    text-align: center;
+    padding: 80px 52px;
+    border-radius: 32px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgb(12, 12, 12), rgb(17, 17, 17));
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    }
+    .container{
+            position: absolute;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 400px;
+    background: radial-gradient(rgba(212, 175, 55, 0.145) 0%, transparent 70%);
+    pointer-events: none;
+    }
+
+    .cta-glow{
+            position: absolute;
+    inset: 0px;
+    display: none;
+    pointer-events: none;
+    }
+    .cta-content{
+            position: relative;
+
+            .cta-stars{
+                    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+            }
+    }
+}
+
+.cta-title{
+        font-size: clamp(1.8rem, 4vw, 2.7rem);
+    font-weight: 900;
+    margin-bottom: 18px;
+    letter-spacing: -0.03em;
+}
+.cta-subtitle{
+        color: rgba(245, 240, 232, 0.55);
+    margin-bottom: 40px;
+    line-height: 1.7;
+    font-size: 15px;
+}
+
+.wf-button{
+        display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 17px 48px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 16px;
+    cursor: pointer;
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
+    color: rgb(0, 0, 0);
+    box-shadow: rgba(212, 175, 55, 0.333) 0px 0px 60px, rgba(0, 0, 0, 0.6) 0px 8px 40px;
+    letter-spacing: 0.02em;
+    animation: wedflowGlowPulse 2.4s ease-in-out infinite;
+
+}
+
+@keyframes wedflowGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.28),
+                0 8px 28px rgba(0, 0, 0, 0.52);
+  }
+  50% {
+    box-shadow: 0 0 48px rgba(245, 197, 24, 0.52),
+                0 10px 34px rgba(0, 0, 0, 0.58);
+  }
+}
+
+.wf-button ::after { 
+    content: "";
+    position: absolute;
+    inset: -45% auto -45% -55%;
+    width: 44%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+    pointer-events: none;
+}
+
+@keyframes wedflowButtonShine {
+  0% {
+    transform: translateX(-145%) skewX(-18deg);
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 0.55;
+  }
+
+  42% {
+    transform: translateX(145%) skewX(-18deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(145%) skewX(-18deg);
+    opacity: 0;
+  }
+}

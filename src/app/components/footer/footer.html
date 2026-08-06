@@ -1,0 +1,35 @@
+<footer class="footer">
+  <div class="footer-brand">
+    <img
+      alt="WedFlow CRM"
+      src="/assests/images/wedflow-logo.png"
+      class="footer-logo"
+    />
+    <div>
+      <div class="footer-name">WEDFLOW CRM</div>
+      <div class="footer-powered">
+        <span class="power">Powered by </span>
+        <span class="footer-powered-brand">MAHAKARSHAN</span>
+        <span class="footer-powered-tech">TECHNOLOGIES</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-contact">
+    <div class="footer-contact-title">Contact</div>
+    @for (link of contactLinks; track link.label) {
+      <a
+        [href]="link.href"
+        [class]="'footer-link footer-link-' + link.type"
+      >
+        {{ link.label }}
+      </a>
+    }
+  </div>
+
+  <div class="footer-rights">
+    <div class="footer-rights-brand">WedFlow CRM</div>
+    <div>Copyright {{ currentYear }} MAHAKARSHAN TECHNOLOGIES.</div>
+    <div>All rights reserved.</div>
+  </div>
+</footer>

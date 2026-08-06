@@ -1,0 +1,59 @@
+.feature-card {
+    padding: 32px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgb(12, 12, 12), rgb(17, 17, 17));
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+     min-height: 250px;
+    display: flex;
+    flex-direction: column;
+
+    .feature-card-glow {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(212, 175, 55, 0.063) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .feature-card-icon-wrap {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        background: linear-gradient(135deg, rgba(184, 134, 11, 0.157), rgba(212, 175, 55, 0.094));
+        border: 1px solid rgba(212, 175, 55, 0.15);
+        box-shadow: rgba(212, 175, 55, 0.094) 0px 0px 24px;
+
+        .feature-icon {
+            width: 20px;
+            height: 20px;
+            color: rgb(212, 175, 55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    .feature-card-title {
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 10px;
+        color: rgb(245, 240, 232);
+    }
+
+    .feature-card-desc {
+        color: rgba(245, 240, 232, 0.55);
+        font-size: 13px;
+        line-height: 1.7;
+        margin-top: 12px;
+    }
+}

@@ -1,0 +1,67 @@
+.pricing {
+    order: 3;
+    padding: 0px 2rem 120px;
+    position: relative;
+
+    .pricing-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 900px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(rgba(212, 175, 55, 0.063) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .pricing-container {
+        max-width: 1060px;
+        margin: 0px auto;
+        position: relative;
+
+
+        .pricing-badge {
+            text-align: center;
+            margin-bottom: 70px;
+
+            .icon {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                padding: 5px 16px;
+                border-radius: 100px;
+                background: rgba(212, 175, 55, 0.07);
+                border: 1px solid rgba(212, 175, 55, 0.15);
+                font-size: 11px;
+                color: rgb(212, 175, 55);
+                letter-spacing: 0.1em;
+                margin-bottom: 22px;
+            }
+
+
+
+            p {
+                color: rgba(245, 240, 232, 0.28);
+                font-size: 15px;
+            }
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 22px;
+            align-items: start;
+        }
+
+    }
+
+}
+
+h2 {
+    font-size: clamp(1.8rem, 4vw, 2.9rem);
+    font-weight: 900;
+    margin-bottom: 14px;
+    letter-spacing: -0.03em;
+    color: white;
+}

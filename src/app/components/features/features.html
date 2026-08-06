@@ -1,0 +1,23 @@
+<section class="features">
+  <div class="features-container">
+    <div class="features-header">
+      <div class="features-badge">
+        <lucide-icon [img]="SparklesIcon" [size]="11" />
+        FEATURES
+      </div>
+      <h2 class="features-title">
+        Everything you need,<br />
+        <span class="features-title-gradient">nothing you don't.</span>
+      </h2>
+      <p class="features-subtitle">
+        Purpose-built for wedding studios with secured data, isolated server options and backup protection.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      @for (feature of features; track feature.title) {
+        <app-feature-card [feature]="feature" />
+      }
+    </div>
+  </div>
+</section>

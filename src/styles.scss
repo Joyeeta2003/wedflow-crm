@@ -1,0 +1,45 @@
+/* You can add global styles to this file, and also import other style files */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+// @font-face {
+//     font-family: inter ;
+//     src: url("/assests/fonts/Inter_28pt-Bold.ttf");
+// }
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+*, ::before, ::after, ::backdrop {
+  box-sizing: border-box;
+  border: 0 solid;
+  margin: 0;
+  padding: 0;
+}
+
+html,body{
+    height: 100%;
+    width: 100%;
+
+    background:
+        linear-gradient(180deg, #050505 0%, #000 100%);
+
+    color: white;
+    font-family: "Inter", sans-serif;
+}
+
+:root {
+  --background: 0 0% 4%;
+  --foreground: 45 20% 92%;
+
+  --card: 0 0% 7%;
+  --card-foreground: 45 20% 92%;
+
+  --border: 0 0% 13%;
+  --primary: 43 90% 52%;
+  --muted-foreground: 0 0% 50%;
+
+  --button-outline: #2e2e2e;
+}
