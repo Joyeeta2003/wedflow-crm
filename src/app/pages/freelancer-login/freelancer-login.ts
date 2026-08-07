@@ -5,22 +5,23 @@ import { Router } from '@angular/router';
 import { Location } from '@angular/common';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-freelancer-login',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './login.html',
-  styleUrl: './login.scss'
+  templateUrl: './freelancer-login.html',
+  styleUrl: './freelancer-login.scss'
+
 })
-export class Login {
+export class FreelancerLogin {
   email = signal('');
   isSubmitting = signal(false);
 
-  constructor(private router: Router, private location: Location) {}
+  constructor(private router: Router, private location:Location) {}
 
-  goBack():void{
+  goBack(): void {
     this.location.back();
   }
-  
+
   closeLogin(): void {
     this.router.navigate(['/']);
   }
@@ -31,9 +32,7 @@ export class Login {
     }
     this.isSubmitting.set(true);
 
-    // TODO: call your OTP API here, then navigate to OTP-verify page
-    // e.g. this.router.navigate(['/verify-otp'], { queryParams: { email: this.email() } });
-
-    console.log('Sending OTP to:', this.email());
+    // TODO: call your freelancer OTP API here, then navigate to OTP-verify page
+    console.log('Sending OTP to freelancer:', this.email());
   }
 }

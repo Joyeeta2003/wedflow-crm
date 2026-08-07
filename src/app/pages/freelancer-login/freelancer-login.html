@@ -1,0 +1,117 @@
+<div class="freelancer-login-page">
+  <img
+    alt=""
+    aria-hidden="true"
+    class="hero-bg"
+    src="/assests/images/bg-image.jpg">
+  <div class="hero-overlay"></div>
+
+  <a href="javascript:void(0)" (click)="goBack()" routerLink="/" class="home-link">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      class="home-icon" aria-hidden="true">
+      <path d="m12 19-7-7 7-7"></path>
+      <path d="M19 12H5"></path>
+    </svg>
+    Home
+  </a>
+
+  <main class="login-main">
+    <div class="modal-shell">
+      <div class="glow-1"></div>
+
+      <button
+        (click)="closeLogin()"
+        aria-label="Close freelancer login"
+        class="close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class="close-icon" aria-hidden="true">
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      </button>
+
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Freelancer marketplace login"
+        class="login-card">
+        <div class="card-glow"></div>
+
+        <div class="header-block">
+          <div class="icon-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="briefcase-icon" aria-hidden="true">
+              <path d="M12 12h.01"></path>
+              <path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+              <path d="M22 13a18.15 18.15 0 0 1-20 0"></path>
+              <rect width="20" height="14" x="2" y="6" rx="2"></rect>
+            </svg>
+          </div>
+
+          <div class="verified-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="badge-icon" aria-hidden="true">
+              <path
+                d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z">
+              </path>
+              <path d="m9 12 2 2 4-4"></path>
+            </svg>
+            Verified talent portal
+          </div>
+
+          <h1 class="title">Freelancer login</h1>
+          <p class="subtitle">
+            Manage studio requests, availability and your public marketplace profile.
+          </p>
+        </div>
+
+        <form class="login-form" (ngSubmit)="onSendOtp()">
+          <div class="field-group">
+            <label for="freelancer-email" class="field-label">
+              Registered email
+            </label>
+            <div class="input-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="input-icon" aria-hidden="true">
+                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+              <input
+                class="email-input"
+                id="freelancer-email"
+                name="email"
+                required
+                placeholder="talent@example.com"
+                type="email"
+                [ngModel]="email()"
+                (ngModelChange)="email.set($event)">
+            </div>
+          </div>
+
+          <div class="turnstile-box">
+            <!-- Cloudflare Turnstile widget renders here at runtime -->
+          </div>
+
+          <button
+            class="submit-btn"
+            type="submit"
+            [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Sending...' : 'Send OTP' }}
+          </button>
+
+          <p class="register-note">
+            Not verified yet?
+            <a routerLink="/freelancer-register" class="register-link">
+              Register your profile
+            </a>
+          </p>
+        </form>
+      </section>
+    </div>
+  </main>
+</div>
