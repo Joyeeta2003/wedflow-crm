@@ -45,7 +45,7 @@
     align-items: center;
 
     .secondary-btn {
-        padding: 15px 18px;
+        padding: 13px 18px;
         border-radius: 8px;
         font-weight: 700;
         font-size: 12px;
@@ -76,20 +76,19 @@
 
 .wf-button {
     position: relative;
-    overflow: hidden; /* shine বাটনের বাইরে বেরিয়ে যাবে না */
+    overflow: hidden;
+    /* shine বাটনের বাইরে বেরিয়ে যাবে না */
 }
 
 .wf-button::after {
     content: "";
     position: absolute;
     inset: -45% auto -45% -55%;
-    width: 18%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.42),
-        transparent
-    );
+    width: 45px;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.42),
+            transparent);
     filter: blur(1px);
     pointer-events: none;
     animation: wedflowButtonShine 3.6s ease-in-out infinite;
@@ -100,134 +99,173 @@
         transform: translateX(-145%) skewX(-18deg);
         opacity: 0;
     }
-    15% {
-        opacity: 1;
+
+    18% {
+        opacity: 0.55;
     }
-    85% {
-        opacity: 1;
+
+    42% {
+        transform: translateX(145%) skewX(-18deg);
+        opacity: 0;
     }
+
     100% {
-        transform: translateX(420%) skewX(-18deg);
+        transform: translateX(145%) skewX(-18deg);
         opacity: 0;
     }
 }
 
 @keyframes wedflowGlowPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 24px rgba(212, 175, 55, 0.28),
-                    0 8px 28px rgba(0, 0, 0, 0.52);
+            0 8px 28px rgba(0, 0, 0, 0.52);
     }
+
     50% {
         box-shadow: 0 0 48px rgba(245, 197, 24, 0.52),
-                    0 10px 34px rgba(0, 0, 0, 0.58);
+            0 10px 34px rgba(0, 0, 0, 0.58);
     }
 }
 
 /* ==============================
-   Tablet (992px)
+   Tablet
 ================================= */
+
 @media (max-width: 992px) {
-    .navbar {
-        padding: 0px 1.5rem;
-        height: 62px;
+  .navbar {
+    padding: 0 1.5rem;
+    height: 62px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .wordmark {
+    font-size: 17px;
+  }
+
+  .actions {
+    gap: 8px;
+
+    .secondary-btn {
+      padding: 12px 14px;
+      font-size: 11px;
     }
 
-    .brand img {
-        width: 48px;
-        height: 48px;
+    .primary-btn {
+      padding: 12px 20px;
+      font-size: 12px;
     }
-
-    .wordmark {
-        font-size: 17px;
-    }
-
-    .actions {
-        gap: 8px;
-
-        .secondary-btn {
-            padding: 12px 14px;
-            font-size: 11px;
-        }
-
-        .primary-btn {
-            padding: 12px 20px;
-            font-size: 12px;
-        }
-    }
+  }
 }
 
+
 /* ==============================
-   Mobile (768px)
+   Mobile
 ================================= */
+
 @media (max-width: 768px) {
-    .navbar {
-        padding: 0px 16px;
-        height: 56px;
+  .navbar {
+    width: 100%;
+    padding: 0 16px;
+    height: 56px;
+    box-sizing: border-box;
+  }
+
+  .brand {
+    gap: 8px;
+    min-width: 0;
+
+    img {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+    }
+  }
+
+  .wordmark {
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .actions {
+    gap: 6px;
+    flex-shrink: 0;
+
+    .secondary-btn {
+      padding: 10px 12px;
+      font-size: 10px;
+      border-radius: 6px;
+      white-space: nowrap;
     }
 
-    .brand {
-        gap: 8px;
-
-        img {
-            width: 40px;
-            height: 40px;
-        }
+    .primary-btn {
+      padding: 10px 16px;
+      font-size: 11px;
+      border-radius: 6px;
+      white-space: nowrap;
     }
-
-    .wordmark {
-        font-size: 14px;
-        letter-spacing: 0.05em;
-        gap: 6px;
-    }
-
-    .actions {
-        gap: 6px;
-
-        .secondary-btn {
-            padding: 10px 12px;
-            font-size: 10px;
-            border-radius: 6px;
-        }
-
-        .primary-btn {
-            padding: 10px 16px;
-            font-size: 11px;
-            border-radius: 6px;
-        }
-    }
+  }
 }
 
+
 /* ==============================
-   Small Mobile (480px)
+   Small Mobile
 ================================= */
+
 @media (max-width: 480px) {
-    .navbar {
-        padding: 0px 12px;
-        height: 52px;
+  .navbar {
+    width: 100%;
+    padding: 0 10px;
+    height: 52px;
+    gap: 5px;
+  }
+
+  .brand {
+    gap: 6px;
+    min-width: 0;
+
+    img {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  .wordmark {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+
+    span:last-child {
+      display: none;
+    }
+  }
+
+  .actions {
+    gap: 5px;
+
+    .secondary-btn {
+      display: inline-flex;
+      padding: 8px 9px;
+      font-size: 9px;
+      border-radius: 6px;
+      white-space: nowrap;
     }
 
-    .brand img {
-        width: 34px;
-        height: 34px;
+    .primary-btn {
+      padding: 8px 10px;
+      font-size: 9px;
+      border-radius: 6px;
+      white-space: nowrap;
     }
-
-    .wordmark {
-        font-size: 12px;
-        letter-spacing: 0.03em;
-
-        span:last-child {
-            display: none; /* খুব ছোট স্ক্রিনে শুধু "WEDFLOW" দেখাবে, "CRM" hide হয়ে যাবে */
-        }
-    }
-
-    .actions {
-        .secondary-btn {
-            display: none; /* খুব ছোট স্ক্রিনে শুধু Sign In বাটন থাকবে, জায়গা বাঁচাতে */
-        }
-
-        .primary-btn {
-            padding: 9px 14px;
-            font-size: 11px;
-        }
-    }
+  }
 }
