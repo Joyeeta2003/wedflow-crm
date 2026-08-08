@@ -76,16 +76,6 @@
 
 }
 
-@keyframes wedflowGlowPulse {
-  0%, 100% {
-    box-shadow: 0 0 24px rgba(212, 175, 55, 0.28),
-                0 8px 28px rgba(0, 0, 0, 0.52);
-  }
-  50% {
-    box-shadow: 0 0 48px rgba(245, 197, 24, 0.52),
-                0 10px 34px rgba(0, 0, 0, 0.58);
-  }
-}
 
 .wf-button ::after { 
     content: "";
@@ -96,23 +86,3 @@
     pointer-events: none;
 }
 
-@keyframes wedflowButtonShine {
-  0% {
-    transform: translateX(-145%) skewX(-18deg);
-    opacity: 0;
-  }
-
-  18% {
-    opacity: 0.55;
-  }
-
-  42% {
-    transform: translateX(145%) skewX(-18deg);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateX(145%) skewX(-18deg);
-    opacity: 0;
-  }
-}

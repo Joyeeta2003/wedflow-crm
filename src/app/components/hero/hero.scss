@@ -91,9 +91,9 @@
 ========================================================= */
 
 .hero-content {
-    position: relative;
-    max-width: 920px;
-    width: 100%;
+  position: relative;
+  max-width: 920px;
+  width: 100%;
 }
 
 
@@ -102,23 +102,23 @@
 ========================================================= */
 
 .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 20px;
-    border-radius: 100px;
-    margin-bottom: 36px;
-    background: linear-gradient(135deg, rgba(184, 134, 11, 0.133), rgba(212, 175, 55, 0.094));
-    border: 1px solid rgba(212, 175, 55, 0.28);
-    font-size: 12px;
-    color: rgb(212, 175, 55);
-    letter-spacing: 0.1em;
-    box-shadow: rgba(212, 175, 55, 0.094) 0px 0px 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 20px;
+  border-radius: 100px;
+  margin-bottom: 36px;
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.133), rgba(212, 175, 55, 0.094));
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  font-size: 12px;
+  color: rgb(212, 175, 55);
+  letter-spacing: 0.1em;
+  box-shadow: rgba(212, 175, 55, 0.094) 0px 0px 30px;
 
-    svg{
-          width: 12px;
+  svg {
+    width: 12px;
     height: 12px;
-    }
+  }
 }
 
 /* =========================================================
@@ -126,22 +126,22 @@
 ========================================================= */
 
 .hero-title {
-    font-size: clamp(3rem, 7.5vw, 5.6rem);
-    font-weight: 900;
-    line-height: 1.03;
-    margin-bottom: 30px;
-    letter-spacing: -0.04em;
+  font-size: clamp(3rem, 7.5vw, 5.6rem);
+  font-weight: 900;
+  line-height: 1.03;
+  margin-bottom: 30px;
+  letter-spacing: -0.04em;
 }
 
 .hero-manage {
-color: rgb(245, 240, 232);
+  color: rgb(245, 240, 232);
 }
 
 
 .gradient-text {
-    background: linear-gradient(120deg, rgb(184, 134, 11) 0%, rgb(212, 175, 55) 40%, rgb(245, 197, 24) 70%, rgb(212, 175, 55) 100%) 0% 0% / 200% text;
-    -webkit-text-fill-color: transparent;
-    display: inline-block;
+  background: linear-gradient(120deg, rgb(184, 134, 11) 0%, rgb(212, 175, 55) 40%, rgb(245, 197, 24) 70%, rgb(212, 175, 55) 100%) 0% 0% / 200% text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
 }
 
 /* =========================================================
@@ -149,11 +149,11 @@ color: rgb(245, 240, 232);
 ========================================================= */
 
 .hero-subtitle {
-    font-size: clamp(1rem, 2vw, 1.2rem);
-    color: rgba(245, 240, 232, 0.55);
-    max-width: 580px;
-    margin: 0px auto 48px;
-    line-height: 1.7;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: rgba(245, 240, 232, 0.55);
+  max-width: 580px;
+  margin: 0px auto 48px;
+  line-height: 1.7;
 }
 
 /* =========================================================
@@ -161,10 +161,10 @@ color: rgb(245, 240, 232);
 ========================================================= */
 
 .hero-actions {
-    display: flex;
-    gap: 14px;
-    justify-content: center;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* =========================================================
@@ -174,10 +174,10 @@ color: rgb(245, 240, 232);
 .primary-btn,
 .secondary-btn,
 .outline-btn {
-      display: inline-flex;
-    align-items: center;
-    border-radius: 12px;
-  }
+  display: inline-flex;
+  align-items: center;
+  border-radius: 12px;
+}
 
 
 /* =========================================================
@@ -185,20 +185,20 @@ color: rgb(245, 240, 232);
 ========================================================= */
 
 .primary-btn {
-    gap: 10px;
-    padding: 16px 40px;
-    font-weight: 800;
-    font-size: 15px;
-    background: linear-gradient(135deg, rgb(184, 134, 11) 0%, rgb(212, 175, 55) 50%, rgb(245, 197, 24) 100%);
-    color: rgb(0, 0, 0);
-    border-width: medium;
-    border-style: none;
-    border-color: currentcolor;
-    border-image: none;
-    cursor: pointer;
-    box-shadow: rgba(212, 175, 55, 0.333) 0px 0px 50px, rgba(0, 0, 0, 0.6) 0px 8px 32px;
-    letter-spacing: 0.01em;
-    animation: wedflowGlowPulse 2.4s ease-in-out infinite;
+  gap: 10px;
+  padding: 16px 40px;
+  font-weight: 800;
+  font-size: 15px;
+  background: linear-gradient(135deg, rgb(184, 134, 11) 0%, rgb(212, 175, 55) 50%, rgb(245, 197, 24) 100%);
+  color: rgb(0, 0, 0);
+  border-width: medium;
+  border-style: none;
+  border-color: currentcolor;
+  border-image: none;
+  cursor: pointer;
+  box-shadow: rgba(212, 175, 55, 0.333) 0px 0px 50px, rgba(0, 0, 0, 0.6) 0px 8px 32px;
+  letter-spacing: 0.01em;
+  animation: wedflowGlowPulse 2.4s ease-in-out infinite;
 
 
   svg {
@@ -206,28 +206,6 @@ color: rgb(245, 240, 232);
     height: 17px;
   }
 }
-
-
-/* =========================================================
-   PRIMARY BUTTON GLOW
-========================================================= */
-
-@keyframes wedflowGlowPulse {
-
-  0%,
-  100% {
-    box-shadow:
-      0 0 24px rgba(212, 175, 55, 0.28),
-      0 8px 28px rgba(0, 0, 0, 0.52);
-  }
-
-  50% {
-    box-shadow:
-      0 0 48px rgba(245, 197, 24, 0.52),
-      0 10px 34px rgba(0, 0, 0, 0.58);
-  }
-}
-
 
 /* =========================================================
    SECONDARY BUTTON
@@ -237,11 +215,11 @@ color: rgb(245, 240, 232);
   gap: 9px;
   padding: 16px 30px;
   font-size: 14px;
-      font-weight: 600;
-          background: rgba(255, 255, 255, 0.03);
-    color: rgba(245, 240, 232, 0.55);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    cursor: pointer;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(245, 240, 232, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  cursor: pointer;
 
   svg {
     width: 14px;
@@ -258,11 +236,11 @@ color: rgb(245, 240, 232);
   gap: 9px;
   padding: 16px 30px;
   font-size: 14px;
-      font-weight: 700;
-          background: rgba(212, 175, 55, 0.08);
-    color: rgb(255, 224, 102);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    cursor: pointer;
+  font-weight: 700;
+  background: rgba(212, 175, 55, 0.08);
+  color: rgb(255, 224, 102);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  cursor: pointer;
 
   svg {
     width: 15px;
@@ -305,29 +283,6 @@ color: rgb(245, 240, 232);
 
   animation:
     wedflowButtonShine 3.6s ease-in-out infinite;
-}
-
-
-@keyframes wedflowButtonShine {
-  0% {
-    transform: translateX(-220%) skewX(-18deg);
-    opacity: 0;
-  }
-
-  18% {
-    transform: translateX(-40%) skewX(-18deg);
-    opacity: 0.55;
-  }
-
-  42% {
-    transform: translateX(320%) skewX(-18deg);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateX(320%) skewX(-18deg);
-    opacity: 0;
-  }
 }
 
 @media (max-width: 820px) {
