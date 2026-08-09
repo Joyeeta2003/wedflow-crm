@@ -1,0 +1,115 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 460px;
+    border-radius: 18px;
+    background: linear-gradient(160deg, rgb(12, 12, 12), rgb(5, 5, 5));
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    box-shadow: rgba(212, 175, 55, 0.133) 0px 0px 90px;
+    padding: 28px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.modal-eyebrow {
+  color: rgb(212, 175, 55);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+
+.modal-title {
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 900;
+  margin: 0;
+}
+
+.modal-subtitle {
+  color: rgba(245, 240, 232, 0.55);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 9px 0 0;
+}
+
+.close-btn {
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(245, 240, 232, 0.55);
+    border-radius: 9px;
+    padding: 7px;
+    cursor: pointer;
+}
+
+.enquiry-form {
+  display: grid;
+  gap: 12px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 13px;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    background: rgba(255, 255, 255, 0.043);
+    color: rgb(245, 240, 232);
+    outline: none;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 82px;
+}
+
+.wf-button-primary {
+    margin-top: 4px;
+    padding: 14px 18px;
+    border-radius: 11px;
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    cursor: pointer;
+    font-weight: 900;
+    color: rgb(0, 0, 0);
+    background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 1;
+}
+
+.wf-button::after {
+    content: "";
+    position: absolute;
+    inset: -45% auto -45% -55%;
+    width: 44%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+    pointer-events: none;
+    animation: wedflowButtonShine 3.6s ease-in-out infinite;
+}

@@ -1,9 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-hero',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './hero.html',
-  styleUrl: './hero.scss',
+  styleUrl: './hero.scss'
 })
-export class Hero {}
+export class Hero {
+  openEnquiryRequested = output<void>();
+
+  openEnquiryModal(): void {
+    this.openEnquiryRequested.emit();
+  }
+}

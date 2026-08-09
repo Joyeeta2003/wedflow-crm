@@ -1,0 +1,66 @@
+@if (isOpen()) {
+  <div class="modal-overlay" (click)="onOverlayClick($event)">
+    <div class="modal-box" [class.modal-box-open]="isOpen()">
+      <div class="modal-header">
+        <div>
+          <div class="modal-eyebrow">Start for Free</div>
+          <h2 class="modal-title">Tell us about your studio</h2>
+          <p class="modal-subtitle">Share your details and the WedFlow team will reach out.</p>
+        </div>
+
+        <button class="close-btn" type="button" (click)="closeModal()" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x" aria-hidden="true" style="width: 16px; height: 16px;"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+
+      <form class="enquiry-form" (ngSubmit)="onSubmit()">
+        <input
+          class="form-input"
+          type="text"
+          name="fullName"
+          required
+          placeholder="Your name"
+          [ngModel]="fullName()"
+          (ngModelChange)="fullName.set($event)">
+
+        <input
+          class="form-input"
+          type="tel"
+          name="phone"
+          required
+          placeholder="Phone number"
+          [ngModel]="phone()"
+          (ngModelChange)="phone.set($event)">
+
+        <input
+          class="form-input"
+          type="text"
+          name="studioName"
+          required
+          placeholder="Company / studio name"
+          [ngModel]="studioName()"
+          (ngModelChange)="studioName.set($event)">
+
+        <input
+          class="form-input"
+          type="email"
+          name="email"
+          placeholder="Email address (optional)"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)">
+
+        <textarea
+          class="form-input form-textarea"
+          name="message"
+          rows="3"
+          placeholder="Anything specific you want to discuss? (optional)"
+          [ngModel]="message()"
+          (ngModelChange)="message.set($event)"></textarea>
+
+        <button type="submit" class="wf-button wf-button-primary" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Submitting...' : 'Submit Enquiry' }}
+        </button>
+      </form>
+    </div>
+  </div>
+}
