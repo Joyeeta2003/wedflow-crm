@@ -1,0 +1,77 @@
+.toast-viewport {
+  position: fixed;
+  z-index: 300;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 420px;
+  max-height: 100vh;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgb(20, 20, 20);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+  animation: wfToastSlideIn 0.3s ease;
+  overflow: hidden;
+}
+
+.toast-content {
+  display: grid;
+  gap: 4px;
+}
+
+.toast-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(245, 240, 232);
+}
+
+.toast-message {
+  font-size: 13px;
+  color: rgba(245, 240, 232, 0.9);
+}
+
+.toast-close {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: rgba(245, 240, 232, 0.5);
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.toast:hover .toast-close {
+  opacity: 1;              /* toast-এর উপর হোভার করলে দেখা যাবে */
+}
+
+.toast-close:hover {
+  color: rgb(245, 240, 232);
+}
+
+@keyframes wfToastSlideIn {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

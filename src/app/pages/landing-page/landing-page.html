@@ -6,4 +6,5 @@
 <app-cta></app-cta>
 <app-footer></app-footer>
 
-<app-enquiry-modal [(isOpen)]="enquiryModalOpen"></app-enquiry-modal>
+<app-enquiry-modal [(isOpen)]="enquiryModalOpen" (submitted)="onEnquirySubmitted()"></app-enquiry-modal>
+<app-toast [visible]="toastVisible()" (closed)="onToastClosed()"></app-toast>

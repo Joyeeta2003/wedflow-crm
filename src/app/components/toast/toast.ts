@@ -1,9 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-toast',
-  imports: [],
+  standalone: true,
   templateUrl: './toast.html',
-  styleUrl: './toast.scss',
+  styleUrl: './toast.scss'
 })
-export class Toast {}
+export class Toast {
+  visible = input(false);
+  title = input('Enquiry submitted');
+  message = input('Our team will contact you soon.');
+  closed = output<void>();
+
+  onClose(): void {
+    this.closed.emit();
+  }
+}
