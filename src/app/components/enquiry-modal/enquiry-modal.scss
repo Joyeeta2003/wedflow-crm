@@ -8,16 +8,34 @@
   padding: 18px;
   background: rgba(0, 0, 0, 0.82);
   backdrop-filter: blur(10px);
+  animation: wfOverlayFadeIn 0.25s ease;
 }
 
 .modal-box {
-    width: 100%;
-    max-width: 460px;
-    border-radius: 18px;
-    background: linear-gradient(160deg, rgb(12, 12, 12), rgb(5, 5, 5));
-    border: 1px solid rgba(212, 175, 55, 0.28);
-    box-shadow: rgba(212, 175, 55, 0.133) 0px 0px 90px;
-    padding: 28px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgb(12, 12, 12), rgb(5, 5, 5));
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow: rgba(212, 175, 55, 0.133) 0px 0px 90px;
+  padding: 28px;
+  transform: translateY(40px);
+  opacity: 0;
+  animation: wfModalSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes wfOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wfModalSlideUp {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-header {
@@ -42,6 +60,7 @@
   line-height: 1.15;
   font-weight: 900;
   margin: 0;
+  color: rgb(245, 240, 232);
 }
 
 .modal-subtitle {
@@ -52,15 +71,22 @@
 }
 
 .close-btn {
-    border-width: medium;
-    border-style: none;
-    border-color: currentcolor;
-    border-image: none;
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(245, 240, 232, 0.55);
-    border-radius: 9px;
-    padding: 7px;
-    cursor: pointer;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(245, 240, 232, 0.55);
+  border-radius: 9px;
+  padding: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgb(245, 240, 232);
+  }
 }
 
 .enquiry-form {
@@ -68,16 +94,37 @@
   gap: 12px;
 }
 
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-error {
+  font-size: 12px;
+  color: rgb(248, 113, 113);
+}
+
 .form-input {
-    width: 100%;
-    padding: 12px 13px;
-    border-radius: 10px;
-    border: 1px solid rgba(212, 175, 55, 0.28);
-    background: rgba(255, 255, 255, 0.043);
-    color: rgb(245, 240, 232);
-    outline: none;
-    font-size: 14px;
-    box-sizing: border-box;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  background: rgba(255, 255, 255, 0.043);
+  color: rgb(245, 240, 232);
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+
+  &::placeholder {
+    color: rgba(245, 240, 232, 0.4);
+  }
+
+  &:focus {
+    border-color: rgba(212, 175, 55, 0.6);
+  }
 }
 
 .form-textarea {
@@ -86,30 +133,40 @@
 }
 
 .wf-button-primary {
-    margin-top: 4px;
-    padding: 14px 18px;
-    border-radius: 11px;
-    border-width: medium;
-    border-style: none;
-    border-color: currentcolor;
-    border-image: none;
-    cursor: pointer;
-    font-weight: 900;
-    color: rgb(0, 0, 0);
-    background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    opacity: 1;
+  margin-top: 4px;
+  padding: 14px 18px;
+  border-radius: 11px;
+  border: none;
+  font-weight: 900;
+  color: rgb(0, 0, 0);
+  background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    opacity: 0.92;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
-.wf-button::after {
-    content: "";
-    position: absolute;
-    inset: -45% auto -45% -55%;
-    width: 44%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.52), transparent);
-    pointer-events: none;
-    animation: wedflowButtonShine 3.6s ease-in-out infinite;
+.success-state {
+  text-align: center;
+  padding: 20px 0;
+
+  .modal-title {
+    color: rgb(212, 175, 55);
+  }
 }

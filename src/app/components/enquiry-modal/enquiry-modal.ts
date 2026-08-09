@@ -1,6 +1,6 @@
-import { Component, model, signal } from '@angular/core';
+import { Component, model, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 
 @Component({
   selector: 'app-enquiry-modal',
@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 export class EnquiryModal {
   isOpen = model(false);
   isSubmitting = signal(false);
+  submitted = output<void>();
 
   fullName = signal('');
   phone = signal('');
@@ -30,13 +31,13 @@ export class EnquiryModal {
     }
   }
 
-  onSubmit(): void {
-    if (!this.fullName() || !this.phone() || !this.studioName()) {
+  onSubmit(form: NgForm): void {
+    if (form.invalid) {
       return;
     }
+
     this.isSubmitting.set(true);
 
-    // TODO: এখানে API কল বসাও
     console.log('Enquiry submitted:', {
       fullName: this.fullName(),
       phone: this.phone(),
@@ -44,5 +45,22 @@ export class EnquiryModal {
       email: this.email(),
       message: this.message()
     });
+
+    // TODO: আসল API কল এখানে বসাও, সফল হলে নিচের কোড রান করবে
+    setTimeout(() => {
+      this.isSubmitting.set(false);
+      this.resetForm(form);
+      this.closeModal();
+      this.submitted.emit();
+    }, 800);
+  }
+
+  private resetForm(form: NgForm): void {
+    form.resetForm();
+    this.fullName.set('');
+    this.phone.set('');
+    this.studioName.set('');
+    this.email.set('');
+    this.message.set('');
   }
 }
