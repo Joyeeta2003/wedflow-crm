@@ -1,28 +1,24 @@
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(10px);
+    position: fixed;
+    inset: 0px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(10px);
   animation: wfOverlayFadeIn 0.25s ease;
 }
 
 .modal-box {
-  width: 100%;
-  max-width: 460px;
-  max-height: 90vh;
-  overflow-y: auto;
-  border-radius: 18px;
-  background: linear-gradient(160deg, rgb(12, 12, 12), rgb(5, 5, 5));
-  border: 1px solid rgba(212, 175, 55, 0.28);
-  box-shadow: rgba(212, 175, 55, 0.133) 0px 0px 90px;
-  padding: 28px;
-  transform: translateY(40px);
-  opacity: 0;
+    width: 100%;
+    max-width: 460px;
+    border-radius: 18px;
+    background: linear-gradient(160deg, rgb(12, 12, 12), rgb(5, 5, 5));
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    box-shadow: rgba(212, 175, 55, 0.133) 0px 0px 90px;
+    padding: 28px;
   animation: wfModalSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -39,11 +35,11 @@
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  margin-bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 22px;
 }
 
 .modal-eyebrow {
@@ -71,22 +67,15 @@
 }
 
 .close-btn {
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(245, 240, 232, 0.55);
-  border-radius: 9px;
-  padding: 7px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: rgb(245, 240, 232);
-  }
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(245, 240, 232, 0.55);
+    border-radius: 9px;
+    padding: 7px;
+    cursor: pointer;
 }
 
 .enquiry-form {
@@ -94,36 +83,24 @@
   gap: 12px;
 }
 
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.field-error {
-  font-size: 12px;
-  color: rgb(248, 113, 113);
-}
-
 .form-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 13px;
-  border-radius: 10px;
-  border: 1px solid rgba(212, 175, 55, 0.28);
-  background: rgba(255, 255, 255, 0.043);
-  color: rgb(245, 240, 232);
-  outline: none;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.15s ease;
+    width: 100%;
+    padding: 12px 13px;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    background: rgba(255, 255, 255, 0.043);
+    color: rgb(245, 240, 232);
+    outline: none;
+    font-size: 14px;
+    box-sizing: border-box;
 
   &::placeholder {
     color: rgba(245, 240, 232, 0.4);
   }
 
   &:focus {
-    border-color: rgba(212, 175, 55, 0.6);
+outline: none;
+box-shadow:0 0 0 2px  #f3b41666 ;
   }
 }
 
@@ -131,22 +108,30 @@
   resize: vertical;
   min-height: 82px;
 }
-
+.wf-button{
+      position: relative;
+    overflow: hidden;
+    transform: translateY(0) scale(1);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, filter 180ms ease;
+}
 .wf-button-primary {
-  margin-top: 4px;
-  padding: 14px 18px;
-  border-radius: 11px;
-  border: none;
-  font-weight: 900;
-  color: rgb(0, 0, 0);
-  background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 15px;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+    margin-top: 4px;
+    padding: 14px 18px;
+    border-radius: 11px;
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    cursor: pointer;
+    font-weight: 900;
+    color: rgb(0, 0, 0);
+    background: linear-gradient(135deg, rgb(184, 134, 11), rgb(212, 175, 55), rgb(245, 197, 24));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 1;
+    animation: wedflowButtonPulse 3s ease-in-out infinite;
 
   &:hover {
     opacity: 0.92;
@@ -159,6 +144,21 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.loader-icon {
+  width: 16px;
+  height: 16px;
+  animation: wfLoaderSpin 1s linear infinite;
+}
+
+@keyframes wfLoaderSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
