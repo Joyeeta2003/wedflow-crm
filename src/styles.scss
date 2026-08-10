@@ -81,3 +81,35 @@ html,body{
     transform: translateY(-2px) scale(1.015);
     filter: brightness(1.06);
 }
+
+// src/styles.scss
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(10, 10, 10);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(184, 134, 11), rgb(212, 175, 55));
+  border-radius: 10px;
+  border: 2px solid rgb(10, 10, 10);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(212, 175, 55), rgb(245, 197, 24));
+}
+
+::-webkit-scrollbar-corner {
+  background: rgb(10, 10, 10);
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(52, 50, 47) rgb(10, 10, 10);
+}
