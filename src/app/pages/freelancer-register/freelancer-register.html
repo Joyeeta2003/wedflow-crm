@@ -1,1 +1,337 @@
-<p>freelancer-register works!</p>
+<div class="register-page">
+  <header class="register-header">
+    <a routerLink="/" class="brand">
+      <img alt="WedFlow CRM" class="brand-logo" src="/assests/images/wedflow-logo.png">
+      <span class="brand-name">WEDFLOW CRM</span>
+    </a>
+
+    <div class="header-actions">
+      <a routerLink="/freelancerlogin" class="freelancer-login-link">Freelancer login</a>
+      <a routerLink="/" class="back-home">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m12 19-7-7 7-7"></path>
+          <path d="M19 12H5"></path>
+        </svg>
+        Back home
+      </a>
+    </div>
+  </header>
+
+  <main class="register-main">
+    <form class="register-form" #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)">
+      <section class="intro-section">
+        <div class="eyebrow">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+            <path d="M22 13a18.15 18.15 0 0 1-20 0"></path>
+            <rect width="20" height="14" x="2" y="6" rx="2"></rect>
+          </svg>
+          Freelancer marketplace
+        </div>
+        <h1 class="page-title">Work with verified wedding studios</h1>
+        <p class="page-subtitle">
+          Create a professional profile for yourself or your team. Your profile becomes visible only after document
+          verification by WedFlow CRM.
+        </p>
+      </section>
+
+      <section class="profile-section">
+        <div>
+          <h2 class="section-title">Profile</h2>
+          <p class="section-subtitle">Tell studios who they will be hiring.</p>
+        </div>
+
+        <div class="profile-toggle">
+          <button type="button" class="toggle-btn" [class.toggle-btn-active]="profileType() === 'individual'"
+            (click)="setProfileType('individual')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 20a6 6 0 0 0-12 0"></path>
+              <circle cx="12" cy="10" r="4"></circle>
+              <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+            Individual
+          </button>
+          <button type="button" class="toggle-btn" [class.toggle-btn-active]="profileType() === 'team'"
+            (click)="setProfileType('team')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            Team / Agency
+          </button>
+        </div>
+
+        <div class="field-grid">
+          <div class="field-group">
+            <label for="display-name">
+              {{ profileType() === 'team' ? 'Team / agency name' : 'Professional name' }} *
+            </label>
+            <input id="display-name" name="displayName" class="form-input" required maxlength="120"
+              [ngModel]="displayName()" (ngModelChange)="displayName.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="contact-name">Primary contact person *</label>
+            <input id="contact-name" name="contactName" class="form-input" required maxlength="120"
+              [ngModel]="contactName()" (ngModelChange)="contactName.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="email">Email *</label>
+            <input id="email" name="email" type="email" class="form-input" required [ngModel]="email()"
+              (ngModelChange)="email.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="phone">Phone *</label>
+            <input id="phone" name="phone" type="tel" class="form-input" required [ngModel]="phone()"
+              (ngModelChange)="phone.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="city">City *</label>
+            <input id="city" name="city" class="form-input" required [ngModel]="city()"
+              (ngModelChange)="city.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="state">State *</label>
+            <input id="state" name="state" class="form-input" required [ngModel]="state()"
+              (ngModelChange)="state.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="experience">Experience (years) *</label>
+            <input id="experience" name="experience" type="number" class="form-input" min="0" max="60" required
+              [ngModel]="experience()" (ngModelChange)="experience.set($event)">
+          </div>
+
+          @if (profileType() === 'team') {
+          <div class="field-group">
+            <label for="team-size">Team size *</label>
+            <input id="team-size" name="teamSize" type="number" class="form-input" min="2" max="100" required
+              [ngModel]="teamSize()" (ngModelChange)="teamSize.set($event)">
+          </div>
+          }
+
+          <div class="field-group">
+            <label for="rate">Typical rate range</label>
+            <input id="rate" name="rate" class="form-input" placeholder="Example: Rs. 15,000 - 25,000/day"
+              [ngModel]="rate()" (ngModelChange)="rate.set($event)">
+          </div>
+
+          <div class="field-group">
+            <label for="availability">Availability</label>
+            <select id="availability" name="availability" class="form-input" [ngModel]="availability()"
+              (ngModelChange)="availability.set($event)">
+              <option value="Available for projects">Available for projects</option>
+              <option value="Limited availability">Limited availability</option>
+              <option value="Available for remote work">Available for remote work</option>
+            </select>
+          </div>
+
+          <div class="field-group field-span-2">
+            <label for="portfolio">Portfolio website</label>
+            <input id="portfolio" name="portfolio" type="url" class="form-input" placeholder="https://yourportfolio.com"
+              [ngModel]="portfolio()" (ngModelChange)="portfolio.set($event)">
+          </div>
+
+          <div class="field-group field-span-2">
+            <label for="about">Professional summary *</label>
+            <textarea id="about" name="about" class="form-input form-textarea" rows="6" required minlength="80"
+              maxlength="1600"
+              placeholder="Describe your style, experience, equipment, team strengths and the kind of projects you handle..."
+              [ngModel]="about()" (ngModelChange)="about.set($event)"></textarea>
+            <div class="char-counter">{{ about().length }}/1600</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="services-section">
+        <div>
+          <h2 class="section-title">Services</h2>
+          <p class="section-subtitle">Select every service you can deliver professionally.</p>
+        </div>
+
+        <div class="services-grid">
+          @for (service of services; track service) {
+          <label class="service-card" [class.service-card-checked]="isServiceSelected(service)">
+            <button type="button" role="checkbox" [attr.aria-checked]="isServiceSelected(service)"
+              [attr.data-state]="isServiceSelected(service) ? 'checked' : 'unchecked'" value="on"
+              class="service-checkbox" (click)="toggleService(service)">
+            </button>
+            <input aria-hidden="true" tabindex="-1" type="checkbox" value="on" [checked]="isServiceSelected(service)"
+              style="position: absolute; pointer-events: none; opacity: 0; margin: 0px; transform: translateX(-100%); width: 16px; height: 44px;">
+            <span>{{ service }}</span>
+          </label>
+          }
+        </div>
+      </section>
+
+      <section class="documents-section">
+        <div>
+          <h2 class="section-title">Photo &amp; verification documents</h2>
+          <p class="section-subtitle">These files are private and visible only to platform verification administrators.
+          </p>
+        </div>
+
+        <div class="documents-grid">
+          <label class="doc-card">
+            <span class="doc-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                <circle cx="9" cy="9" r="2"></circle>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+              </svg>
+            </span>
+            <span class="doc-info">
+              <span class="doc-title">Profile photo</span>
+              <span class="doc-hint">PNG, JPG or WebP under 1.3MB</span>
+            </span>
+            <span class="doc-upload">Upload</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
+          </label>
+
+          <label class="doc-card">
+            <span class="doc-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 2v6h6"></path>
+              </svg>
+            </span>
+            <span class="doc-info">
+              <span class="doc-title">Government identity proof *</span>
+              <span class="doc-hint">PDF, PNG or JPG under 1.8MB</span>
+            </span>
+            <span class="doc-upload">Upload</span>
+            <input type="file" accept="application/pdf,image/png,image/jpeg" class="sr-only">
+          </label>
+
+          <label class="doc-card">
+            <span class="doc-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 2v6h6"></path>
+              </svg>
+            </span>
+            <span class="doc-info">
+              <span class="doc-title">Work proof / portfolio sample *</span>
+              <span class="doc-hint">Invoice, work certificate or sample PDF/image</span>
+            </span>
+            <span class="doc-upload">Upload</span>
+            <input type="file" accept="application/pdf,image/png,image/jpeg" class="sr-only">
+          </label>
+
+          @if (profileType() === 'individual') {
+          <label class="doc-card">
+            <span class="doc-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 2v6h6"></path>
+              </svg>
+            </span>
+            <span class="doc-info">
+              <span class="doc-title">Professional certification</span>
+              <span class="doc-hint">Optional training or industry certificate</span>
+            </span>
+            <span class="doc-upload">Upload</span>
+            <input type="file" accept="application/pdf,image/png,image/jpeg" class="sr-only">
+          </label>
+          } @else {
+          <label class="doc-card">
+            <span class="doc-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 2v6h6"></path>
+              </svg>
+            </span>
+            <span class="doc-info">
+              <span class="doc-title">Business registration</span>
+              <span class="doc-hint">Optional registration document</span>
+            </span>
+            <span class="doc-upload">Upload</span>
+            <input type="file" accept="application/pdf,image/png,image/jpeg" class="sr-only">
+          </label>
+          }
+        </div>
+
+        <div class="turnstile-box">
+          <!-- Cloudflare Turnstile renders here at runtime -->
+        </div>
+
+        <div class="submit-row">
+          <p class="disclaimer">
+            By submitting, you confirm that the profile and documents are genuine and may be reviewed for marketplace
+            verification.
+          </p>
+          <button type="submit" class="submit-btn" [disabled]="isSubmitting()">
+            @if (isSubmitting()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="loader-icon"
+              aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+            } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"></path>
+              <path d="m17 8-5-5-5 5"></path>
+              <path d="M19 21H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2Z"></path>
+            </svg>
+            }
+            Submit for review
+          </button>
+        </div>
+      </section>
+    </form>
+
+    <aside class="register-aside">
+      <div class="info-card">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="info-icon"
+          aria-hidden="true">
+          <path
+            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z">
+          </path>
+          <path d="m9 12 2 2 4-4"></path>
+        </svg>
+        <h2 class="info-title">Verification process</h2>
+        <ol class="info-list">
+          <li><span class="info-num">1</span><span>Submit your complete profile and documents.</span></li>
+          <li><span class="info-num">2</span><span>WedFlow CRM reviews identity and work credentials.</span></li>
+          <li><span class="info-num">3</span><span>Approved profiles become visible to studios.</span></li>
+        </ol>
+      </div>
+
+      <div class="highlight-card">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="highlight-icon"
+          aria-hidden="true">
+          <path
+            d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z">
+          </path>
+          <path d="m9 12 2 2 4-4"></path>
+        </svg>
+        <h2 class="highlight-title">Verified profiles stand out</h2>
+        <p class="highlight-text">Studios can contact you directly or send structured project briefs with event date,
+          location and budget.</p>
+      </div>
+    </aside>
+  </main>
+</div>
