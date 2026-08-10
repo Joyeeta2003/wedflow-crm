@@ -56,6 +56,11 @@
         white-space: nowrap;
     }
 
+    .secondary-btn:hover{
+        border-color: rgba(212, 175, 55, 0.42) !important;
+        box-shadow: 0 0 24px rgba(212, 175, 55, 0.16);
+    }
+
     .primary-btn {
         padding: 15px 26px;
         border-radius: 8px;

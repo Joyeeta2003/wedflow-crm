@@ -111,8 +111,6 @@ box-shadow:0 0 0 2px  #f3b41666 ;
 .wf-button{
       position: relative;
     overflow: hidden;
-    transform: translateY(0) scale(1);
-    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, filter 180ms ease;
 }
 .wf-button-primary {
     margin-top: 4px;
