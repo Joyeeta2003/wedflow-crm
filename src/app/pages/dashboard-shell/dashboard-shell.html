@@ -1,1 +1,67 @@
-<p>dashboard-shell works!</p>
+<div class="app-shell">
+  <app-sidebar></app-sidebar>
+
+  <div class="content-area">
+    <!-- Mobile Topbar -->
+    <header class="mobile-topbar">
+      <button class="mobile-menu-btn" type="button" (click)="toggleMobileSidebar()">
+        <svg class="menu-icon"><!-- lucide-menu --></svg>
+      </button>
+      <div class="mobile-brand">
+        <div class="mobile-brand-icon">
+          <svg class="camera-icon"><!-- lucide-camera --></svg>
+        </div>
+        <span class="mobile-brand-name">DRV Studios</span>
+      </div>
+      <div class="mobile-avatar">J</div>
+    </header>
+
+    <!-- Mobile Theme Toggle -->
+    <div class="mobile-theme-row">
+      <button class="theme-btn" type="button">
+        <svg class="theme-icon"><!-- lucide-sun --></svg>
+        <span>Light</span>
+      </button>
+    </div>
+
+    <!-- Desktop Theme Toggle -->
+    <div class="desktop-theme-row">
+      <button class="theme-btn" type="button">
+        <svg class="theme-icon"><!-- lucide-sun --></svg>
+        <span>Light mode</span>
+      </button>
+    </div>
+
+    <main class="scroll-region">
+      <div class="content-inner">
+        <div class="content-max-width">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="mobile-bottom-nav">
+      <a routerLink="/app/dashboard" routerLinkActive="active" class="bottom-nav-item">
+        <div class="bottom-nav-icon-wrap">
+          <svg class="bottom-nav-icon"><!-- lucide-layout-dashboard --></svg>
+        </div>
+        <span class="bottom-nav-label">Dashboard</span>
+        <div class="bottom-nav-dot"></div>
+      </a>
+      <a routerLink="/app/packages" routerLinkActive="active" class="bottom-nav-item">
+        <div class="bottom-nav-icon-wrap">
+          <svg class="bottom-nav-icon"><!-- lucide-package --></svg>
+        </div>
+        <span class="bottom-nav-label">Packages</span>
+      </a>
+      <a routerLink="/app/clients" routerLinkActive="active" class="bottom-nav-item">
+        <div class="bottom-nav-icon-wrap">
+          <svg class="bottom-nav-icon"><!-- lucide-users --></svg>
+        </div>
+        <span class="bottom-nav-label">Clients</span>
+      </a>
+      <!-- FLAG: baki bottom-nav items (Bookings ityadi) screenshot e cut hoye gechilo, pore pathale add kore debo -->
+    </nav>
+  </div>
+</div>
