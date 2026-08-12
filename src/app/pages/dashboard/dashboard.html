@@ -1,1 +1,175 @@
-<p>dashboard works!</p>
+<div class="dashboard-page">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Live studio overview. Data refreshes automatically every 60 seconds.</p>
+  </div>
+
+  <!-- Attention banner -->
+  <div class="attention-banner" role="alert">
+    <svg class="attention-icon"><!-- lucide-circle-alert --></svg>
+    <h5 class="attention-title">Attention needed</h5>
+    <div class="attention-body">
+      <span>{{ bookingsNeedingCrew() }} booking(s) need crew assignment.</span>
+      <span>{{ paymentsNeedingFollowUp() }} payment item(s) need follow-up.</span>
+      <a routerLink="/app/crew-assignments">
+        <button class="btn-solid btn-xs" type="button">Open crew board</button>
+      </a>
+      <a routerLink="/app/bookings">
+        <button class="btn-outline btn-xs" type="button">Open bookings</button>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stat-grid">
+    <a [routerLink]="card.link" class="stat-card-link" *ngFor="let card of statCards">
+      <div class="stat-card" [class.highlighted]="card.highlighted">
+        <div class="stat-card-head">
+          <span class="stat-label">{{ card.label }}</span>
+          <div class="stat-icon-wrap">
+            <svg class="stat-icon"><!-- {{ card.icon }} --></svg>
+          </div>
+        </div>
+        <div class="stat-value" [class.gold]="card.highlighted">{{ card.value }}</div>
+        <p class="stat-subtext">{{ card.subtext }}</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- Calendar -->
+  <div class="card-block">
+    <div class="calendar-head">
+      <div>
+        <div class="calendar-title">
+          <svg class="calendar-title-icon"><!-- lucide-calendar --></svg>
+          Event Calendar
+        </div>
+        <p class="calendar-subtitle">Date-wise live view of bookings, venues and crew status.</p>
+      </div>
+      <div class="calendar-controls">
+        <button class="icon-btn" type="button" (click)="prevMonth()">
+          <svg><!-- lucide-chevron-left --></svg>
+        </button>
+        <button class="select-btn" type="button">{{ monthLabel() }}</button>
+        <button class="select-btn" type="button">{{ yearLabel() }}</button>
+        <button class="icon-btn" type="button" (click)="nextMonth()">
+          <svg><!-- lucide-chevron-right --></svg>
+        </button>
+        <button class="btn-outline btn-sm" type="button" (click)="goToToday()">Today</button>
+      </div>
+    </div>
+
+    <div class="calendar-filters">
+      <input
+        class="input-field"
+        type="text"
+        placeholder="Search client, venue, package..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+      <input class="input-field" type="date" value="2026-08-12" />
+      <button class="select-btn full" type="button">All statuses</button>
+      <button class="select-btn full" type="button">All crew states</button>
+    </div>
+
+    <div class="calendar-columns">
+      <div>
+        <div class="weekday-row">
+          <div *ngFor="let day of weekDays">{{ day }}</div>
+        </div>
+        <div class="day-grid">
+          <button
+            type="button"
+            class="day-cell"
+            *ngFor="let day of calendarDays()"
+            [class.faded]="isPast(day)"
+            [class.selected]="isSelected(day)"
+            (click)="selectDay(day)"
+          >
+            <div class="day-cell-top">
+              <span class="day-number">{{ day.date }}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <div class="side-panel-head">
+          <div>
+            <div class="side-panel-date">{{ selectedDate() | date: 'dd-MM-yyyy' }}</div>
+            <div class="side-panel-count">0 bookings</div>
+          </div>
+          <a routerLink="/app/crew-assignments">
+            <button class="btn-outline btn-xs" type="button">Crew Board</button>
+          </a>
+        </div>
+        <div class="side-panel-body">
+          <div class="empty-dashed">No events on this date.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtered events -->
+  <div class="bordered-block">
+    <div class="filtered-head">
+      <div>
+        <div class="filtered-title">Filtered Events In {{ monthLabel() }} {{ yearLabel() }}</div>
+        <div class="filtered-subtitle">{{ filteredEvents.length }} booking match current filters</div>
+      </div>
+    </div>
+    <div class="filtered-grid">
+      <a [routerLink]="'/app/bookings/' + event.id" class="filtered-card-link" *ngFor="let event of filteredEvents">
+        <div class="filtered-card">
+          <div class="filtered-card-inner">
+            <div class="filtered-card-info">
+              <div class="filtered-name">{{ event.name }}</div>
+              <div class="filtered-meta">{{ event.date }} · {{ event.location }}</div>
+            </div>
+            <div class="badge">Crew</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Upcoming Events + Action Items -->
+  <div class="bottom-grid">
+    <div class="card-block">
+      <div class="card-head">
+        <div class="card-head-title">
+          <svg class="card-head-icon"><!-- lucide-calendar --></svg>
+          Upcoming Events
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="empty-center">No upcoming events.</div>
+      </div>
+    </div>
+
+    <div class="card-block">
+      <div class="card-head">
+        <div class="card-head-title">
+          <svg class="card-head-icon"><!-- lucide-circle-alert --></svg>
+          Action Items
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="action-item" *ngFor="let item of actionItems">
+          <div class="action-icon-wrap" [class.danger]="item.urgent">
+            <svg class="action-icon">
+              <!-- item.type === 'payment' ? lucide-credit-card : lucide-camera -->
+            </svg>
+          </div>
+          <div class="action-info">
+            <div class="action-title">{{ item.title }}</div>
+            <div class="action-detail">{{ item.detail }}</div>
+          </div>
+          <a [routerLink]="item.link">
+            <button class="btn-link" type="button">Fix</button>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
