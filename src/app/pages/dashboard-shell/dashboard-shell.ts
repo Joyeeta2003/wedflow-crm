@@ -19,4 +19,11 @@ export class DashboardShell {
       sidebar.isMobileOpen = !sidebar.isMobileOpen;
     }
   }
+
+isDarkMode = true;
+
+toggleTheme() {
+  this.isDarkMode = !this.isDarkMode;
+  document.documentElement.classList.toggle('dark', this.isDarkMode);
+}
 }
