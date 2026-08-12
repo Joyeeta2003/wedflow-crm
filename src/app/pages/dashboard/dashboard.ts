@@ -119,11 +119,11 @@ export class Dashboard {
 
   // ----- Action items -----
   actionItems: ActionItem[] = [
-    { type: 'crew', title: 'Assign crew for Subha', detail: 'Event in -35 days - crew not yet assigned', link: '/app/bookings/6a43729eeff108acd01663aa', urgent: true },
-    { type: 'crew', title: 'Assign crew for Swagatam & Swagata', detail: 'Event in -22 days - crew not yet assigned', link: '/app/bookings/6a5b20497a427311e7ce16c2', urgent: true },
-    { type: 'crew', title: 'Assign crew for Aniket', detail: 'Event in -11 days - crew not yet assigned', link: '/app/bookings/6a451fc8cf4d7fe2486b481e', urgent: true },
-    { type: 'payment', title: 'Payment overdue: "Advance"', detail: 'Rs. 1,10,000 due - follow up needed', link: '/app/bookings', urgent: true },
-    { type: 'payment', title: 'Payment overdue: "Advance"', detail: 'Rs. 1,05,000 due - follow up needed', link: '/app/bookings', urgent: true },
-    { type: 'payment', title: 'Payment overdue: "On Event Day"', detail: 'Rs. 88,000 due - follow up needed', link: '/app/bookings', urgent: true },
+    { type: 'crew', title: 'Assign crew for Subha', detail: 'Event in -35 days - crew not yet assigned', link: '/bookings/6a43729eeff108acd01663aa', urgent: true },
+    { type: 'crew', title: 'Assign crew for Swagatam & Swagata', detail: 'Event in -22 days - crew not yet assigned', link: '/bookings/6a5b20497a427311e7ce16c2', urgent: true },
+    { type: 'crew', title: 'Assign crew for Aniket', detail: 'Event in -11 days - crew not yet assigned', link: '/bookings/6a451fc8cf4d7fe2486b481e', urgent: true },
+    { type: 'payment', title: 'Payment overdue: "Advance"', detail: 'Rs. 1,10,000 due - follow up needed', link: '/bookings', urgent: true },
+    { type: 'payment', title: 'Payment overdue: "Advance"', detail: 'Rs. 1,05,000 due - follow up needed', link: '/bookings', urgent: true },
+    { type: 'payment', title: 'Payment overdue: "On Event Day"', detail: 'Rs. 88,000 due - follow up needed', link: '/bookings', urgent: true },
   ];
 }

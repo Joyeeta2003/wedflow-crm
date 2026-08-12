@@ -36,6 +36,6 @@ export class Login {
 
     console.log('Sending OTP to:', this.email());
 
-    this.router.navigate(['/app/dashboard']);
+    this.router.navigate(['/dashboard']);
   }
 }

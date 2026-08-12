@@ -10,6 +10,7 @@ export const routes: Routes = [
   {
     path: '',
     component: LandingPage,
+    pathMatch:'full',
   },
    {
     path: 'login',
@@ -24,11 +25,10 @@ export const routes: Routes = [
     component: FreelancerRegister 
   },
    {
-    path: 'app',
+    path: '',
     component: DashboardShell,
     children: [
       { path: 'dashboard', component: Dashboard },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
 ];
