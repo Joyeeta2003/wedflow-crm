@@ -35,5 +35,7 @@ export class Login {
     // e.g. this.router.navigate(['/verify-otp'], { queryParams: { email: this.email() } });
 
     console.log('Sending OTP to:', this.email());
+
+    this.router.navigate(['/app/dashboard']);
   }
 }

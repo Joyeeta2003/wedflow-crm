@@ -1,0 +1,165 @@
+<!-- Desktop Sidebar -->
+<aside class="sidebar sidebar--desktop">
+  <div class="sidebar-inner">
+    <div class="sidebar-header">
+      <img class="brand-logo" alt="Company Logo" src="assets/images/logo.jpg" />
+      <div class="brand-info">
+        <div class="brand-name">DRV Studios</div>
+        <div class="brand-tagline">Wedding Photography</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/app/dashboard" routerLinkActive="active" class="nav-item">
+        <span class="active-indicator"></span>
+        <svg class="nav-icon"><!-- lucide-layout-dashboard --></svg>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a routerLink="/app/packages" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- lucide-package --></svg>
+        <span class="nav-label">Packages</span>
+      </a>
+      <a routerLink="/app/clients" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- lucide-users --></svg>
+        <span class="nav-label">Clients</span>
+      </a>
+      <a routerLink="/app/bookings" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- lucide-calendar --></svg>
+        <span class="nav-label">Bookings</span>
+      </a>
+      <a routerLink="/app/crew-assignments" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- lucide-clipboard-check --></svg>
+        <span class="nav-label">Crew Assign</span>
+      </a>
+
+      <!-- FLAG: icon class DevTools e collapsed chilo, confirm hoyni -->
+      <a routerLink="/app/marketplace" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Marketplace</span>
+      </a>
+      <a routerLink="/app/storage" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Storage</span>
+      </a>
+      <a routerLink="/app/equipment" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Equipment</span>
+      </a>
+      <a routerLink="/app/workflow-board" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Workflow Board</span>
+      </a>
+      <a routerLink="/app/production-tasks" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Production</span>
+      </a>
+      <a routerLink="/app/users" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">User Management</span>
+      </a>
+      <a routerLink="/app/settings" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-block">
+        <div class="user-avatar">J</div>
+        <div class="user-info">
+          <div class="user-name">Joyeeta Das</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <div class="user-actions">
+          <button class="logout-btn" type="button">
+            <svg class="logout-icon"><!-- lucide-log-out --></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile Sidebar Overlay -->
+<aside class="sidebar sidebar--mobile" [class.open]="isMobileOpen">
+  <button class="mobile-close-btn" type="button" (click)="closeMobileSidebar()">
+    <svg class="close-icon"><!-- lucide-x --></svg>
+  </button>
+
+  <div class="sidebar-inner">
+    <div class="sidebar-header">
+      <img class="brand-logo" alt="Company Logo" src="assets/images/logo.jpg" />
+      <div class="brand-info">
+        <div class="brand-name">DRV Studios</div>
+        <div class="brand-tagline">Wedding Photography</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/app/dashboard" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <span class="active-indicator"></span>
+        <svg class="nav-icon"><!-- lucide-layout-dashboard --></svg>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a routerLink="/app/packages" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- lucide-package --></svg>
+        <span class="nav-label">Packages</span>
+      </a>
+      <a routerLink="/app/clients" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- lucide-users --></svg>
+        <span class="nav-label">Clients</span>
+      </a>
+      <a routerLink="/app/bookings" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- lucide-calendar --></svg>
+        <span class="nav-label">Bookings</span>
+      </a>
+      <a routerLink="/app/crew-assignments" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- lucide-clipboard-check --></svg>
+        <span class="nav-label">Crew Assign</span>
+      </a>
+      <a routerLink="/app/marketplace" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Marketplace</span>
+      </a>
+      <a routerLink="/app/storage" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Storage</span>
+      </a>
+      <a routerLink="/app/equipment" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Equipment</span>
+      </a>
+      <a routerLink="/app/workflow-board" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Workflow Board</span>
+      </a>
+      <a routerLink="/app/production-tasks" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Production</span>
+      </a>
+      <a routerLink="/app/users" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">User Management</span>
+      </a>
+      <a routerLink="/app/settings" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <svg class="nav-icon"><!-- icon TBD --></svg>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-block">
+        <div class="user-avatar">J</div>
+        <div class="user-info">
+          <div class="user-name">Joyeeta Das</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <div class="user-actions">
+          <button class="logout-btn" type="button">
+            <svg class="logout-icon"><!-- lucide-log-out --></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
