@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component,viewChild } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Sidebar } from '../../components/sidebar/sidebar';
 
@@ -10,8 +10,13 @@ import { Sidebar } from '../../components/sidebar/sidebar';
   styleUrl: './dashboard-shell.scss',
 })
 export class DashboardShell {
-  toggleMobileSidebar(): void {
-    // Sidebar component-er isMobileOpen control korte @ViewChild lagbe,
-    // ba ekta shared service diye state manage kora better
+  sidebar = viewChild(Sidebar);
+
+  toggleMobileSidebar() {
+    const sidebar = this.sidebar();
+
+    if (sidebar) {
+      sidebar.isMobileOpen = !sidebar.isMobileOpen;
+    }
   }
 }
