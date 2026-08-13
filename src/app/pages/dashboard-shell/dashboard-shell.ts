@@ -1,4 +1,4 @@
-import { Component,viewChild } from '@angular/core';
+import { Component, viewChild, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Sidebar } from '../../components/sidebar/sidebar';
 
@@ -9,21 +9,25 @@ import { Sidebar } from '../../components/sidebar/sidebar';
   templateUrl: './dashboard-shell.html',
   styleUrl: './dashboard-shell.scss',
 })
-export class DashboardShell {
+export class DashboardShell implements OnInit {
   sidebar = viewChild(Sidebar);
 
   toggleMobileSidebar() {
     const sidebar = this.sidebar();
-
     if (sidebar) {
       sidebar.isMobileOpen = !sidebar.isMobileOpen;
     }
   }
 
-isDarkMode = true;
+  isDarkMode = true;
 
-toggleTheme() {
-  this.isDarkMode = !this.isDarkMode;
-  document.documentElement.classList.toggle('dark', this.isDarkMode);
-}
+  ngOnInit(): void {
+    // page load-e default dark theme thakbe, tai 'light' class thakbe na
+    document.documentElement.classList.toggle('light', !this.isDarkMode);
+  }
+
+  toggleTheme() {
+    this.isDarkMode = !this.isDarkMode;
+    document.documentElement.classList.toggle('light', !this.isDarkMode);
+  }
 }
