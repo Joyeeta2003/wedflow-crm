@@ -4,10 +4,10 @@
     <p class="page-subtitle">Live studio overview. Data refreshes automatically every 60 seconds.</p>
   </div>
 
-  <!-- Attention banner   -->
+  <!-- Attention banner -->
   <div class="attention-banner" role="alert">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-alert h-4 w-4"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-alert h-4 w-4 attention-icon"
       aria-hidden="true">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="12" x2="12" y1="8" y2="12"></line>
@@ -18,10 +18,10 @@
       <span>{{ bookingsNeedingCrew() }} booking(s) need crew assignment.</span>
       <span>{{ paymentsNeedingFollowUp() }} payment item(s) need follow-up.</span>
       <a routerLink="/crew-assignments">
-        <button class="btn-solid" type="button">Open crew board</button>
+        <button class="btn-solid btn-xs" type="button">Open crew board</button>
       </a>
       <a routerLink="/bookings">
-        <button class="btn-outline" type="button">Open bookings</button>
+        <button class="btn-outline btn-xs" type="button">Open bookings</button>
       </a>
     </div>
   </div>
@@ -37,14 +37,14 @@
 
               <svg *ngSwitchCase="'trending-up'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" class="lucide h-4 w-4" style="color:rgb(245,196,71)" aria-hidden="true">
+                stroke-linejoin="round" class="lucide stat-icon h-4 w-4" style="color:rgb(245,196,71)" aria-hidden="true">
                 <path d="M16 7h6v6"></path>
                 <path d="m22 7-8.5 8.5-5-5L2 17"></path>
               </svg>
 
               <svg *ngSwitchCase="'calendar'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" class="lucide h-4 w-4" style="color:rgb(128,128,128)" aria-hidden="true">
+                stroke-linejoin="round" class="lucide stat-icon h-4 w-4" style="color:rgb(128,128,128)" aria-hidden="true">
                 <path d="M8 2v4"></path>
                 <path d="M16 2v4"></path>
                 <rect width="18" height="18" x="3" y="4" rx="2"></rect>
@@ -53,14 +53,14 @@
 
               <svg *ngSwitchCase="'credit-card'" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" class="lucide h-4 w-4" style="color: rgb(226,80,80);" aria-hidden="true">
+                stroke-linejoin="round" class="lucide stat-icon h-4 w-4" style="color: rgb(226,80,80);" aria-hidden="true">
                 <rect width="20" height="14" x="2" y="5" rx="2"></rect>
                 <line x1="2" x2="22" y1="10" y2="10"></line>
               </svg>
 
               <svg *ngSwitchCase="'users'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                class="lucide h-4 w-4" style="color: rgb(245,177,61);" aria-hidden="true">
+                class="lucide stat-icon h-4 w-4" style="color: rgb(245,177,61);" aria-hidden="true">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                 <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -70,30 +70,61 @@
             </ng-container>
           </div>
         </div>
-        <div class="stat-value" [ngClass]="'color-' + card.valueColor" >{{ card.value }}</div>
+        <div class="stat-value" [ngClass]="'color-' + card.valueColor">{{ card.value }}</div>
         <p class="stat-subtext">{{ card.subtext }}</p>
       </div>
     </a>
   </div>
 
-  <!-- Calendar -->
+  <!-- Event Calendar + Filtered Events — SHOB EKTA card-block-er bhitore -->
   <div class="card-block">
+
     <div class="calendar-head">
       <div>
         <div class="calendar-title">
-          <svg class="calendar-title-icon"><!-- lucide-calendar --></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-calendar h-4 w-4 calendar-title-icon" aria-hidden="true">
+            <path d="M8 2v4"></path>
+            <path d="M16 2v4"></path>
+            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+            <path d="M3 10h18"></path>
+          </svg>
           Event Calendar
         </div>
         <p class="calendar-subtitle">Date-wise live view of bookings, venues and crew status.</p>
       </div>
+
       <div class="calendar-controls">
         <button class="icon-btn" type="button" (click)="prevMonth()">
-          <svg><!-- lucide-chevron-left --></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-chevron-left h-4 w-4" aria-hidden="true">
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
         </button>
-        <button class="select-btn" type="button">{{ monthLabel() }}</button>
-        <button class="select-btn" type="button">{{ yearLabel() }}</button>
+        <button class="select-btn" type="button" role="combobox">
+          <span>{{ monthLabel() }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-chevron-down h-4 w-4 opacity-50" aria-hidden="true">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <button class="select-btn" type="button" role="combobox">
+          <span>{{ yearLabel() }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-chevron-down h-4 w-4 opacity-50" aria-hidden="true">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
         <button class="icon-btn" type="button" (click)="nextMonth()">
-          <svg><!-- lucide-chevron-right --></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true">
+            <path d="m9 18 6-6-6-6"></path>
+          </svg>
         </button>
         <button class="btn-outline btn-sm" type="button" (click)="goToToday()">Today</button>
       </div>
@@ -103,20 +134,43 @@
       <input class="input-field" type="text" placeholder="Search client, venue, package..." [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)" />
       <input class="input-field" type="date" value="2026-08-12" />
-      <button class="select-btn full" type="button">All statuses</button>
-      <button class="select-btn full" type="button">All crew states</button>
+      <button class="select-btn full" type="button" role="combobox">
+        <span>All statuses</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class="lucide lucide-chevron-down h-4 w-4 opacity-50" aria-hidden="true">
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </button>
+      <button class="select-btn full" type="button" role="combobox">
+        <span>All crew states</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class="lucide lucide-chevron-down h-4 w-4 opacity-50" aria-hidden="true">
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </button>
     </div>
 
     <div class="calendar-columns">
-      <div>
+      <div class="calendar-days-col">
         <div class="weekday-row">
           <div *ngFor="let day of weekDays">{{ day }}</div>
         </div>
         <div class="day-grid">
-          <button type="button" class="day-cell" *ngFor="let day of calendarDays()" [class.faded]="isPast(day)"
-            [class.selected]="isSelected(day)" (click)="selectDay(day)">
+          <button type="button" class="day-cell" *ngFor="let day of calendarDays()" [class.faded]="isOtherMonth(day)"
+            [class.selected]="isSelected(day)" [class.is-today]="isToday(day)" (click)="selectDay(day)">
             <div class="day-cell-top">
               <span class="day-number">{{ day.date }}</span>
+              <span class="today-dot" *ngIf="isToday(day)"></span>
+            </div>
+            <div class="day-events" *ngIf="day.events.length > 0">
+              <div class="event-count-badge">{{ day.events.length }} event{{ day.events.length > 1 ? 's' : '' }}</div>
+              <div class="event-name-list">
+                <div class="event-name-badge" *ngFor="let ev of day.events" [style.background]="ev.colorBg">
+                  {{ ev.name }}
+                </div>
+              </div>
             </div>
           </button>
         </div>
@@ -128,7 +182,7 @@
             <div class="side-panel-date">{{ selectedDate() | date: 'dd-MM-yyyy' }}</div>
             <div class="side-panel-count">0 bookings</div>
           </div>
-          <a routerLink="/app/crew-assignments">
+          <a routerLink="/crew-assignments">
             <button class="btn-outline btn-xs" type="button">Crew Board</button>
           </a>
         </div>
@@ -137,37 +191,47 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Filtered events -->
-  <div class="bordered-block">
-    <div class="filtered-head">
-      <div>
-        <div class="filtered-title">Filtered Events In {{ monthLabel() }} {{ yearLabel() }}</div>
-        <div class="filtered-subtitle">{{ filteredEvents.length }} booking match current filters</div>
-      </div>
-    </div>
-    <div class="filtered-grid">
-      <a [routerLink]="'/app/bookings/' + event.id" class="filtered-card-link" *ngFor="let event of filteredEvents">
-        <div class="filtered-card">
-          <div class="filtered-card-inner">
-            <div class="filtered-card-info">
-              <div class="filtered-name">{{ event.name }}</div>
-              <div class="filtered-meta">{{ event.date }} · {{ event.location }}</div>
-            </div>
-            <div class="badge">Crew</div>
-          </div>
-        </div>
-      </a>
+   
+<!-- Filtered Events — alada, nijer full border box -->
+<div class="filtered-events-section">
+  <div class="filtered-head">
+    <div>
+      <div class="filtered-title">Filtered Events In {{ monthLabel() }} {{ yearLabel() }}</div>
+      <div class="filtered-subtitle">{{ filteredEvents.length }} booking match current filters</div>
     </div>
   </div>
+  <div class="filtered-grid">
+    <a [routerLink]="'/bookings/' + event.id" class="filtered-card-link" *ngFor="let event of filteredEvents">
+      <div class="filtered-card">
+        <div class="filtered-card-inner">
+          <div class="filtered-card-info">
+            <div class="filtered-name">{{ event.name }}</div>
+            <div class="filtered-meta">{{ event.date }} · {{ event.location }}</div>
+          </div>
+          <div class="badge">Crew</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+  </div>
+  <!-- card-block EKHANE close — Calendar + Filtered Events dutai er bhitore chilo -->
 
   <!-- Upcoming Events + Action Items -->
   <div class="bottom-grid">
     <div class="card-block">
       <div class="card-head">
         <div class="card-head-title">
-          <svg class="card-head-icon"><!-- lucide-calendar --></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-calendar h-4 w-4 card-head-icon" aria-hidden="true">
+            <path d="M8 2v4"></path>
+            <path d="M16 2v4"></path>
+            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+            <path d="M3 10h18"></path>
+          </svg>
           Upcoming Events
         </div>
       </div>
@@ -179,15 +243,30 @@
     <div class="card-block">
       <div class="card-head">
         <div class="card-head-title">
-          <svg class="card-head-icon"><!-- lucide-circle-alert --></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-circle-alert h-4 w-4 card-head-icon" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" x2="12" y1="8" y2="12"></line>
+            <line x1="12" x2="12.01" y1="16" y2="16"></line>
+          </svg>
           Action Items
         </div>
       </div>
       <div class="card-body">
         <div class="action-item" *ngFor="let item of actionItems">
           <div class="action-icon-wrap" [class.danger]="item.urgent">
-            <svg class="action-icon">
-              <!-- item.type === 'payment' ? lucide-credit-card : lucide-camera -->
+            <svg *ngIf="item.type === 'payment'" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-credit-card action-icon" aria-hidden="true">
+              <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+              <line x1="2" x2="22" y1="10" y2="10"></line>
+            </svg>
+            <svg *ngIf="item.type === 'crew'" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-camera action-icon" aria-hidden="true">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+              <circle cx="12" cy="13" r="3"></circle>
             </svg>
           </div>
           <div class="action-info">
