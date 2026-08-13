@@ -140,3 +140,73 @@ html {
   scrollbar-width: thin;
   scrollbar-color: rgb(52, 50, 47) rgb(10, 10, 10);
 }
+
+/* ===========================
+   Theme Toggle Button
+=========================== */
+
+.mobile-theme-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.desktop-theme-row {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: flex;
+    justify-content: flex-end;
+    padding: 20px 32px 0;
+  }
+}
+
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-width: 110px;
+  height: 44px;
+
+  padding: 0 16px;
+
+  border: 1px solid var(--sidebar-border, #2c2c2c);
+  border-radius: 10px;
+
+  background: var(--sidebar, #171717);
+  color: var(--foreground, #fff);
+
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: all .25s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  span {
+    white-space: nowrap;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: #3d3d3d;
+    background: #202020;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+

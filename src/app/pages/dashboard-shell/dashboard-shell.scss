@@ -135,15 +135,17 @@
 
 .content-inner {
   padding: 0.75rem;
+  padding-bottom: 7rem;
+
 
   @media (min-width: 640px) {
     padding: 1rem;
+    padding-bottom: 7rem;
   }
   @media (min-width: 768px) {
     padding: 2rem;
     padding-bottom: 2rem;
   }
-  padding-bottom: 7rem; // pb-28 for mobile bottom nav clearance
 }
 
 .content-max-width {

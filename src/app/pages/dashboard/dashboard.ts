@@ -10,6 +10,7 @@ interface StatCard {
   icon: string;
   link: string;
   highlighted?: boolean;
+  valueColor:string;
 }
 
 interface CalendarDay {
@@ -40,10 +41,10 @@ export class Dashboard {
 
   // ----- Stat cards -----
   statCards: StatCard[] = [
-    { label: 'Total Revenue', value: '₹17,62,000', subtext: '₹9,73,000 collected', icon: 'trending-up', link: '/app/bookings', highlighted: true },
-    { label: 'Active Bookings', value: '9', subtext: '0 upcoming this month', icon: 'calendar', link: '/app/bookings' },
-    { label: 'Pending Payments', value: '22', subtext: 'Require follow up', icon: 'credit-card', link: '/app/bookings' },
-    { label: 'Need Crew', value: '5', subtext: 'Bookings unassigned', icon: 'users', link: '/app/crew-assignments' },
+    { label: 'Total Revenue', value: '₹17,62,000', subtext: '₹9,73,000 collected', icon: 'trending-up', link: '/bookings', highlighted: true,valueColor:'gold' },
+    { label: 'Active Bookings', value: '9', subtext: '0 upcoming this month', icon: 'calendar', link: '/bookings', valueColor:'white' },
+    { label: 'Pending Payments', value: '22', subtext: 'Require follow up', icon: 'credit-card', link: '/bookings', valueColor:'red' },
+    { label: 'Need Crew', value: '5', subtext: 'Bookings unassigned', icon: 'users', link: '/app/crew-assignments' ,valueColor:'gold'},
   ];
 
   // ----- Calendar -----
