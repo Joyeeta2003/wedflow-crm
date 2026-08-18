@@ -14,7 +14,10 @@ interface StatCard {
 }
 
 interface DayEvent {
+  id: string;
   name: string;
+  location: string;
+  package: string;
   colorBg: string;
 }
 
@@ -64,10 +67,27 @@ export class Dashboard {
   weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // ----- Sample event data (TODO: real API theke fetch hobe) -----
-  private eventsByDate: Record<string, DayEvent[]> = {
-    '2026-7-31': [{ name: 'Jason', colorBg: 'rgba(31, 71, 31, 0.35)' }],
-    '2026-8-1': [{ name: 'Aniket', colorBg: 'rgba(98, 24, 24, 0.35)' }],
-  };
+private eventsByDate: Record<string, DayEvent[]> = {
+  '2026-7-31': [
+    {
+      id: '6a43729eeff108acd01663aa',
+      name: 'Jason',
+      location: 'Kolkata',
+      package: 'Wedding Photography Package',
+      colorBg: 'rgba(31, 71, 31, 0.35)',
+    },
+  ],
+
+  '2026-8-1': [
+    {
+      id: '6a451fc8cf4d7fe2486b481e',
+      name: 'Aniket',
+      location: 'Kolkata',
+      package: 'Om Photography Premium Package',
+      colorBg: 'rgba(98, 24, 24, 0.35)',
+    },
+  ],
+};
 
   private dateKey(d: Date): string {
     return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;

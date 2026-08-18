@@ -1,0 +1,175 @@
+<div class="packages-page">
+  <div class="packages-header">
+    <div>
+      <h1 class="page-title">Packages</h1>
+      <p class="page-subtitle">Manage service offerings, crew requirements, payment terms, and reminder schedules.</p>
+    </div>
+    <button class="btn-new-package" type="button" (click)="onNewPackage()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="lucide lucide-plus h-4 w-4 mr-2" aria-hidden="true">
+        <path d="M5 12h14"></path>
+        <path d="M12 5v14"></path>
+      </svg>
+      <!-- New Package -->
+    </button>
+  </div>
+
+  <div class="packages-grid">
+    <div class="package-card" *ngFor="let pkg of packages">
+
+      <div class="package-card-head">
+        <div class="package-card-head-inner">
+          <div>
+            <div class="package-name">{{ pkg.name }}</div>
+            <div class="package-duration">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-package h-3 w-3" aria-hidden="true">
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z">
+                </path>
+                <path d="M12 22V12"></path>
+                <polyline points="3.29 7 12 12 20.71 7"></polyline>
+                <path d="m7.5 4.27 9 5.15"></path>
+              </svg>
+              {{ pkg.durationDays }} Day{{ pkg.durationDays > 1 ? 's' : '' }}
+            </div>
+          </div>
+          <div class="status-badge">{{ pkg.status }}</div>
+        </div>
+      </div>
+
+      <div class="package-card-body">
+        <div class="package-price">{{ pkg.price }}</div>
+        <p class="package-description">{{ pkg.description }}</p>
+
+        <!-- Crew Per Day -->
+        <div>
+          <div class="section-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-users h-4 w-4" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            Crew Per Day
+          </div>
+          <div class="day-crew-list">
+            <div class="day-crew-box" *ngFor="let day of pkg.crewPerDay">
+              <div class="day-crew-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="lucide lucide-calendar-days h-3 w-3 day-crew-icon" aria-hidden="true">
+                  <path d="M8 2v4"></path>
+                  <path d="M16 2v4"></path>
+                  <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                  <path d="M3 10h18"></path>
+                  <path d="M8 14h.01"></path>
+                  <path d="M12 14h.01"></path>
+                  <path d="M16 14h.01"></path>
+                  <path d="M8 18h.01"></path>
+                  <path d="M12 18h.01"></path>
+                </svg>
+                {{ day.dayLabel }}
+              </div>
+              <div class="crew-badge-row" *ngIf="day.crew.length > 0">
+                <div class="crew-badge" *ngFor="let member of day.crew">{{ member.count }}x {{ member.role }}</div>
+              </div>
+              <div class="no-crew-text" *ngIf="day.crew.length === 0">No crew defined for this day</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Schedule -->
+        <div>
+          <div class="section-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-indian-rupee h-4 w-4" aria-hidden="true">
+              <path d="M6 3h12"></path>
+              <path d="M6 8h12"></path>
+              <path d="m6 13 8.5 8"></path>
+              <path d="M6 13h3"></path>
+              <path d="M9 13c6.667 0 6.667-10 0-10"></path>
+            </svg>
+            Payment Schedule
+          </div>
+          <div class="payment-rows">
+            <div class="payment-row" *ngFor="let term of pkg.paymentSchedule">
+              <span class="payment-label">{{ term.label }}</span>
+              <span class="payment-percent">
+                {{ term.percent }}%
+                <span class="payment-timing">({{ term.timing }})</span>
+              </span>
+            </div>
+          </div>
+        </div> 
+
+        <!-- Reminder note -->
+        <div class="reminder-note">{{ pkg.reminderNote }}</div>
+
+        <!-- Editor Plan (jodi thake) -->
+         <div *ngIf="pkg.editorPlan.length > 0">
+          <div class="section-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-pencil h-4 w-4" aria-hidden="true">
+              <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z">
+              </path>
+            </svg>
+            Editor Plan
+          </div>
+          <div class="editor-row" *ngFor="let editor of pkg.editorPlan">
+            <span class="editor-role">{{ editor.role }}</span>
+            <span class="editor-task">{{ editor.task }}</span>
+          </div>
+        </div> 
+
+        <!-- Deliverables -->
+         <div>
+          <div class="section-label plain">Deliverables</div>
+          <ul class="deliverables-list">
+            <li class="deliverable-item" *ngFor="let item of visibleDeliverables(pkg)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-circle-check h-4 w-4 deliverable-icon" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+              <span>{{ item }}</span>
+            </li>
+            <li class="more-text" *ngIf="remainingCount(pkg) > 0">+ {{ remainingCount(pkg) }} more...</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="package-card-footer">
+        <button class="btn-edit" type="button" (click)="onEdit(pkg)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-pencil h-4 w-4 mr-1" aria-hidden="true">
+            <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z">
+            </path>
+          </svg>
+          Edit
+        </button>
+        <button class="btn-delete" type="button" (click)="onDelete(pkg)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="lucide lucide-trash2 h-4 w-4" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" x2="10" y1="11" y2="17"></line>
+            <line x1="14" x2="14" y1="11" y2="17"></line>
+          </svg>
+        </button>
+      </div> 
+
+    </div>
+  </div> 
+
+</div>
