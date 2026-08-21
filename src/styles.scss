@@ -1,8 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
-*{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 // @font-face {
@@ -12,101 +12,108 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
-*, ::before, ::after, ::backdrop {
+*,
+::before,
+::after,
+::backdrop {
   box-sizing: border-box;
   border: 0 solid;
   margin: 0;
   padding: 0;
 }
 
-html,body{
-    height: 100%;
-    width: 100%;
+html,
+body {
+  height: 100%;
+  width: 100%;
 
-    background:
-        linear-gradient(180deg, #050505 0%, #000 100%);
+  background: linear-gradient(180deg, #050505 0%, #000 100%);
 
-    color: white;
-    font-family: "Inter", sans-serif;
+  color: white;
+  font-family: 'Inter', sans-serif;
 }
 
 :root {
-    --background: 0 0% 4%;
-    --foreground: 45 20% 92%;
-    --card: 0 0% 7%;
-    --card-foreground: 45 20% 92%;
-    --card-border: 0 0% 14%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 45 20% 92%;
-    --popover-border: 0 0% 16%;
-    --primary: 43 90% 52%;
-    --primary-foreground: 0 0% 5%;
-    --primary-border: #f3b4164d;
-    --secondary: 0 0% 11%;
-    --secondary-foreground: 45 15% 85%;
-    --secondary-border: 0 0% 18%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 50%;
-    --muted-border: 0 0% 15%;
-    --accent: 43 50% 14%;
-    --accent-foreground: 43 90% 65%;
-    --accent-border: 43 50% 20%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --destructive-border: 0 72% 40%;
-    --border: 0 0% 13%;
-    --input: 0 0% 11%;
-    --ring: 43 90% 52%;
-    --radius: .5rem;
-    --sidebar: 0 0% 3%;
-    --sidebar-foreground: 45 15% 85%;
-    --sidebar-border: 0 0% 11%;
-    --sidebar-primary: 43 90% 52%;
-    --sidebar-primary-foreground: 0 0% 5%;
-    --sidebar-primary-border: #f3b41640;
-    --sidebar-accent: 43 40% 10%;
-    --sidebar-accent-foreground: 43 90% 65%;
-    --sidebar-accent-border: 43 40% 15%;
-    --sidebar-ring: 43 90% 52%;
-    --button-outline: #2e2e2e;
+  --background: 0 0% 4%;
+  --foreground: 45 20% 92%;
+  --card: 0 0% 7%;
+  --card-foreground: 45 20% 92%;
+  --card-border: 0 0% 14%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 45 20% 92%;
+  --popover-border: 0 0% 16%;
+  --primary: 43 90% 52%;
+  --primary-foreground: 0 0% 5%;
+  --primary-border: #f3b4164d;
+  --secondary: 0 0% 11%;
+  --secondary-foreground: 45 15% 85%;
+  --secondary-border: 0 0% 18%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 50%;
+  --muted-border: 0 0% 15%;
+  --accent: 43 50% 14%;
+  --accent-foreground: 43 90% 65%;
+  --accent-border: 43 50% 20%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --destructive-border: 0 72% 40%;
+  --border: 0 0% 13%;
+  --input: 0 0% 11%;
+  --ring: 43 90% 52%;
+  --radius: 0.5rem;
+  --sidebar: 0 0% 3%;
+  --sidebar-foreground: 45 15% 85%;
+  --sidebar-border: 0 0% 11%;
+  --sidebar-primary: 43 90% 52%;
+  --sidebar-primary-foreground: 0 0% 5%;
+  --sidebar-primary-border: #f3b41640;
+  --sidebar-accent: 43 40% 10%;
+  --sidebar-accent-foreground: 43 90% 65%;
+  --sidebar-accent-border: 43 40% 15%;
+  --sidebar-ring: 43 90% 52%;
+  --button-outline: #2e2e2e;
+  --badge-outline: rgba(255, 255, 255, 0.861);
 }
 
 @keyframes wedflowGlowPulse {
-
   0%,
   100% {
-    box-shadow: 0 0 24px rgba(212, 175, 55, 0.28), 0 8px 28px rgba(0, 0, 0, 0.52);
+    box-shadow:
+      0 0 24px rgba(212, 175, 55, 0.28),
+      0 8px 28px rgba(0, 0, 0, 0.52);
   }
 
   50% {
-    box-shadow: 0 0 48px rgba(245, 197, 24, 0.52), 0 10px 34px rgba(0, 0, 0, 0.58);
+    box-shadow:
+      0 0 48px rgba(245, 197, 24, 0.52),
+      0 10px 34px rgba(0, 0, 0, 0.58);
   }
 }
 
 @keyframes wedflowButtonShine {
-    0% {
-        transform: translateX(-145%) skewX(-18deg);
-        opacity: 0;
-    }
+  0% {
+    transform: translateX(-145%) skewX(-18deg);
+    opacity: 0;
+  }
 
-    18% {
-        opacity: 0.55;
-    }
+  18% {
+    opacity: 0.55;
+  }
 
-    42% {
-        transform: translateX(145%) skewX(-18deg);
-        opacity: 0;
-    }
+  42% {
+    transform: translateX(145%) skewX(-18deg);
+    opacity: 0;
+  }
 
-    100% {
-        transform: translateX(145%) skewX(-18deg);
-        opacity: 0;
-    }
+  100% {
+    transform: translateX(145%) skewX(-18deg);
+    opacity: 0;
+  }
 }
 
-.wf-button:hover{
-    transform: translateY(-2px) scale(1.015);
-    filter: brightness(1.06);
+.wf-button:hover {
+  transform: translateY(-2px) scale(1.015);
+  filter: brightness(1.06);
 }
 
 // src/styles.scss
@@ -187,7 +194,7 @@ html {
   font-size: 14px;
   font-weight: 600;
 
-  transition: all .25s ease;
+  transition: all 0.25s ease;
 
   svg {
     width: 18px;
@@ -209,4 +216,3 @@ html {
     transform: translateY(0);
   }
 }
-
