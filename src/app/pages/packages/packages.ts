@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NewPackageModal } from './components/new-package-modal/new-package-modal';
 
 interface CrewMember {
   role: string;
@@ -39,7 +40,7 @@ interface Package {
 @Component({
   selector: 'app-packages',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NewPackageModal],
   templateUrl: './packages.html',
   styleUrl: './packages.scss',
 })
@@ -459,5 +460,12 @@ export class Packages {
 
   onDelete(pkg: Package): void {
     // TODO: confirm dialog + delete API call
+  }
+
+  showModal = false;
+
+  onPackageCreated(data: any) {
+    console.log(data);
+    this.showModal = false;
   }
 }

@@ -4,7 +4,7 @@
       <h1 class="page-title">Packages</h1>
       <p class="page-subtitle">Manage service offerings, crew requirements, payment terms, and reminder schedules.</p>
     </div>
-    <button class="btn-new-package" type="button" (click)="onNewPackage()">
+    <button (click)="showModal = true" class="btn-new-package" type="button" (click)="onNewPackage()">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
         class="lucide lucide-plus h-4 w-4 mr-2" aria-hidden="true">
@@ -14,6 +14,9 @@
       New Package
       <!-- New Package -->
     </button>
+    <app-new-package-modal [isOpen]="showModal" (closeModal)="showModal = false"
+      (createPackage)="onPackageCreated($event)">
+    </app-new-package-modal>
   </div>
 
   <div class="packages-grid">
@@ -107,18 +110,19 @@
               </span>
             </div>
           </div>
-        </div> 
+        </div>
 
         <!-- Reminder note -->
         <div class="reminder-note">{{ pkg.reminderNote }}</div>
 
         <!-- Editor Plan (jodi thake) -->
-         <div *ngIf="pkg.editorPlan.length > 0">
+        <div *ngIf="pkg.editorPlan.length > 0">
           <div class="section-label">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
               class="lucide lucide-pencil h-4 w-4" aria-hidden="true">
-              <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z">
+              <path
+                d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z">
               </path>
             </svg>
             Editor Plan
@@ -127,10 +131,10 @@
             <span class="editor-role">{{ editor.role }}</span>
             <span class="editor-task">{{ editor.task }}</span>
           </div>
-        </div> 
+        </div>
 
         <!-- Deliverables -->
-         <div>
+        <div>
           <div class="section-label plain">Deliverables</div>
           <ul class="deliverables-list">
             <li class="deliverable-item" *ngFor="let item of visibleDeliverables(pkg)">
@@ -152,7 +156,8 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             class="lucide lucide-pencil h-4 w-4 mr-1" aria-hidden="true">
-            <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z">
+            <path
+              d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z">
             </path>
           </svg>
           Edit
@@ -168,9 +173,9 @@
             <line x1="14" x2="14" y1="11" y2="17"></line>
           </svg>
         </button>
-      </div> 
+      </div>
 
     </div>
-  </div> 
+  </div>
 
 </div>

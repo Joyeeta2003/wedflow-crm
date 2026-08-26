@@ -1,1 +1,260 @@
-<p>new-package-modal works!</p>
+<!-- overlay -->
+<div *ngIf="isOpen" class="modal-overlay" animate.enter="overlay-enter" animate.leave="overlay-leave"
+  (click)="onCancel()"></div>
+
+<!-- dialog -->
+<div *ngIf="isOpen" role="dialog" class="modal-dialog" animate.enter="dialog-enter" animate.leave="dialog-leave">
+
+  <div class="modal-header">
+    <h2 class="modal-title">New Package</h2>
+    <button type="button" class="modal-close-btn" (click)="onCancel()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <path d="M18 6 6 18"></path>
+        <path d="m6 6 12 12"></path>
+      </svg>
+      <span class="sr-only">Close</span>
+    </button>
+  </div>
+
+  <form class="modal-form" [formGroup]="packageForm" (ngSubmit)="onSubmit()">
+
+    <!-- Name / Price / Duration -->
+    <div class="form-row">
+      <div class="form-group form-group--full">
+        <label class="form-label" for="name">Package Name *</label>
+        <input class="form-input" placeholder="Royal Package" id="name" formControlName="name" type="text">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="price">Price (₹) *</label>
+        <input class="form-input" placeholder="220000" id="price" formControlName="price" type="number">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="durationDays">Duration (Days) *</label>
+        <input class="form-input" min="1" id="durationDays" formControlName="durationDays" type="number">
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label class="form-label" for="description">Description *</label>
+      <textarea class="form-textarea" rows="2" placeholder="Full coverage including pre-wedding..." id="description"
+        formControlName="description"></textarea>
+    </div>
+
+    <!-- Default coverage side -->
+    <div class="form-group">
+      <label class="form-label" for="coverageSide">Default coverage side</label>
+      <select class="form-input" id="coverageSide" formControlName="coverageSide">
+        <option value="single">Single side</option>
+        <option value="both">Both sides</option>
+      </select>
+      <p class="form-hint">Both-side bookings create separate assignment slots and addresses for each side.</p>
+    </div>
+
+    <!-- Crew Requirements -->
+    <div class="form-section">
+      <div class="section-heading">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Crew Requirements (per day)
+      </div>
+
+      <div formArrayName="crewDays">
+        <div class="crew-day-card" *ngFor="let dayGroup of crewDays.controls; let dayIndex = index"
+          [formGroupName]="dayIndex">
+
+          <div class="crew-day-header">
+            <span class="day-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <path d="M16 2v4M8 2v4M3 10h18"></path>
+              </svg>
+              Day {{ dayGroup.get('day')?.value }}
+            </span>
+            <input class="form-input" placeholder="e.g. Wedding" formControlName="eventLabel">
+            <button type="button" class="link-btn" (click)="addRole(dayIndex)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-plus h-3 w-3 mr-1" aria-hidden="true">
+                <path d="M5 12h14"></path>
+                <path d="M12 5v14"></path>
+              </svg>
+              Role
+            </button>
+          </div>
+
+          <ng-container formArrayName="roles">
+            <p *ngIf="getRoles(dayGroup).length === 0" class="role-empty-text">
+              No roles added. Click <span class="role-empty-highlight">+ Role</span> to define crew for this day.
+            </p>
+
+            <div class="role-row" *ngFor="let roleGroup of getRoles(dayGroup).controls; let roleIndex = index"
+              [formGroupName]="roleIndex">
+              <input class="form-input" placeholder="Role name" formControlName="roleName">
+              <input class="form-input form-input--sm" type="number" min="1" formControlName="count">
+              <button type="button" class="icon-btn" (click)="removeRole(dayIndex, roleIndex)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Deliverables -->
+    <div class="form-group">
+      <label class="form-label" for="deliverables">Deliverables *</label>
+      <textarea class="form-textarea" rows="4"
+        placeholder="2 Royal Look Albums (12x36)&#10;4K Wedding Film (30-35 min)&#10;400 Soft Copy Photos"
+        id="deliverables" formControlName="deliverables"></textarea>
+    </div>
+
+    <!-- Editor / Post Production Plan -->
+    <div class="panel-card">
+      <div class="panel-card__header">
+        <div>
+          <div class="panel-card__title">Editor / Post Production Plan</div>
+          <p class="form-hint">After crew source files are verified, these editor tickets will be created automatically.
+          </p>
+        </div>
+        <button type="button" class="outline-btn-sm" (click)="addEditorRow()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+          Editor Row
+        </button>
+      </div>
+
+      <div formArrayName="editorRows">
+        <div class="editor-row" *ngFor="let row of editorRows.controls; let i = index" [formGroupName]="i">
+          <select class="form-input" formControlName="editorRole">
+            <option *ngFor="let role of editorRoleOptions" [value]="role">{{ role }}</option>
+          </select>
+          <select class="form-input" formControlName="taskType">
+            <option *ngFor="let type of taskTypeOptions" [value]="type">{{ type }}</option>
+          </select>
+          <input class="form-input form-input--sm" type="number" min="1" formControlName="qty">
+          <input class="form-input form-input--sm" type="number" min="1" formControlName="days">
+          <button type="button" class="icon-btn" (click)="removeEditorRow(i)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Schedule -->
+    <div class="form-section">
+      <div class="payment-section-header">
+        <div class="payment-section-left">
+          <label class="form-label">Payment Schedule</label>
+          <select class="schedule-mode-select" formControlName="scheduleMode">
+            <option *ngFor="let mode of scheduleModeOptions" [value]="mode">{{ mode }}</option>
+          </select>
+        </div>
+
+        <div class="payment-section-right">
+          <span class="allocated-badge" [class.allocated-badge--ok]="remainingPercent === 0">
+            {{ allocatedPercent }}% allocated · {{ remainingPercent }}% remaining
+          </span>
+          <button type="button" class="outline-btn-sm" (click)="addPaymentRow()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-plus h-3 w-3 mr-1" aria-hidden="true">
+              <path d="M5 12h14"></path>
+              <path d="M12 5v14"></path>
+            </svg>
+            Add Row
+          </button>
+        </div>
+      </div>
+
+      <div class="payment-table">
+        <div class="payment-table__row payment-table__row--header">
+          <span>Label</span><span>%</span><span>When Due</span><span>Days</span><span></span>
+        </div>
+
+        <div formArrayName="paymentRows">
+          <div class="payment-table__row" *ngFor="let row of paymentRows.controls; let i = index" [formGroupName]="i">
+            <input class="form-input" formControlName="label">
+            <input class="form-input" type="number" min="0" max="100" formControlName="percent">
+            <select class="form-input" formControlName="whenDue">
+              <option *ngFor="let opt of whenDueOptions" [value]="opt">{{ opt }}</option>
+            </select>
+
+            <input *ngIf="needsDaysInput(row.get('whenDue')?.value)" class="form-input" type="number" min="0"
+              formControlName="days">
+            <span *ngIf="!needsDaysInput(row.get('whenDue')?.value)"></span>
+
+            <button type="button" class="icon-btn" (click)="removePaymentRow(i)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6">
+                </path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reminder settings -->
+    <div class="form-group">
+      <label class="form-label" for="reminderDays">Customer Event Reminder Days</label>
+      <input class="form-input" id="reminderDays" formControlName="reminderDays">
+      <p class="form-hint">Comma-separated days before the selected reference event day.</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="reminderReferenceDay">Reminder Reference Event Day</label>
+      <input class="form-input" type="number" min="1" id="reminderReferenceDay" formControlName="reminderReferenceDay">
+      <p class="form-hint">Example: choose Day 2 if all customer event reminders should count from reception day.</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="crewMailBeforeEvent">Crew Details Mail Before Event</label>
+      <input class="form-input" type="number" min="0" id="crewMailBeforeEvent" formControlName="crewMailBeforeEvent">
+      <p class="form-hint">How many days before each event day the customer gets that day's assigned crew details.</p>
+    </div>
+
+    <!-- Package availability -->
+    <div class="availability-card">
+      <div class="availability-info">
+        <label class="availability-label">Package availability</label>
+        <p class="form-hint">Show this package while creating a booking.</p>
+      </div>
+      <div class="switch-wrapper">
+        <span class="switch-status-text">{{ packageForm.get('availability')?.value ? 'On' : 'Off' }}</span>
+        <button type="button" role="switch" [attr.aria-checked]="packageForm.get('availability')?.value"
+          class="switch-toggle" [class.switch-toggle--on]="packageForm.get('availability')?.value"
+          (click)="packageForm.get('availability')?.setValue(!packageForm.get('availability')?.value)">
+          <span class="switch-thumb"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
+      <button type="submit" class="btn-primary">Create</button>
+    </div>
+
+  </form>
+</div>

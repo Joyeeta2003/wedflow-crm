@@ -1,0 +1,665 @@
+// ---------- theme tokens ----------
+:host {
+  --bg: #0b0b0d;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-main: #f5f5f5;
+  --text-muted: #9a9a9a;
+  --primary: #d9a441;
+  --primary-foreground: #0b0b0d;
+  --destructive: #e05c5c;
+
+  display: contents;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Open Sans',
+    'Helvetica Neue',
+    sans-serif;
+
+  input,
+  textarea,
+  placeholder,
+  select,
+  button {
+    font-family: inherit;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+// ---------- overlay + dialog ----------
+// ---------- overlay + dialog ----------
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-enter-kf {
+  from {
+    opacity: 0;
+    transform: translate(-100%, -98%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes dialog-leave-kf {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-100%, -98%) scale(0.95);
+  }
+}
+
+.overlay-enter {
+  animation: overlay-fade-in 150ms ease;
+}
+.overlay-leave {
+  animation: overlay-fade-out 150ms ease;
+}
+
+.dialog-enter {
+  animation: dialog-enter-kf 200ms ease;
+}
+.dialog-leave {
+  animation: dialog-leave-kf 200ms ease;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  width: calc(100% - 2rem);
+  max-width: 680px;
+  max-height: 92svh;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  padding: 1.5rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+// ---------- form layout ----------
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 560px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s ease;
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+  &:focus {
+    border-color: var(--primary);
+  }
+}
+
+.form-input {
+  height: 2.25rem;
+  padding: 0.25rem 0.75rem; // py-1 px-3 — original input spec
+}
+
+.form-textarea {
+  min-height: 60px;
+  padding: 0.5rem 0.75rem; // py-2 px-3 — original textarea spec (age eta bhul chilo)
+  resize: vertical;
+}
+
+.form-input--sm {
+  width: 4.5rem;
+  flex: none;
+}
+.form-input--auto {
+  width: auto;
+  flex: none;
+}
+
+// ---------- generic sections ----------
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  svg {
+    color: var(--primary);
+  } // icon amber
+}
+
+.panel-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.panel-card__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+// ---------- crew requirements ----------
+.crew-day-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03); // pure black na, ektু lighter shade
+  overflow: hidden; // child-er padding jeno card-er border chhariye na jay
+  margin-bottom: 0.75rem;
+}
+
+.crew-day-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem; // age beshi chilo, kombe dilam
+  border-bottom: 1px solid var(--border-color);
+
+  .form-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.day-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted); // "Day 1" text — pure white na, soft/muted tone
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  svg {
+    color: var(--primary);
+  } // calendar icon amber
+}
+
+.role-empty-text {
+  padding: 0.4rem 0.75rem; // px-3 py-2
+  font-size: 0.75rem; // text-xs
+  color: var(--text-muted);
+  background-color: rgba(0, 0, 0, 0.8);
+  margin: 0;
+}
+
+.role-empty-highlight {
+  color: var(--primary) !important;
+  font-weight: 500;
+}
+
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0; // squeeze hote dibe na
+  white-space: nowrap; // "+ Role" ekline-e thakবে, dui line hবে na
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+
+  svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--destructive);
+  cursor: pointer;
+  padding: 0.25rem;
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.outline-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+  height: 1.75rem;
+  min-height: 2rem;
+
+  &:hover {
+    border-color: var(--primary);
+  }
+}
+
+// ---------- editor rows ----------
+.editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ---------- payment schedule ----------
+.payment-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;   // duটা group duই প্রান্তে
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+}
+
+.payment-section-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;    // gap-2
+}
+
+.payment-section-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;   // gap-3
+}
+
+.schedule-mode-select {
+  height: 2rem;          // h-8
+  width: 9rem;            // w-36 — original-e full-width na, fixed width
+  font-size: 0.75rem;     // text-xs
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-main);
+  outline: none;
+
+  &:focus { border-color: var(--primary); }
+}
+
+.allocated-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(224, 92, 92, 0.25);   // age border-i chilo na
+  padding: 0.25rem 0.65rem;                      // px-2.5 py-1
+  font-size: 0.75rem;
+  font-weight: 600;                               // font-semibold, age medium chilo
+  background: rgba(224, 92, 92, 0.1);
+  color: #e0736f;
+
+  &--ok {
+    border-color: rgba(16, 185, 129, 0.25);   // emerald-500/25
+    background: rgba(16, 185, 129, 0.1);       // emerald-500/10
+    color: #10b981;                             // emerald-500
+  }
+}
+
+.payment-table {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.payment-table__row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &--header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
+
+// ---------- availability card ----------
+.availability-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 1rem;
+}
+
+.availability-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.availability-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.switch-status-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.switch-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 9999px;
+  border: none;
+  background: #3a3a3a;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &--on {
+    background: var(--primary);
+  }
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-main);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transform: translateX(0);
+  transition: transform 0.15s ease;
+
+  .switch-toggle--on & {
+    transform: translateX(16px);
+  }
+}
+
+// ---------- footer ----------
+.modal-footer {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  justify-content: flex-end;
+
+  @media (min-width: 560px) {
+    flex-direction: row;
+  }
+}
+
+.btn-cancel {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--text-muted);
+  }
+}
+
+.btn-primary {
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+// ---------- mobile responsive fixes ----------
+@media (max-width: 640px) {
+  .modal-dialog {
+    width: calc(100% - 1rem);
+    padding: 1rem;
+    max-height: 95svh;
+  }
+
+  .modal-header {
+    margin-bottom: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+  }
+
+  .crew-day-header {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+
+    .form-input {
+      flex-basis: 100%;
+      order: 3;
+    }
+  }
+
+  .day-badge {
+    order: 1;
+  }
+  .link-btn {
+    order: 2;
+    margin-left: auto;
+  }
+
+  // ekhane .editor-row add kora holo, .role-row-er pashe
+  .role-row,
+  .editor-row {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+
+    .form-input {
+      flex-basis: 100%;
+    }
+    .form-input--sm {
+      flex-basis: calc(50% - 0.375rem);
+    }
+  }
+  
+
+  .payment-table {
+    overflow-x: auto;
+  }
+
+  .payment-table__row {
+    grid-template-columns: 140px 70px 130px 70px 40px;
+    min-width: 480px;
+  }
+
+  .availability-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .switch-wrapper {
+    align-self: flex-end;
+  }
+
+  .editor-row {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+
+  .form-input,
+  .form-input--sm {
+    flex-basis: 100%;   // qty ar days duটাই full width, pashapashi na
+  }
+}
+}
