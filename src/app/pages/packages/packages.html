@@ -112,9 +112,6 @@
           </div>
         </div>
 
-        <!-- Reminder note -->
-        <div class="reminder-note">{{ pkg.reminderNote }}</div>
-
         <!-- Editor Plan (jodi thake) -->
         <div *ngIf="pkg.editorPlan.length > 0">
           <div class="section-label">
@@ -127,11 +124,16 @@
             </svg>
             Editor Plan
           </div>
-          <div class="editor-row" *ngFor="let editor of pkg.editorPlan">
-            <span class="editor-role">{{ editor.role }}</span>
-            <span class="editor-task">{{ editor.task }}</span>
+          <div class="editor-plan-list">
+            <div class="editor-row" *ngFor="let editor of pkg.editorPlan">
+              <span class="editor-role">{{ editor.role }}</span>
+              <span class="editor-task">{{ editor.task }}</span>
+            </div>
           </div>
         </div>
+
+        <!-- Reminder note -->
+        <div class="reminder-note">{{ pkg.reminderNote }}</div>
 
         <!-- Deliverables -->
         <div>

@@ -335,7 +335,10 @@ export class Packages {
         { label: 'Advance', percent: 100, timing: 'At Booking' },
       ],
       reminderNote: 'Reminders use Day 1; crew details mail: 3 days before each event day.',
-      editorPlan: [],
+      editorPlan: [
+        { role: '1x videographer', task: 'video Editing - 7d' },
+        { role: '1x photo Editor', task: 'photo Editing - 7d' },
+      ],
       deliverables: [
         'Pre-Wedding Photoshoot (1 Day)',
         '100+ Professionally Edited Photos',
@@ -380,12 +383,15 @@ export class Packages {
         { label: 'Advance', percent: 50, timing: 'On Final Delivery' },
       ],
       reminderNote: 'Reminders use Day 1; crew details mail: 3 days before each event day.',
-      editorPlan: [],
+      editorPlan: [
+        { role: '1x Photo Editor', task: 'video Editing - 7d' },
+        { role: '1x photo Editor', task: 'photo Editing - 7d' },
+      ],
       deliverables: ['ghghgh'],
     },
     {
       id: '9',
-      name: 'CM PHOTOGRAPHY PREMIUM PACKAGE',
+      name: 'OM PHOTOGRAPHY PREMIUM PACKAGE',
       status: 'Active',
       durationDays: 5,
       price: '₹76,000',
@@ -414,7 +420,10 @@ export class Packages {
         { label: 'Installment 2', percent: 60, timing: 'On Final Delivery' },
       ],
       reminderNote: 'Reminders use Day 1; crew details mail: 3 days before each event day.',
-      editorPlan: [],
+      editorPlan: [
+        { role: '1x Photographar', task: 'Photo Editing - 7d' },
+        { role: '1x Video Editor', task: 'photo Editing - 7d' },
+      ],
       deliverables: ['heheheww'],
     },
     {
@@ -436,7 +445,7 @@ export class Packages {
         { label: 'Installment 2', percent: 60, timing: 'On Final Delivery' },
       ],
       reminderNote: 'Reminders use Day 1; crew details mail: 3 days before each event day.',
-      editorPlan: [],
+      editorPlan: [{ role: '1x Photo Editor', task: 'Photo Editing - 7d' }],
       deliverables: ['Album will be delivered'],
     },
   ];
@@ -464,8 +473,52 @@ export class Packages {
 
   showModal = false;
 
-  onPackageCreated(data: any) {
-    console.log(data);
+  onPackageCreated(formValue: any) {
+    const newPackage: Package = this.mapFormToPackage(formValue);
+    this.packages.push(newPackage);
     this.showModal = false;
+  }
+
+  private mapFormToPackage(formValue: any): Package {
+    return {
+      id: (this.packages.length + 1).toString(),
+      name: formValue.name,
+      status: formValue.availability ? 'Active' : 'Inactive',
+      durationDays: formValue.durationDays,
+      price: this.formatIndianCurrency(formValue.price),
+      description: formValue.description,
+
+      crewPerDay: formValue.crewDays.map((day: any) => ({
+        dayLabel: `Day ${day.day}: ${day.eventLabel}`,
+        crew: day.roles.map((r: any) => ({ role: r.roleName, count: r.count })),
+      })),
+
+      paymentSchedule: formValue.paymentRows.map((row: any) => ({
+        label: row.label,
+        percent: row.percent,
+        timing: row.whenDue,
+      })),
+
+      reminderNote: `Reminders use Day ${formValue.reminderReferenceDay}; crew details mail: ${formValue.crewMailBeforeEvent} days before each event day.`,
+
+      // eikhanei Editor Plan-er logic — jodi kono row-e role/task select kora
+      // thake shudhu tokhoni entry banabe, nahole editorPlan: [] thakবে
+      // r card-e "Editor Plan" section *ngIf diye auto-hide hoye jaবে
+      editorPlan: formValue.editorRows
+        .filter((row: any) => row.editorRole && row.taskType && row.qty > 0)
+        .map((row: any) => ({
+          role: `${row.qty}x ${row.editorRole}`,
+          task: `${row.taskType} - ${row.days}d`,
+        })),
+
+      deliverables: formValue.deliverables
+        .split('\n')
+        .map((d: string) => d.trim())
+        .filter((d: string) => d.length > 0),
+    };
+  }
+
+  private formatIndianCurrency(value: number): string {
+    return '₹' + Number(value).toLocaleString('en-IN');
   }
 }
