@@ -6,6 +6,7 @@ import { FreelancerRegister } from './pages/freelancer-register/freelancer-regis
 import { Dashboard } from './pages/dashboard/dashboard';
 import { DashboardShell } from './pages/dashboard-shell/dashboard-shell';
 import { Packages } from './pages/packages/packages';
+import { Clients } from './pages/clients/clients';
 
 export const routes: Routes = [
   {
@@ -31,6 +32,7 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'packages', component: Packages }, // <-- EKHANE niye asha holo
+      { path: 'clients', component: Clients }, // <-- EKHANE niye asha holo
     ],
   },
 ];
