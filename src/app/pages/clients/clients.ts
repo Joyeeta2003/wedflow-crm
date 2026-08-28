@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import {ClientModal, NewClientData} from './client-modal/client-modal'
 
 interface Client {
   id: string;
@@ -15,11 +16,12 @@ interface Client {
 @Component({
   selector: 'app-clients',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ClientModal],
   templateUrl: './clients.html',
   styleUrl: './clients.scss',
 })
 export class Clients {
+  showNewClientModal = false;
   // TODO: real API theke fetch hobe
   clients: Client[] = [
     {
@@ -109,9 +111,9 @@ export class Clients {
     // TODO: export filteredClients as Excel/CSV
   }
 
-  onNewClient(): void {
-    // TODO: new client form/modal, jerokom "New Package" modal chilo
-  }
+ onNewClient(): void {
+  this.showNewClientModal = true;
+}
 
   onEdit(client: Client): void {
     // TODO: edit form/modal
@@ -121,4 +123,25 @@ export class Clients {
     // TODO: confirm dialog + delete API call
     this.clients = this.clients.filter((c) => c.id !== client.id);
   }
+
+  onModalClose(): void {
+  this.showNewClientModal = false;
+}
+
+onClientCreate(data: NewClientData): void {
+  const nextNumber = this.clients.length + 1;
+  const newClient: Client = {
+    id: String(nextNumber),
+    name: data.name,
+    customerId: 'DRVSTU-CUS-' + String(nextNumber).padStart(6, '0'),
+    phone: data.phone,
+    email: data.email,
+    address: data.address,
+    createdAt: new Date().toISOString().slice(0, 10), // "YYYY-MM-DD" format, tor parseDDMMYYYY logic-er sathe compatible
+  };
+
+  this.clients = [...this.clients, newClient];
+  this.showNewClientModal = false;
+}
+  
 }

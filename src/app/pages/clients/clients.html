@@ -126,3 +126,9 @@
 
   </div>
 </div>
+
+   <app-client-modal
+     [isOpen]="showNewClientModal"
+     (closeModal)="onModalClose()"
+     (create)="onClientCreate($event)"
+   ></app-client-modal>
