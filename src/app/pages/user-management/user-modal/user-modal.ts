@@ -29,6 +29,7 @@ export interface NewUserData {
 })
 export class UserModal {
   @Input() isOpen = false;
+   @Input() isSubmitting = false;
   @Output() closeModal = new EventEmitter<void>();
   @Output() create = new EventEmitter<NewUserData>();
 
@@ -59,10 +60,9 @@ export class UserModal {
   onSubmit(form: NgForm) {
     if (form.invalid) return;
     this.create.emit({ ...this.newUser });
-    this.resetForm();
   }
 
-  private resetForm() {
+  resetForm() {
     this.newUser = { name: '', email: '', phone: '', role: 'photographer', address: '' };
   }
 }

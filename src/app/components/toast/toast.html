@@ -1,6 +1,6 @@
 @if (visible()) {
   <div class="toast-viewport">
-    <div class="toast">
+    <div class="toast"  [class.toast--error]="variant() === 'error'">
       <div class="toast-content">
         <div class="toast-title">{{ title() }}</div>
         <div class="toast-message">{{ message() }}</div>

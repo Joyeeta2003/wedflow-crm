@@ -10,6 +10,7 @@ export class Toast {
   visible = input(false);
   title = input('Enquiry submitted');
   message = input('Our team will contact you soon.');
+  variant = input<'success' | 'error'>('success');
   closed = output<void>();
 
   onClose(): void {

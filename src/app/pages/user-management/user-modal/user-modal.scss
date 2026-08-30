@@ -199,3 +199,38 @@
   background: var(--brand);
   color: var(--brand-foreground);
 }
+
+.form-input.invalid,
+.form-select.invalid {
+  border-color: hsl(var(--destructive));
+}
+
+.form-label.invalid {
+  color: hsl(var(--destructive));
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: hsl(var(--destructive));
+  margin: 0;
+}
+
+.btn-primary {
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: var(--brand-foreground);
+  min-width: 6.5rem; // spinner-e জায়গা shrink na hoy tার jonno
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
