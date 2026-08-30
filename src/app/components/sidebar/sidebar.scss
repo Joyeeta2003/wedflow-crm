@@ -95,6 +95,16 @@
   color: rgb(97, 97, 97);
 }
 
+.sidebar-nav {
+  flex: 1;             // available space niye nibe, baki shob fixed thakবে
+  overflow-y: auto;     // menu item beshi hole EI part-e scroll hobe
+  min-height: 0;        // flex child-er default min-height:auto override — na dile overflow kaj korবে না
+  padding: 0.75rem;     // tor original spacing jodi different hoy, adjust kore nis
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .nav-item {
   position: relative;
   display: flex;
@@ -110,17 +120,6 @@
     background: rgba(243, 180, 22, 0.12);
     color: rgb(245, 196, 71);
     font-weight: 600;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: -0.75rem;
-      top: 15%;
-      bottom: 15%;
-      width: 3px;
-      background: rgb(245, 196, 71);
-      border-radius: 0 2px 2px 0;
-    }
   }
 }
 
@@ -170,8 +169,9 @@
 }
 
 .sidebar-footer {
-  padding: 1rem; // p-4
+  padding: 1rem;
   border-top: 1px solid rgb(26, 26, 26);
+  flex-shrink: 0;   // 👈 eta add kor
 }
 
 .user-block {

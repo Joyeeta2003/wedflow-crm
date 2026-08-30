@@ -49,3 +49,9 @@
     </div>
   </div>
 </div>
+
+<app-user-modal
+  [isOpen]="showNewUserModal"
+  (closeModal)="onModalClose()"
+  (create)="onUserCreate($event)"
+></app-user-modal>
