@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NewPackageModal } from './components/new-package-modal/new-package-modal';
+import { PackageService, Package } from '../../services/package.service';
 
 interface CrewMember {
   role: string;
@@ -23,7 +24,7 @@ interface EditorAssignment {
   task: string; // "Photo Editing - 7d"
 }
 
-interface Package {
+interface UIPackage {
   id: string;
   name: string;
   status: 'Active' | 'Inactive';
@@ -44,9 +45,61 @@ interface Package {
   templateUrl: './packages.html',
   styleUrl: './packages.scss',
 })
-export class Packages {
-  // TODO: real API theke fetch hobe
-  packages: Package[] = [
+export class Packages implements OnInit {
+  isLoading = false;
+  packages: UIPackage[] = [];
+
+  constructor(
+    private packageService: PackageService,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  ngOnInit(): void {
+    this.loadPackages();
+  }
+
+  loadPackages(): void {
+    this.isLoading = true;
+    this.cdr.detectChanges(); // Show loading state immediately
+
+    this.packageService.getPackages().subscribe({
+      next: (response) => {
+        const dbPackages = Array.isArray(response?.packages) ? response.packages : [];
+        this.packages = dbPackages.length > 0
+          ? dbPackages.map(pkg => this.mapDbPackageToUIPackage(pkg))
+          : this.mockPackages;
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Update view with packages
+      },
+      error: (error) => {
+        console.error('Error loading packages:', error);
+        this.packages = this.mockPackages;
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Show error state
+      }
+    });
+  }
+
+  private mapDbPackageToUIPackage(dbPackage: Package): UIPackage {
+    return {
+      id: dbPackage.id,
+      name: dbPackage.name,
+      status: dbPackage.status === 'active' ? 'Active' : 'Inactive',
+      durationDays: dbPackage.duration_days,
+      price: this.formatIndianCurrency(dbPackage.price),
+      description: dbPackage.description || '',
+      crewPerDay: [],
+      paymentSchedule: [],
+      reminderNote: dbPackage.reminder_day
+        ? `Reminders use Day ${dbPackage.reminder_day}; crew details mail: ${dbPackage.reminder_email_days} days before each event day.`
+        : '',
+      editorPlan: [],
+      deliverables: [],
+    };
+  }
+
+  // Keep existing mock data as fallback for now
+  mockPackages: UIPackage[] = [
     {
       id: '1',
       name: 'ROYAL WEDDING PACKAGE',
@@ -451,35 +504,82 @@ export class Packages {
   ];
 
   // ----- Deliverables: prothom 3 ta dekhabe, baki count-e "+X more..." -----
-  visibleDeliverables(pkg: Package): string[] {
+  visibleDeliverables(pkg: UIPackage): string[] {
     return pkg.deliverables.slice(0, 3);
   }
 
-  remainingCount(pkg: Package): number {
-    return pkg.deliverables.length - 3;
+  remainingCount(pkg: UIPackage): number {
+    return Math.max(pkg.deliverables.length - 3, 0);
   }
 
   onNewPackage(): void {
     // TODO: new package form/modal
   }
 
-  onEdit(pkg: Package): void {
+  onEdit(pkg: UIPackage): void {
     // TODO: edit form/modal
   }
 
-  onDelete(pkg: Package): void {
-    // TODO: confirm dialog + delete API call
+  onDelete(pkg: UIPackage): void {
+    if (!confirm(`Are you sure you want to delete ${pkg.name}?`)) {
+      return;
+    }
+
+    this.packageService.deletePackage(pkg.id).subscribe({
+      next: (response) => {
+        this.packages = this.packages.filter((p) => p.id !== pkg.id);
+        this.cdr.detectChanges();
+        this.loadPackages();
+      },
+      error: (error) => {
+        console.error('Error deleting package:', error);
+      }
+    });
   }
 
   showModal = false;
 
   onPackageCreated(formValue: any) {
-    const newPackage: Package = this.mapFormToPackage(formValue);
-    this.packages.push(newPackage);
-    this.showModal = false;
+    const packageName = (formValue.name || '').trim();
+    const isDuplicate = this.packages.some(pkg => pkg.name.toLowerCase() === packageName.toLowerCase());
+
+    if (!packageName) {
+      alert('Package name is required.');
+      return;
+    }
+
+    if (isDuplicate) {
+      alert(`Package "${packageName}" already exists in this workspace. Please use a unique name.`);
+      return;
+    }
+
+    const createRequest = {
+      name: packageName,
+      durationDays: Number(formValue.durationDays),
+      price: parseFloat(formValue.price.toString()),
+      description: formValue.description,
+      status: formValue.availability ? 'active' : 'inactive',
+      reminderDay: formValue.reminderReferenceDay,
+      reminderEmailDays: formValue.crewMailBeforeEvent
+    };
+
+    this.packageService.createPackage(createRequest).subscribe({
+      next: (response) => {
+        const newPackage = this.mapDbPackageToUIPackage(response.package);
+        this.packages = [...this.packages, newPackage];
+        this.showModal = false;
+        this.cdr.detectChanges();
+        this.loadPackages();
+      },
+      error: (error) => {
+        console.error('Error creating package:', error);
+        const message = error?.error?.error || error?.message || 'Failed to create package.';
+        alert(message);
+      }
+    });
   }
 
-  private mapFormToPackage(formValue: any): Package {
+  private mapFormToPackage(formValue: any): UIPackage {
     return {
       id: (this.packages.length + 1).toString(),
       name: formValue.name,

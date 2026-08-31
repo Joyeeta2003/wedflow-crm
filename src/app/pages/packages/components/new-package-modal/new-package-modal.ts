@@ -155,7 +155,6 @@ whenDueOptions = ['At Booking', 'On Event Day', 'Days Before Event', 'Days After
       return;
     }
     this.createPackage.emit(this.packageForm.value);
-    this.closeModal.emit();
   }
 
   // ei method-টা notun add koro
