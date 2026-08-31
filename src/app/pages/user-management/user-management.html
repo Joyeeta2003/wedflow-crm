@@ -55,3 +55,12 @@
   (closeModal)="onModalClose()"
   (create)="onUserCreate($event)"
 ></app-user-modal>
+
+<!-- age dewa custom toast div ta REMOVE kor, replace kर eটা diye: -->
+<app-toast
+  [visible]="toastVisible"
+  [title]="toastTitle"
+  [message]="toastMessage"
+  [variant]="toastVariant"
+  (closed)="onToastClosed()"
+></app-toast>

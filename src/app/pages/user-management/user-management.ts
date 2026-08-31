@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserModal, NewUserData } from './user-modal/user-modal'; // 👈 1. NOTUN IMPORT ADD KOR
+import {Toast} from '../../components/toast/toast'
 
 type Role =
   | 'Admin'
@@ -30,12 +31,19 @@ interface RoleGroup {
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, UserModal], // 👈 2. IMPORTS ARRAY-E UserModal ADD KOR
+  imports: [CommonModule, UserModal,Toast], // 👈 2. IMPORTS ARRAY-E UserModal ADD KOR
   templateUrl: './user-management.html',
   styleUrl: './user-management.scss',
 })
 export class UserManagement {
   showNewUserModal = false; // 👈 3. NOTUN PROPERTY ADD KOR
+  isCreatingUser = false;
+
+  toastVisible = false;
+  toastTitle = '';
+  toastMessage = '';
+  toastVariant: 'success' | 'error' = 'success';
+  private toastTimer: any;
 
   private roleOrder: Role[] = [
     'Admin',
@@ -116,7 +124,21 @@ export class UserManagement {
   }
 
   onUserCreate(data: NewUserData): void {
-    // 👈 6. NOTUN METHOD ADD KOR
+    this.isCreatingUser = true;
+
+    setTimeout(() => {
+      this.isCreatingUser = false;
+
+      const alreadyExists = this.users.some(
+        (u) => u.email.toLowerCase() === data.email.toLowerCase()
+      );
+
+      if (alreadyExists) {
+        this.showToast('error', 'Error', 'Username already exists');
+        return;
+      }
+
+
     const roleLabel = this.roleLabelMap[data.role];
 
     const newUser: AppUser = {
@@ -130,7 +152,23 @@ export class UserManagement {
     };
 
     this.users = [...this.users, newUser];
-    this.showNewUserModal = false;
+      this.showNewUserModal = false;
+      this.showToast('success', 'User created', `${data.name} can now log in as ${data.email}`);
+    }, 700);
+  }
+
+  private showToast(variant: 'success' | 'error', title: string, message: string): void {
+    clearTimeout(this.toastTimer);
+    this.toastVariant = variant;
+    this.toastTitle = title;
+    this.toastMessage = message;
+    this.toastVisible = true;
+    this.toastTimer = setTimeout(() => (this.toastVisible = false), 4000);
+  }
+
+  onToastClosed(): void {
+    clearTimeout(this.toastTimer);
+    this.toastVisible = false;
   }
 
   onEdit(user: AppUser): void {
