@@ -75,3 +75,21 @@
     opacity: 1;
   }
 }
+
+.toast--error {
+  background: hsl(var(--destructive));
+  border-color: hsl(var(--destructive-border));
+
+  .toast-title,
+  .toast-message {
+    color: hsl(var(--destructive-foreground));
+  }
+
+  .toast-close {
+    color: hsla(var(--destructive-foreground), 0.7);
+
+    &:hover {
+      color: hsl(var(--destructive-foreground));
+    }
+  }
+}

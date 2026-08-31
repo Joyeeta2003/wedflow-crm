@@ -1,8 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { UserModal, NewUserData } from './user-modal/user-modal'; // 👈 1. NOTUN IMPORT ADD KOR
+import {Toast} from '../../components/toast/toast'
 
 type Role =
   | 'Admin'
+  | 'HR Manager'
   | 'Photographer'
   | 'Cinematographer'
   | 'Videographer'
@@ -14,9 +17,9 @@ interface AppUser {
   id: string;
   name: string;
   email: string;
-  staffName?: string; // Admin-der jonno thake na, baki role-e thake
+  staffName?: string;
   role: Role;
-  joinedAt: string; // ISO date
+  joinedAt: string;
   active: boolean;
 }
 
@@ -28,14 +31,23 @@ interface RoleGroup {
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UserModal,Toast], // 👈 2. IMPORTS ARRAY-E UserModal ADD KOR
   templateUrl: './user-management.html',
   styleUrl: './user-management.scss',
 })
 export class UserManagement {
-  // Role-order fixed rakhlam, screenshot-e ei order-e e dekhachhilo
+  showNewUserModal = false; // 👈 3. NOTUN PROPERTY ADD KOR
+  isCreatingUser = false;
+
+  toastVisible = false;
+  toastTitle = '';
+  toastMessage = '';
+  toastVariant: 'success' | 'error' = 'success';
+  private toastTimer: any;
+
   private roleOrder: Role[] = [
     'Admin',
+    'HR Manager',
     'Photographer',
     'Cinematographer',
     'Videographer',
@@ -44,7 +56,6 @@ export class UserManagement {
     'Video Editor',
   ];
 
-  // TODO: real API theke fetch hobe
   users: AppUser[] = [
     { id: '1', name: 'Joyeeta Das', email: 'joyeetadas597@gmail.com', role: 'Admin', joinedAt: '2026-07-18', active: true },
     { id: '2', name: 'Piyush Agarwal', email: 'zackagarwal@gmail.com', role: 'Admin', joinedAt: '2026-06-02', active: true },
@@ -70,6 +81,17 @@ export class UserManagement {
     { id: '16', name: 'Srabani Dey', email: 'srabani.sribridhi@gmail.com', staffName: 'Srabani Dey', role: 'Video Editor', joinedAt: '2026-06-09', active: true },
   ];
 
+  private roleLabelMap: Record<string, Role> = {
+    admin: 'Admin',
+    hr: 'HR Manager',
+    photographer: 'Photographer',
+    cinematographer: 'Cinematographer',
+    videographer: 'Videographer',
+    drone_operator: 'Drone Operator',
+    photo_editor: 'Photo Editor',
+    video_editor: 'Video Editor',
+  };
+
   get totalUsers(): number {
     return this.users.length;
   }
@@ -93,7 +115,60 @@ export class UserManagement {
   }
 
   onNewUser(): void {
-    // TODO: New User modal (screenshot lagবে form fields dekhার jonno)
+    this.showNewUserModal = true; // 👈 4. PURONO TODO REPLACE KORLAM
+  }
+
+  onModalClose(): void {
+    // 👈 5. NOTUN METHOD ADD KOR
+    this.showNewUserModal = false;
+  }
+
+  onUserCreate(data: NewUserData): void {
+    this.isCreatingUser = true;
+
+    setTimeout(() => {
+      this.isCreatingUser = false;
+
+      const alreadyExists = this.users.some(
+        (u) => u.email.toLowerCase() === data.email.toLowerCase()
+      );
+
+      if (alreadyExists) {
+        this.showToast('error', 'Error', 'Username already exists');
+        return;
+      }
+
+
+    const roleLabel = this.roleLabelMap[data.role];
+
+    const newUser: AppUser = {
+      id: String(this.users.length + 1),
+      name: data.name,
+      email: data.email,
+      staffName: data.role === 'admin' ? undefined : data.name,
+      role: roleLabel,
+      joinedAt: new Date().toISOString().slice(0, 10),
+      active: true,
+    };
+
+    this.users = [...this.users, newUser];
+      this.showNewUserModal = false;
+      this.showToast('success', 'User created', `${data.name} can now log in as ${data.email}`);
+    }, 700);
+  }
+
+  private showToast(variant: 'success' | 'error', title: string, message: string): void {
+    clearTimeout(this.toastTimer);
+    this.toastVariant = variant;
+    this.toastTitle = title;
+    this.toastMessage = message;
+    this.toastVisible = true;
+    this.toastTimer = setTimeout(() => (this.toastVisible = false), 4000);
+  }
+
+  onToastClosed(): void {
+    clearTimeout(this.toastTimer);
+    this.toastVisible = false;
   }
 
   onEdit(user: AppUser): void {
