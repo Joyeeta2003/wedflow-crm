@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UserModal, NewUserData } from './user-modal/user-modal'; // 👈 1. NOTUN IMPORT ADD KOR
-import {Toast} from '../../components/toast/toast'
+import { UserModal, NewUserData } from './user-modal/user-modal';
+import { Toast } from '../../components/toast/toast';
+import { UserService, User } from '../../services/user.service';
 
 type Role =
   | 'Admin'
@@ -11,7 +12,9 @@ type Role =
   | 'Videographer'
   | 'Drone Operator'
   | 'Photo Editor'
-  | 'Video Editor';
+  | 'Video Editor'
+  | 'Client'
+  | 'Freelancer';
 
 interface AppUser {
   id: string;
@@ -31,19 +34,25 @@ interface RoleGroup {
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, UserModal,Toast], // 👈 2. IMPORTS ARRAY-E UserModal ADD KOR
+  imports: [CommonModule, UserModal, Toast],
   templateUrl: './user-management.html',
   styleUrl: './user-management.scss',
 })
-export class UserManagement {
-  showNewUserModal = false; // 👈 3. NOTUN PROPERTY ADD KOR
+export class UserManagement implements OnInit {
+  showNewUserModal = false;
   isCreatingUser = false;
+  isLoading = false;
 
   toastVisible = false;
   toastTitle = '';
   toastMessage = '';
   toastVariant: 'success' | 'error' = 'success';
   private toastTimer: any;
+
+  constructor(
+    private userService: UserService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   private roleOrder: Role[] = [
     'Admin',
@@ -54,42 +63,58 @@ export class UserManagement {
     'Drone Operator',
     'Photo Editor',
     'Video Editor',
+    'Client',
+    'Freelancer',
   ];
 
-  users: AppUser[] = [
-    { id: '1', name: 'Joyeeta Das', email: 'joyeetadas597@gmail.com', role: 'Admin', joinedAt: '2026-07-18', active: true },
-    { id: '2', name: 'Piyush Agarwal', email: 'zackagarwal@gmail.com', role: 'Admin', joinedAt: '2026-06-02', active: true },
-    { id: '3', name: 'Preetam', email: 'preetamchakrabortty610@gmail.com', role: 'Admin', joinedAt: '2026-08-06', active: true },
-    { id: '4', name: 'Preetam', email: 'mr.pritam420@gmail.com', role: 'Admin', joinedAt: '2026-08-08', active: true },
+  users: AppUser[] = [];
 
-    { id: '5', name: 'Akash Sarkar', email: 'akash.sribridhi@gmail.com', staffName: 'Akash Sarkar', role: 'Photographer', joinedAt: '2026-06-09', active: true },
-    { id: '6', name: 'Rohan Gupta', email: 'arnab.bera@tnu.in', staffName: 'Rohan Gupta', role: 'Photographer', joinedAt: '2026-06-10', active: true },
-    { id: '7', name: 'ytewtywty', email: 'nsh@gmail.com', staffName: 'ytewtywty', role: 'Photographer', joinedAt: '2026-07-18', active: true },
+  ngOnInit(): void {
+    this.loadUsers();
+  }
 
-    { id: '8', name: 'Kathakali Mondal', email: 'kathakali.sribridhi@gmail.com', staffName: 'Kathakali Mondal', role: 'Cinematographer', joinedAt: '2026-06-02', active: true },
-    { id: '9', name: 'fjdfjhjd', email: 'xyz@gmail.com', staffName: 'fjdfjhjd', role: 'Cinematographer', joinedAt: '2026-06-30', active: true },
+  loadUsers(): void {
+    this.isLoading = true;
+    this.cdr.detectChanges(); // ← Force view update to show loading
 
-    { id: '10', name: 'Sujan Das', email: 'sujan.sribridhi@gmail.com', staffName: 'Sujan Das', role: 'Videographer', joinedAt: '2026-06-09', active: true },
-    { id: '11', name: 'srijon chakrabortty', email: 'acd@gmail.com', staffName: 'srijon chakrabortty', role: 'Videographer', joinedAt: '2026-06-30', active: true },
+    this.userService.getUsers().subscribe({
+      next: (response) => {
+        this.users = response.users.map(user => this.mapUserToAppUser(user));
+        this.isLoading = false;
+        this.cdr.detectChanges(); // ← Force view update to show users
+      },
+      error: (error) => {
+        console.error('Error loading users:', error);
+        this.showToast('error', 'Error', 'Failed to load users');
+        this.isLoading = false;
+        this.cdr.detectChanges(); // ← Force view update to show error
+      }
+    });
+  }
 
-    { id: '12', name: 'Abhijit Bhattacharya', email: 'abhijit.sribridhi@gmail.com', staffName: 'Abhijit Bhattacharya', role: 'Drone Operator', joinedAt: '2026-06-09', active: true },
-
-    { id: '13', name: 'Putul Sarkar', email: 'putul.sribridhi@gmail.com', staffName: 'Putul Sarkar', role: 'Photo Editor', joinedAt: '2026-06-09', active: true },
-    { id: '14', name: 'Rajib', email: 'ad@gmail.com', staffName: 'Rajib', role: 'Photo Editor', joinedAt: '2026-07-01', active: true },
-
-    { id: '15', name: 'Abhirup', email: 'abcdre@gmail.com', staffName: 'Abhirup', role: 'Video Editor', joinedAt: '2026-07-15', active: true },
-    { id: '16', name: 'Srabani Dey', email: 'srabani.sribridhi@gmail.com', staffName: 'Srabani Dey', role: 'Video Editor', joinedAt: '2026-06-09', active: true },
-  ];
+  private mapUserToAppUser(user: User): AppUser {
+    const roleLabel = this.roleLabelMap[user.role] || user.role;
+    return {
+      id: user.id,
+      name: `${user.first_name} ${user.last_name || ''}`.trim(),
+      email: user.email,
+      staffName: user.staff_name || undefined,
+      role: roleLabel,
+      joinedAt: user.created_at,
+      active: user.is_active
+    };
+  }
 
   private roleLabelMap: Record<string, Role> = {
     admin: 'Admin',
-    hr: 'HR Manager',
     photographer: 'Photographer',
     cinematographer: 'Cinematographer',
     videographer: 'Videographer',
     drone_operator: 'Drone Operator',
     photo_editor: 'Photo Editor',
     video_editor: 'Video Editor',
+    client: 'Client',
+    freelancer: 'Freelancer',
   };
 
   get totalUsers(): number {
@@ -115,46 +140,43 @@ export class UserManagement {
   }
 
   onNewUser(): void {
-    this.showNewUserModal = true; // 👈 4. PURONO TODO REPLACE KORLAM
+    this.showNewUserModal = true;
   }
 
   onModalClose(): void {
-    // 👈 5. NOTUN METHOD ADD KOR
     this.showNewUserModal = false;
   }
 
   onUserCreate(data: NewUserData): void {
     this.isCreatingUser = true;
 
-    setTimeout(() => {
-      this.isCreatingUser = false;
-
-      const alreadyExists = this.users.some(
-        (u) => u.email.toLowerCase() === data.email.toLowerCase()
-      );
-
-      if (alreadyExists) {
-        this.showToast('error', 'Error', 'Username already exists');
-        return;
-      }
-
-
-    const roleLabel = this.roleLabelMap[data.role];
-
-    const newUser: AppUser = {
-      id: String(this.users.length + 1),
-      name: data.name,
+    const createRequest = {
       email: data.email,
-      staffName: data.role === 'admin' ? undefined : data.name,
-      role: roleLabel,
-      joinedAt: new Date().toISOString().slice(0, 10),
-      active: true,
+      firstName: data.name.split(' ')[0],
+      lastName: data.name.split(' ').slice(1).join(' ') || null,
+      phoneNumber: data.phone || null,
+      role: data.role,
+      staffName: data.role === 'admin' ? null : data.name,
+      address: data.address || null
     };
 
-    this.users = [...this.users, newUser];
-      this.showNewUserModal = false;
-      this.showToast('success', 'User created', `${data.name} can now log in as ${data.email}`);
-    }, 700);
+    this.userService.createUser(createRequest).subscribe({
+      next: (response) => {
+        this.isCreatingUser = false;
+        this.showNewUserModal = false;
+        this.loadUsers(); // Reload users from database to get fresh data
+        this.showToast('success', 'User created', `${data.name} can now log in as ${data.email}`);
+      },
+      error: (error) => {
+        this.isCreatingUser = false;
+        console.error('Error creating user:', error);
+        if (error.status === 409) {
+          this.showToast('error', 'Error', 'A user with this email already exists');
+        } else {
+          this.showToast('error', 'Error', 'Failed to create user');
+        }
+      }
+    });
   }
 
   private showToast(variant: 'success' | 'error', title: string, message: string): void {
@@ -163,12 +185,17 @@ export class UserManagement {
     this.toastTitle = title;
     this.toastMessage = message;
     this.toastVisible = true;
-    this.toastTimer = setTimeout(() => (this.toastVisible = false), 4000);
+    this.cdr.detectChanges(); // ← Force view update to show toast
+    this.toastTimer = setTimeout(() => {
+      this.toastVisible = false;
+      this.cdr.detectChanges(); // ← Force view update to hide toast
+    }, 4000);
   }
 
   onToastClosed(): void {
     clearTimeout(this.toastTimer);
     this.toastVisible = false;
+    this.cdr.detectChanges(); // ← Force view update
   }
 
   onEdit(user: AppUser): void {
@@ -176,6 +203,20 @@ export class UserManagement {
   }
 
   onDelete(user: AppUser): void {
-    this.users = this.users.filter((u) => u.id !== user.id);
+    if (!confirm(`Are you sure you want to delete ${user.name}?`)) {
+      return;
+    }
+
+    this.userService.deleteUser(user.id).subscribe({
+      next: (response) => {
+        this.users = this.users.filter((u) => u.id !== user.id);
+        this.cdr.detectChanges(); // ← Force view update after delete
+        this.showToast('success', 'User deleted', `${user.name} has been removed`);
+      },
+      error: (error) => {
+        console.error('Error deleting user:', error);
+        this.showToast('error', 'Error', 'Failed to delete user');
+      }
+    });
   }
 }

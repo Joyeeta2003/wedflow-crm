@@ -1,16 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {ClientModal, NewClientData} from './client-modal/client-modal'
+import { Router } from '@angular/router';
+import { ClientModal, NewClientData } from './client-modal/client-modal';
+import { ClientService, Client } from '../../services/client.service';
+import { Auth } from '../../services/auth';
 
-interface Client {
+interface DisplayClient {
   id: string;
   name: string;
   customerId: string;
   phone: string;
   email: string;
   address: string;
-  createdAt: string; // ISO date string — "customers created from/to" filter-er jonno
+  createdAt: string;
 }
 
 @Component({
@@ -20,53 +23,76 @@ interface Client {
   templateUrl: './clients.html',
   styleUrl: './clients.scss',
 })
-export class Clients {
+export class Clients implements OnInit, OnDestroy {
   showNewClientModal = false;
-  // TODO: real API theke fetch hobe
-  clients: Client[] = [
-    {
-      id: '1',
-      name: 'Sample Customer',
-      customerId: 'DRVSTU-CUS-000010',
-      phone: '9876543210',
-      email: 'customer@example.com',
-      address: 'Full postal address',
-      createdAt: '2026-01-10',
-    },
-    {
-      id: '2',
-      name: 'Soumik & Shrya',
-      customerId: 'DRVSTU-CUS-000012',
-      phone: '+91 7439452394',
-      email: 'arnab.bera@tnu.in',
-      address: 'kolkata',
-      createdAt: '2026-02-15',
-    },
-    {
-      id: '3',
-      name: 'Swagatam & Swagata',
-      customerId: 'DRVSTU-CUS-000016',
-      phone: '9876543210',
-      email: 'swagatam.jana@tnu.in',
-      address: 'Salt Lake',
-      createdAt: '2026-03-05',
-    },
-    {
-      id: '4',
-      name: 'Arnab',
-      customerId: 'DRVSTU-CUS-000011',
-      phone: '+91 9330550475',
-      email: 'arnabb319@gmail.com',
-      address: 'kolkata',
-      createdAt: '2026-01-28',
-    },
-  ];
+  clients: DisplayClient[] = [];
+  loading = false;
+  error: string | null = null;
 
   searchTerm = '';
-  dateFrom = ''; // DD-MM-YYYY string
-  dateTo = '';   // DD-MM-YYYY string
+  dateFrom = '';
+  dateTo = '';
 
-  get filteredClients(): Client[] {
+  private readonly handleWindowFocus = () => {
+    this.loadClients();
+  };
+
+  constructor(
+    private clientService: ClientService,
+    private auth: Auth,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  ngOnInit(): void {
+    this.loadClients();
+    window.addEventListener('focus', this.handleWindowFocus);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('focus', this.handleWindowFocus);
+  }
+
+  loadClients(): void {
+    this.loading = true;
+    this.error = null;
+    this.cdr.detectChanges(); // Force immediate UI update
+
+    this.clientService.getClients().subscribe({
+      next: (response) => {
+        this.clients = (response?.clients ?? []).map((client) => this.mapToDisplayClient(client));
+        this.loading = false;
+        this.cdr.detectChanges(); // Force UI update
+      },
+      error: (err) => {
+        console.error('Error loading clients:', err);
+
+        if (err?.status === 401 || err?.status === 403) {
+          this.auth.clearSession();
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        this.error = 'Failed to load clients';
+        this.loading = false;
+        this.cdr.detectChanges(); // Force UI update
+      },
+    });
+  }
+
+  private mapToDisplayClient(client: Client): DisplayClient {
+    return {
+      id: client.id,
+      name: client.name,
+      customerId: `DRVSTU-CUS-${client.id.slice(0, 8).toUpperCase()}`,
+      phone: client.phone || '',
+      email: client.email || '',
+      address: client.address || '',
+      createdAt: client.created_at.slice(0, 10),
+    };
+  }
+
+  get filteredClients(): DisplayClient[] {
     const term = this.searchTerm.trim().toLowerCase();
     const fromDate = this.parseDDMMYYYY(this.dateFrom);
     const toDate = this.parseDDMMYYYY(this.dateTo);
@@ -94,7 +120,6 @@ export class Clients {
     return new Date(yyyy, mm - 1, dd);
   }
 
-  // ---------- Header actions ----------
   onTemplate(): void {
     // TODO: download blank Excel template
   }
@@ -103,45 +128,87 @@ export class Clients {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    // TODO: parse .xlsx/.xls/.csv and merge into clients[]
-    input.value = ''; // same file abar select korলেও (change) event fire korার jonno reset
+    input.value = '';
   }
 
   onExportExcel(): void {
     // TODO: export filteredClients as Excel/CSV
   }
 
- onNewClient(): void {
-  this.showNewClientModal = true;
-}
+  onNewClient(): void {
+    this.showNewClientModal = true;
+  }
 
-  onEdit(client: Client): void {
+  onEdit(client: DisplayClient): void {
     // TODO: edit form/modal
   }
 
-  onDelete(client: Client): void {
-    // TODO: confirm dialog + delete API call
-    this.clients = this.clients.filter((c) => c.id !== client.id);
+  onDelete(client: DisplayClient): void {
+    if (confirm(`Are you sure you want to delete ${client.name}?`)) {
+      this.clientService.deleteClient(client.id).subscribe({
+        next: () => {
+          this.clients = this.clients.filter((c) => c.id !== client.id);
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error deleting client:', err);
+          alert('Failed to delete client');
+        },
+      });
+    }
   }
 
   onModalClose(): void {
-  this.showNewClientModal = false;
-}
+    this.showNewClientModal = false;
+    this.loadClients();
+  }
 
-onClientCreate(data: NewClientData): void {
-  const nextNumber = this.clients.length + 1;
-  const newClient: Client = {
-    id: String(nextNumber),
-    name: data.name,
-    customerId: 'DRVSTU-CUS-' + String(nextNumber).padStart(6, '0'),
-    phone: data.phone,
-    email: data.email,
-    address: data.address,
-    createdAt: new Date().toISOString().slice(0, 10), // "YYYY-MM-DD" format, tor parseDDMMYYYY logic-er sathe compatible
-  };
+  onClientCreate(data: NewClientData): void {
+    // Check for duplicate phone number
+    if (data.phone && data.phone.trim()) {
+      const existingPhone = this.clients.find(c => c.phone === data.phone.trim());
+      if (existingPhone) {
+        alert('A client with this phone number already exists');
+        return;
+      }
+    }
 
-  this.clients = [...this.clients, newClient];
-  this.showNewClientModal = false;
-}
-  
+    // Check for duplicate email
+    if (data.email && data.email.trim()) {
+      const existingEmail = this.clients.find(c => c.email === data.email.trim());
+      if (existingEmail) {
+        alert('A client with this email already exists');
+        return;
+      }
+    }
+
+    this.clientService.createClient({
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      status: 'active'
+    }).subscribe({
+      next: (response) => {
+        this.clients = [...this.clients, this.mapToDisplayClient(response.client)];
+        this.showNewClientModal = false;
+        this.cdr.detectChanges();
+        this.loadClients();
+      },
+      error: (err) => {
+        console.error('Error creating client:', err);
+        if (err.status === 401 || err.status === 403) {
+          this.auth.clearSession();
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        if (err.status === 409) {
+          alert(err.error?.error || 'A client with this phone number or email already exists');
+        } else {
+          alert('Failed to create client');
+        }
+      },
+    });
+  }
 }

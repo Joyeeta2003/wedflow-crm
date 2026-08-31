@@ -78,8 +78,20 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading clients...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="error-state">
+      <p>{{ error }}</p>
+      <button type="button" class="btn-outline" (click)="loadClients()">Retry</button>
+    </div>
+
     <!-- Table -->
-    <div class="table-wrapper">
+    <div *ngIf="!loading && !error" class="table-wrapper">
       <table class="clients-table">
         <thead>
           <tr>
