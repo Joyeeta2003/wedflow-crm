@@ -1,0 +1,87 @@
+.booking-detail-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1rem 0 2rem;
+  color: hsl(var(--foreground));
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: hsl(var(--primary));
+  text-decoration: none;
+}
+
+.booking-detail-card {
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card));
+  padding: 1.5rem;
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 1.25rem;
+}
+
+.eyebrow, .detail-grid span, .notes-block > span {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8rem;
+}
+
+h1 { margin: 0.35rem 0 0; }
+
+.status-badge {
+  border-radius: 999px;
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding: 1.5rem 0;
+}
+
+.detail-grid div { display: grid; gap: 0.35rem; }
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 1.25rem 0;
+}
+
+.summary-grid div, .detail-section { display: grid; gap: 0.4rem; }
+.summary-grid span, .detail-section h2 { color: hsl(var(--muted-foreground)); font-size: 0.8rem; }
+.detail-section { padding-top: 1.25rem; }
+.detail-section h2 { margin: 0; font-size: 1rem; color: hsl(var(--foreground)); }
+.event-list, .payment-row, .assignment-row { display: grid; gap: 0.65rem; }
+.event-row, .payment-row, .assignment-row, .role-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; border-bottom: 1px solid hsl(var(--border)); }
+.event-row span, .assignment-row span, .role-row strong, small { color: hsl(var(--muted-foreground)); }
+.crew-day { border: 1px solid hsl(var(--border)); padding: 0.75rem; }
+.crew-day h3 { margin: 0 0 0.4rem; font-size: 0.95rem; }
+
+.notes-block {
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 1.25rem;
+}
+
+.notes-block p { white-space: pre-line; }
+.state-message { padding: 2rem 0; }
+.error-message { color: hsl(var(--destructive)); }
+
+@media (max-width: 640px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .event-row, .payment-row, .assignment-row, .role-row { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
+}

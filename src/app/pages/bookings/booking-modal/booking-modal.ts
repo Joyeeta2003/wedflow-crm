@@ -47,6 +47,8 @@ export interface NewBookingData {
 })
 export class BookingModal {
   @Input() isOpen = false;
+  @Input() clients: ClientOption[] = [];
+  @Input() packages: PackageOption[] = [];
   @Output() closeModal = new EventEmitter<void>();
   @Output() create = new EventEmitter<NewBookingData>();
 
@@ -60,30 +62,6 @@ export class BookingModal {
     'Photo Only',
     'Video Only',
     'Other',
-  ];
-
-  // TODO: real API theke fetch hobe — filhal screenshot-er data diye mock kori
-  clients: ClientOption[] = [
-    { id: '1', label: 'Sample Customer - 9876543210' },
-    { id: '2', label: 'Soumik & Shrya - +91 7439452394' },
-    { id: '3', label: 'Swagatam & Swagata - 9876543210' },
-    { id: '4', label: 'Arnab - +91 9330550475' },
-    { id: '5', label: 'Subha - +918296100911' },
-    { id: '6', label: 'xyz - 1234567890' },
-    { id: '7', label: 'Aniket - 822310098' },
-  ];
-
-  packages: PackageOption[] = [
-    { id: 'p1', label: 'ROYAL WEDDING PACKAGE - Rs. 2,20,000' },
-    { id: 'p2', label: 'EXCLUSIVE WEDDING PACKAGE - Rs. 15,00,000' },
-    { id: 'p3', label: 'STANDARD WEDDING PACKAGE - Rs. 1,00,000' },
-    { id: 'p4', label: 'BASIC PRE-WEDDING PACKAGE - Rs. 20,000' },
-    { id: 'p5', label: 'PREMIUM PRE-WEDDING PACKAGE - Rs. 35,000' },
-    { id: 'p6', label: 'ABC Package - Rs. 50,000' },
-    { id: 'p7', label: 'Royal Wedding Package - Rs. 3,50,000' },
-    { id: 'p8', label: 'Ultimate Wedding Package - Rs. 3,50,000' },
-    { id: 'p9', label: 'Om Photography Premium Package - Rs. 76,000' },
-    { id: 'p10', label: 'Demo Testing - Rs. 1,50,000' },
   ];
 
   booking: NewBookingData = this.emptyBooking();

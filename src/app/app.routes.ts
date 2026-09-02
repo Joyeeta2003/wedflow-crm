@@ -12,6 +12,7 @@ import { Clients } from './pages/clients/clients';
 import { UserManagement } from './pages/user-management/user-management';
 import { Auth } from './services/auth';
 import { Bookings } from './pages/bookings/bookings';
+import { BookingDetail } from './pages/bookings/booking-detail/booking-detail';
 
 const authGuard: CanActivateFn = () => {
   const auth = inject(Auth);
@@ -56,6 +57,7 @@ export const routes: Routes = [
       { path: 'clients', component: Clients },
       { path: 'users', component: UserManagement },
       { path: 'bookings', component: Bookings },
+      { path: 'bookings/:id', component: BookingDetail },
     ],
   },
 ];

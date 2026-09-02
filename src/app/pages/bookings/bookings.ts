@@ -1,8 +1,11 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BookingModal , NewBookingData } from './booking-modal/booking-modal';
+import { BookingService, Booking as ApiBooking } from '../../services/booking.service';
+import { ClientService } from '../../services/client.service';
+import { PackageService } from '../../services/package.service';
 
 type WorkflowStage = 'Booking Confirmed' | 'Advance Received' | 'Full Payment Received';
 
@@ -25,20 +28,85 @@ interface Booking {
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
 })
-export class Bookings {
+export class Bookings implements OnInit {
   showNewBookingModal = false;
-  // TODO: real API theke fetch hobe
-  bookings: Booking[] = [
-    { id: '1', bookingId: 'DRVSTU-BKG-000009', clientName: 'Arnab', eventDate: '2026-06-13', venue: 'ITC', packageName: 'Royal Wedding Package', workflowStage: 'Full Payment Received', amount: 350000, amountPaid: 665000 },
-    { id: '2', bookingId: 'DRVSTU-BKG-000010', clientName: 'Swagatam & Swagata', eventDate: '2026-06-30', venue: 'Kolkata', packageName: 'ROYAL WEDDING', workflowStage: 'Full Payment Received', amount: 220000, amountPaid: 220000 },
-    { id: '3', bookingId: 'DRVSTU-BKG-000012', clientName: 'Subha', eventDate: '2026-07-08', venue: 'ITC', packageName: 'ROYAL WEDDING', workflowStage: 'Booking Confirmed', amount: 220000 },
-    { id: '4', bookingId: 'DRVSTU-BKG-000018', clientName: 'Swagatam & Swagata', eventDate: '2026-07-21', venue: 'kolkata', packageName: 'STANDARD WEDDING', workflowStage: 'Booking Confirmed', amount: 100000 },
-    { id: '5', bookingId: 'DRVSTU-BKG-000017', clientName: 'Soham Biswas', eventDate: '2026-07-24', venue: 'ITC', packageName: 'Demo Testing', workflowStage: 'Booking Confirmed', amount: 150000 },
-    { id: '6', bookingId: 'DRVSTU-BKG-000019', clientName: 'Jason', eventDate: '2026-07-31', venue: 'Kolkata', packageName: 'Om Photography', workflowStage: 'Booking Confirmed', amount: 76000 },
-    { id: '7', bookingId: 'DRVSTU-BKG-000013', clientName: 'Aniket', eventDate: '2026-08-01', venue: 'kolkata', packageName: 'Om Photography', workflowStage: 'Booking Confirmed', amount: 76000 },
-    { id: '8', bookingId: 'DRVSTU-BKG-000014', clientName: 'Soumik & Shrya', eventDate: '2026-11-24', venue: 'PC Chandra Garden', packageName: 'Ultimate Wedding', workflowStage: 'Booking Confirmed', amount: 350000 },
-    { id: '9', bookingId: 'DRVSTU-BKG-000015', clientName: 'Subha', eventDate: '2027-12-12', venue: 'Venue', packageName: 'ROYAL WEDDING', workflowStage: 'Advance Received', amount: 220000, amountPaid: 88000 },
-  ];
+  bookings: Booking[] = [];
+  isLoading = false;
+
+  clientOptions: { id: string; label: string }[] = [];
+  packageOptions: { id: string; label: string }[] = [];
+
+  constructor(
+    private bookingService: BookingService,
+    private clientService: ClientService,
+    private packageService: PackageService,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  ngOnInit(): void {
+    this.loadBookings();
+    this.loadOptions();
+  }
+
+  private loadBookings(): void {
+    this.isLoading = true;
+    this.cdr.detectChanges();
+
+    this.bookingService.getBookings().subscribe({
+      next: (response) => {
+        this.bookings = (response?.bookings ?? []).map((booking) => this.mapBooking(booking));
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading bookings:', error);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private loadOptions(): void {
+    this.clientService.getClients().subscribe({
+      next: (response) => {
+        this.clientOptions = response.clients.map((client) => ({
+          id: client.id,
+          label: `${client.name}${client.phone ? ` - ${client.phone}` : ''}`,
+        }));
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Error loading booking clients:', error),
+    });
+
+    this.packageService.getPackages().subscribe({
+      next: (response) => {
+        this.packageOptions = response.packages.map((pkg) => ({
+          id: pkg.id,
+          label: `${pkg.name} - Rs. ${Number(pkg.price).toLocaleString('en-IN')}`,
+        }));
+        this.cdr.detectChanges();
+      },
+      error: (error) => console.error('Error loading booking packages:', error),
+    });
+  }
+
+  private mapBooking(booking: ApiBooking): Booking {
+    const stageMap: Record<string, WorkflowStage> = {
+      booking: 'Booking Confirmed',
+      completed: 'Full Payment Received',
+    };
+
+    return {
+      id: booking.id,
+      bookingId: booking.booking_number,
+      clientName: booking.client_name,
+      eventDate: booking.event_date || booking.booking_date,
+      venue: booking.venue || '',
+      packageName: booking.package_name,
+      workflowStage: stageMap[booking.current_workflow_stage] || 'Advance Received',
+      amount: Number(booking.total_amount),
+    };
+  }
 
   searchTerm = '';
   dateFrom = ''; // DD-MM-YYYY
@@ -119,8 +187,36 @@ export class Bookings {
   }
 
   onBookingCreate(data: NewBookingData): void {
-    // TODO: real create logic — client/package lookup kore Booking object banate hobe
-    console.log('New booking:', data);
-    this.showNewBookingModal = false;
+    if (data.clientMode !== 'existing' || data.packageMode !== 'existing') {
+      alert('Please select an existing client and package to create a database booking.');
+      return;
+    }
+
+    this.bookingService.createBooking({
+      clientId: data.clientId,
+      packageId: data.packageId,
+      bookingDate: this.toIsoDate(data.bookingDate),
+      eventDate: this.toIsoDate(data.mainEventDate),
+      totalAmount: Number(data.totalAmount),
+      venue: data.venue.trim(),
+      eventType: data.eventType || 'Other',
+      notes: [data.notes, data.remarks].filter(Boolean).join('\n'),
+    }).subscribe({
+      next: () => {
+        this.showNewBookingModal = false;
+        this.loadBookings();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error creating booking:', error);
+        const message = error?.error?.error || error?.message || 'Failed to create booking';
+        alert(message);
+      },
+    });
+  }
+
+  private toIsoDate(value: string): string {
+    const [day, month, year] = value.split('-');
+    return year && month && day ? `${year}-${month}-${day}` : value;
   }
 }

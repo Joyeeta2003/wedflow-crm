@@ -835,6 +835,196 @@ app.delete('/api/clients/:id', async (req, res) => {
   }
 });
 
+// GET /api/packages - List packages in the authenticated user's workspace
+app.get('/api/packages', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, duration_days, status, price, description,
+              reminder_day, reminder_email_days, created_at, updated_at
+       FROM packages
+       WHERE workspace_id = $1
+       ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+    return res.json({ success: true, packages: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching packages:', error);
+    return res.status(500).json({ error: 'Failed to fetch packages' });
+  }
+});
+
+// POST /api/packages - Create a package for the authenticated user's workspace
+app.post('/api/packages', requireAdmin, async (req, res) => {
+  const { name, durationDays, price, description, status, reminderDay, reminderEmailDays } = req.body;
+
+  if (!name || !durationDays || price === undefined) {
+    return res.status(400).json({ error: 'Name, duration days, and price are required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO packages (workspace_id, name, duration_days, status, price, description, reminder_day, reminder_email_days)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, name, duration_days, status, price, description, reminder_day, reminder_email_days, created_at, updated_at`,
+      [req.user.workspace_id, name.trim(), Number(durationDays), status || 'active', Number(price),
+        description?.trim() || null, reminderDay || null, reminderEmailDays || 7]
+    );
+    return res.status(201).json({ success: true, package: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating package:', error);
+    if (error.code === '23505') return res.status(409).json({ error: 'A package with this name already exists' });
+    return res.status(500).json({ error: 'Failed to create package' });
+  }
+});
+
+// GET /api/bookings - List bookings with workspace-scoped client and package names
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT b.id, b.booking_number, b.booking_date, b.total_amount, b.status,
+              b.current_workflow_stage, b.notes, b.created_at, b.updated_at,
+              c.id AS client_id, c.name AS client_name,
+              p.id AS package_id, p.name AS package_name,
+              be.event_date, be.venue
+       FROM bookings b
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       JOIN packages p ON p.id = b.package_id AND p.workspace_id = b.workspace_id
+       LEFT JOIN LATERAL (
+         SELECT event_date, venue FROM booking_events
+         WHERE booking_id = b.id ORDER BY event_date ASC LIMIT 1
+       ) be ON true
+       WHERE b.workspace_id = $1
+       ORDER BY b.booking_date DESC, b.created_at DESC`,
+      [req.user.workspace_id]
+    );
+    return res.json({ success: true, bookings: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    return res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+// POST /api/bookings - Create a booking linked to an existing client and package
+app.post('/api/bookings', requireAdmin, async (req, res) => {
+  const { clientId, packageId, bookingDate, eventDate, totalAmount, venue, eventType, status, currentWorkflowStage, notes } = req.body;
+
+  if (!clientId || !packageId || !bookingDate || !eventDate || !venue || totalAmount === undefined) {
+    return res.status(400).json({ error: 'Client, package, booking date, event date, venue, and amount are required' });
+  }
+
+  try {
+    const ownership = await pool.query(
+      `SELECT c.id AS client_id, p.id AS package_id
+       FROM client c CROSS JOIN packages p
+       WHERE c.id = $1 AND p.id = $2 AND c.workspace_id = $3 AND p.workspace_id = $3`,
+      [clientId, packageId, req.user.workspace_id]
+    );
+    if (ownership.rows.length === 0) {
+      return res.status(400).json({ error: 'Client or package is not available in this workspace' });
+    }
+
+    const numberResult = await pool.query(
+      `SELECT 'DRVSTU-BKG-' || LPAD((COUNT(*) + 1)::text, 6, '0') AS booking_number
+       FROM bookings WHERE workspace_id = $1`,
+      [req.user.workspace_id]
+    );
+    const result = await pool.query(
+      `INSERT INTO bookings (workspace_id, client_id, package_id, booking_number, booking_date,
+                             total_amount, status, current_workflow_stage, notes)
+       VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8, $9)
+       RETURNING id`,
+      [req.user.workspace_id, clientId, packageId, numberResult.rows[0].booking_number, bookingDate,
+        Number(totalAmount), status || 'draft', currentWorkflowStage || 'booking', notes || null]
+    );
+
+    let eventTypeId = (await pool.query(
+      `SELECT id FROM event_type WHERE workspace_id = $1 AND is_active = true
+       AND LOWER(name) = LOWER($2) LIMIT 1`,
+      [req.user.workspace_id, eventType || 'Other']
+    )).rows[0]?.id;
+    if (!eventTypeId) {
+      eventTypeId = (await pool.query(
+        `INSERT INTO event_type (workspace_id, name) VALUES ($1, $2)
+         ON CONFLICT (workspace_id, name) DO UPDATE SET is_active = true RETURNING id`,
+        [req.user.workspace_id, eventType || 'Other']
+      )).rows[0]?.id;
+    }
+
+    await pool.query(
+      `INSERT INTO booking_events (workspace_id, booking_id, event_type_id, event_name, event_date, venue, notes)
+       VALUES ($1, $2, $3, $4, $5::date, $6, $7)`,
+      [req.user.workspace_id, result.rows[0].id, eventTypeId, eventType || 'Other', eventDate, venue.trim(), notes || null]
+    );
+
+    const booking = await pool.query(
+      `SELECT b.*, c.name AS client_name, p.name AS package_name, be.event_date, be.venue
+       FROM bookings b JOIN client c ON c.id = b.client_id JOIN packages p ON p.id = b.package_id
+       LEFT JOIN LATERAL (SELECT event_date, venue FROM booking_events WHERE booking_id = b.id LIMIT 1) be ON true
+       WHERE b.id = $1`,
+      [result.rows[0].id]
+    );
+    return res.status(201).json({ success: true, booking: booking.rows[0] });
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    if (error.code === '23505') return res.status(409).json({ error: 'Booking number already exists' });
+    return res.status(500).json({ error: 'Failed to create booking' });
+  }
+});
+
+// GET /api/bookings/:id - Get one workspace-scoped booking
+app.get('/api/bookings/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+            `SELECT b.*, c.name AS client_name, p.name AS package_name,
+              be.event_date, be.venue,
+              COALESCE((SELECT SUM(amount) FROM payments
+            WHERE booking_id = b.id AND workspace_id = b.workspace_id AND status = 'completed'), 0) AS amount_paid,
+              COALESCE((SELECT json_agg(json_build_object(
+            'event_name', e.event_name, 'event_date', e.event_date, 'venue', e.venue)
+            ORDER BY e.event_date)
+            FROM booking_events e WHERE e.booking_id = b.id AND e.workspace_id = b.workspace_id), '[]') AS event_days,
+              COALESCE((SELECT json_agg(json_build_object(
+            'installment_name', ps.installment_name, 'percentage', ps.percentage, 'timing', ps.timing)
+            ORDER BY ps.payment_order)
+            FROM payment_schedules ps WHERE ps.package_id = p.id AND ps.workspace_id = p.workspace_id), '[]') AS payment_schedule,
+              COALESCE((SELECT json_agg(json_build_object(
+            'day_number', pd.day_number, 'event_type', pd.event_type,
+            'roles', COALESCE((SELECT json_agg(json_build_object('role', ct.name, 'quantity', pdc.quantity))
+                  FROM package_day_crew pdc JOIN crew_types ct ON ct.id = pdc.crew_type_id
+                  WHERE pdc.package_day_id = pd.id), '[]'))
+            ORDER BY pd.day_number)
+            FROM package_days pd WHERE pd.package_id = p.id AND pd.workspace_id = p.workspace_id), '[]') AS package_crew_plan,
+              COALESCE((SELECT json_agg(json_build_object(
+            'staff_name', s.name, 'assigned_role', ca.assigned_role,
+            'event_name', ev.event_name, 'event_date', ev.event_date,
+            'venue', ev.venue, 'status', ca.status)
+            ORDER BY ev.event_date, s.name)
+            FROM crew_assignments ca
+            JOIN staff s ON s.id = ca.staff_id
+            JOIN booking_events ev ON ev.id = ca.booking_event_id
+            WHERE ev.booking_id = b.id AND ev.workspace_id = b.workspace_id), '[]') AS crew_assignments
+       FROM bookings b
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       JOIN packages p ON p.id = b.package_id AND p.workspace_id = b.workspace_id
+       LEFT JOIN LATERAL (
+         SELECT event_date, venue FROM booking_events
+         WHERE booking_id = b.id ORDER BY event_date ASC LIMIT 1
+       ) be ON true
+       WHERE b.id = $1 AND b.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    return res.json({ success: true, booking: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    return res.status(500).json({ error: 'Failed to fetch booking' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`WedFlow CRM Backend running on port ${port}`);
   console.log(`Health check: http://localhost:${port}/api/health`);

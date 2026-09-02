@@ -106,6 +106,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <tr *ngIf="isLoading">
+                        <td colspan="7" class="empty-state">Loading bookings...</td>
+                    </tr>
                     <tr *ngFor="let b of filteredBookings">
                         <td>
                             <div class="booking-name">{{ b.clientName }}</div>
@@ -136,7 +139,7 @@
                         </td>
                     </tr>
 
-                    <tr *ngIf="filteredBookings.length === 0">
+                    <tr *ngIf="!isLoading && filteredBookings.length === 0">
                         <td colspan="7" class="empty-state">No bookings found.</td>
                     </tr>
                 </tbody>
@@ -146,6 +149,8 @@
 </div>
 <app-booking-modal
   [isOpen]="showNewBookingModal"
+    [clients]="clientOptions"
+    [packages]="packageOptions"
   (closeModal)="onModalClose()"
   (create)="onBookingCreate($event)"
 ></app-booking-modal>

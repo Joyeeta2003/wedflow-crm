@@ -1,0 +1,75 @@
+<div class="booking-detail-page">
+  <a routerLink="/bookings" class="back-link">Back to Bookings</a>
+
+  <div *ngIf="loading" class="state-message">Loading booking...</div>
+  <div *ngIf="!loading && error" class="state-message error-message">{{ error }}</div>
+
+  <section *ngIf="!loading && booking" class="booking-detail-card">
+    <div class="detail-header">
+      <div>
+        <p class="eyebrow">{{ booking.booking_number }}</p>
+        <h1>{{ booking.client_name }}</h1>
+      </div>
+      <span class="status-badge">{{ booking.status }}</span>
+    </div>
+
+    <div class="detail-grid">
+      <div><span>Booking</span><strong>{{ booking.booking_number }}</strong></div>
+      <div><span>Event Date</span><strong>{{ booking.event_date ? formatDate(booking.event_date) : 'Not set' }}</strong></div>
+      <div><span>Venue</span><strong>{{ booking.venue || 'Not set' }}</strong></div>
+      <div><span>Package</span><strong>{{ booking.package_name }}</strong></div>
+      <div><span>Booking Date</span><strong>{{ formatDate(booking.booking_date) }}</strong></div>
+      <div><span>Workflow Stage</span><strong>{{ booking.current_workflow_stage }}</strong></div>
+    </div>
+
+    <div class="summary-grid">
+      <div><span>Total Amount</span><strong>{{ formatAmount(booking.total_amount) }}</strong></div>
+      <div><span>Amount Paid</span><strong>{{ formatAmount(amountPaid) }}</strong></div>
+      <div><span>Balance Due</span><strong>{{ formatAmount(balanceDue) }}</strong></div>
+      <div><span>Payment Progress</span><strong>{{ paymentProgress }}% collected</strong></div>
+    </div>
+
+    <section class="detail-section" *ngIf="booking.event_days?.length">
+      <h2>Event Days</h2>
+      <div class="event-list">
+        <div class="event-row" *ngFor="let event of booking.event_days">
+          <strong>{{ event.event_name }}</strong>
+          <span>{{ formatDate(event.event_date) }}</span>
+          <span>{{ event.venue || 'Venue not set' }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-section" *ngIf="booking.payment_schedule?.length">
+      <h2>Payment Schedule</h2>
+      <div class="payment-row" *ngFor="let payment of booking.payment_schedule">
+        <span>{{ payment.installment_name }}</span>
+        <strong>{{ payment.percentage }}% <small>({{ payment.timing || 'Not set' }})</small></strong>
+      </div>
+    </section>
+
+    <section class="detail-section" *ngIf="booking.package_crew_plan?.length">
+      <h2>Package Crew Plan</h2>
+      <div class="crew-day" *ngFor="let day of booking.package_crew_plan">
+        <h3>Day {{ day.day_number }} - {{ day.event_type }}</h3>
+        <div class="role-row" *ngFor="let role of day.roles">
+          <span>{{ role.role }}</span><strong>{{ role.quantity }} required</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-section" *ngIf="booking.crew_assignments?.length">
+      <h2>Crew Assignments</h2>
+      <div class="assignment-row" *ngFor="let assignment of booking.crew_assignments">
+        <strong>{{ assignment.staff_name }}</strong>
+        <span>{{ assignment.assigned_role }} · {{ assignment.event_name }}</span>
+        <span>{{ assignment.status }}</span>
+      </div>
+    </section>
+
+    <div *ngIf="booking.notes" class="notes-block">
+      <span>Notes</span>
+      <p>{{ booking.notes }}</p>
+    </div>
+  </section>
+</div>
