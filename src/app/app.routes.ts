@@ -8,6 +8,7 @@ import { DashboardShell } from './pages/dashboard-shell/dashboard-shell';
 import { Packages } from './pages/packages/packages';
 import { Clients } from './pages/clients/clients';
 import {UserManagement} from './pages/user-management/user-management'
+import { Bookings } from './pages/bookings/bookings';
 
 export const routes: Routes = [
   {
@@ -35,6 +36,7 @@ export const routes: Routes = [
       { path: 'packages', component: Packages }, // <-- EKHANE niye asha holo
       { path: 'clients', component: Clients }, // <-- EKHANE niye asha holo
       { path: 'users', component: UserManagement },
+      { path: 'bookings', component: Bookings },
     ],
   },
 ];

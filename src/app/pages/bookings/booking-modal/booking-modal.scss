@@ -1,0 +1,245 @@
+:host {
+  --bg: hsl(var(--background));
+  --card-bg: hsl(var(--card));
+  --dialog-border: hsl(var(--card-border));
+  --input-bg: hsl(var(--popover));
+  --input-border: hsl(var(--secondary-border));
+  --text-main: hsl(var(--foreground));
+  --text-muted: hsl(var(--muted-foreground));
+  --brand: hsl(var(--primary));
+  --brand-foreground: hsl(var(--primary-foreground));
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.dialog-content {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+
+  width: 100%;
+  max-width: 48rem;      // 👈 sm:max-w-3xl er approximate
+  max-height: 92vh;
+  overflow-y: auto;
+
+  @media (max-width: 640px) {
+    max-width: 92vw;
+  }
+
+  border: 1px solid var(--dialog-border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-main);
+
+  padding: 1.5rem;
+  box-shadow: 0 10px 38px rgba(0, 0, 0, 0.6);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.dialog-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover { color: var(--text-main); }
+}
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// ---------- Sections (Client / Package / Payment & Operations) ----------
+.modal-section {
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.section-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.125rem 0 0;
+}
+
+.section-toggle {
+  width: 100%;
+
+
+  @media (min-width: 640px) {
+    width: 12rem;
+  }
+}
+
+// ---------- Coverage side box ----------
+.coverage-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.coverage-select {
+  width: 100%;
+
+  @media (min-width: 640px) {
+    width: 9rem;
+  }
+}
+
+// ---------- Generic field styles ----------
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &--full {
+    @media (min-width: 640px) {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+
+  &::placeholder { color: var(--text-muted); }
+  &:focus { border-color: var(--brand); }
+}
+
+.form-input,
+.form-select { height: 2.25rem; }
+
+.form-textarea {
+  min-height: 3.75rem;
+  resize: vertical;
+}
+
+.form-select { 
+  cursor: pointer;
+  width: 100%;
+  @media (min-width: 640px) {
+  width: fit-content;
+  }
+ }
+
+// ---------- Actions ----------
+.dialog-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.75rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+.btn-outline,
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 2.25rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-outline {
+  border: 1px solid var(--button-outline, #2e2e2e);
+  background: transparent;
+  color: var(--text-main);
+}
+
+.btn-primary {
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: var(--brand-foreground);
+}
