@@ -9,6 +9,7 @@ import { Packages } from './pages/packages/packages';
 import { Clients } from './pages/clients/clients';
 import {UserManagement} from './pages/user-management/user-management'
 import { Bookings } from './pages/bookings/bookings';
+import { CrewAssign } from './pages/crew-assign/crew-assign';
 
 export const routes: Routes = [
   {
@@ -37,6 +38,7 @@ export const routes: Routes = [
       { path: 'clients', component: Clients }, // <-- EKHANE niye asha holo
       { path: 'users', component: UserManagement },
       { path: 'bookings', component: Bookings },
+      { path: 'crew-assignments', component: CrewAssign },
     ],
   },
 ];
