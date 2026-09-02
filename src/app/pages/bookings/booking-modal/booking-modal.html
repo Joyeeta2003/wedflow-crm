@@ -1,0 +1,200 @@
+<div class="dialog-overlay" *ngIf="isOpen" (click)="onCancel()"></div>
+
+<div class="dialog-content" role="dialog" *ngIf="isOpen" tabindex="-1">
+  <div class="dialog-header">
+    <h2 class="dialog-title">New Booking</h2>
+    <button type="button" class="dialog-close" (click)="onCancel()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18" />
+        <path d="M6 6l12 12" />
+      </svg>
+    </button>
+
+  </div>
+
+  <form class="dialog-form" (ngSubmit)="onSubmit(bookingForm)" #bookingForm="ngForm">
+
+    <!-- Client section -->
+    <div class="modal-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Client</div>
+          <p class="section-hint">Select an existing client or create one while booking.</p>
+        </div>
+        <select class="form-select section-toggle" name="clientMode" [(ngModel)]="booking.clientMode">
+          <option value="existing">Existing Client</option>
+          <option value="new">Add New Client</option>
+        </select>
+      </div>
+
+      <div class="form-group" *ngIf="booking.clientMode === 'existing'">
+        <label class="form-label">Client *</label>
+        <select class="form-select" name="clientId" [(ngModel)]="booking.clientId" required>
+          <option value="" disabled>Select a client</option>
+          <option *ngFor="let c of clients" [value]="c.id">{{ c.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 4-field grid -->
+    <div class="form-grid" *ngIf="booking.clientMode === 'new'">
+      <div class="form-group">
+        <label class="form-label">Client name *</label>
+        <input class="form-input" type="text" name="newClientName" [(ngModel)]="booking.newClientName" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone number *</label>
+        <input class="form-input" type="text" name="newClientPhone" [(ngModel)]="booking.newClientPhone" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" name="newClientEmail" [(ngModel)]="booking.newClientEmail" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input class="form-input" type="text" name="newClientAddress" [(ngModel)]="booking.newClientAddress" />
+      </div>
+    </div>
+
+
+    <!-- Package section -->
+    <div class="modal-section">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Package</div>
+          <p class="section-hint">Use saved packages, add a reusable package, or make a one-booking custom package.</p>
+        </div>
+        <select class="form-select section-toggle" name="packageMode" [(ngModel)]="booking.packageMode">
+          <option value="existing">Existing Package</option>
+          <option value="new">Add New Package</option>
+          <option value="custom">Custom For Booking</option>
+        </select>
+      </div>
+
+      <div class="form-group" *ngIf="booking.packageMode === 'existing'">
+        <label class="form-label">Package *</label>
+        <select class="form-select" name="packageId" [(ngModel)]="booking.packageId" required>
+          <option value="" disabled>Select a package</option>
+          <option *ngFor="let p of packages" [value]="p.id">{{ p.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Grid fields -->
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Booking Date</label>
+        <input class="form-input" type="text" name="bookingDate" [(ngModel)]="booking.bookingDate"
+          placeholder="DD-MM-YYYY" maxlength="10" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project / Division</label>
+        <input class="form-input" type="text" name="projectDivision" [(ngModel)]="booking.projectDivision"
+          placeholder="Studio division / brand" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Event Type</label>
+        <select class="form-select" name="eventType" [(ngModel)]="booking.eventType">
+          <option value="" disabled selected>Select event type</option>
+          <option *ngFor="let t of eventTypes" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client Manager</label>
+        <input class="form-input" type="text" name="clientManager" [(ngModel)]="booking.clientManager"
+          placeholder="Manager name" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Main Event Date *</label>
+        <input class="form-input" type="text" name="mainEventDate" [(ngModel)]="booking.mainEventDate"
+          placeholder="DD-MM-YYYY" maxlength="10" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Total Amount (Rs.) *</label>
+        <input class="form-input" type="number" name="totalAmount" [(ngModel)]="booking.totalAmount" required />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Venue *</label>
+      <input class="form-input" type="text" name="venue" [(ngModel)]="booking.venue"
+        placeholder="Grand Ballroom, Kolkata" required />
+    </div>
+
+    <!-- Coverage side -->
+    <div class="coverage-box">
+      <div>
+        <div class="section-title">Coverage side</div>
+        <p class="section-hint">Use both sides when bride and groom locations or crews are separate.</p>
+      </div>
+      <select class="form-select coverage-select" name="coverageSide" [(ngModel)]="booking.coverageSide">
+        <option value="single">Single side</option>
+        <option value="both">Both sides</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Google Maps Link</label>
+      <input class="form-input" type="url" name="googleMapsLink" [(ngModel)]="booking.googleMapsLink"
+        placeholder="https://maps.app.goo.gl/..." />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" name="notes" [(ngModel)]="booking.notes" rows="2"
+        placeholder="Any special requirements..."></textarea>
+    </div>
+
+    <!-- Payment & Operations -->
+    <div class="modal-section">
+      <div>
+        <div class="section-title">Payment &amp; Operations</div>
+        <p class="section-hint">Extra tracking fields used by studios for real production work.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <input class="form-input" type="text" name="paymentMethod" [(ngModel)]="booking.paymentMethod"
+            placeholder="UPI / Bank / Cash" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Final Payment Status</label>
+          <input class="form-input" type="text" name="finalPaymentStatus" [(ngModel)]="booking.finalPaymentStatus"
+            placeholder="Advance pending / Full paid" />
+        </div>
+
+        <div class="form-group form-group--full">
+          <label class="form-label">Payment Collection Notes</label>
+          <textarea class="form-textarea" name="paymentCollectionNotes" [(ngModel)]="booking.paymentCollectionNotes"
+            rows="2" placeholder="Advance, 2nd payment, due notes..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Selection Upload Process</label>
+          <input class="form-input" type="text" name="selectionUploadProcess"
+            [(ngModel)]="booking.selectionUploadProcess" placeholder="Selection pending / uploaded / link sent" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Review</label>
+          <input class="form-input" type="text" name="review" [(ngModel)]="booking.review"
+            placeholder="Review status or date" />
+        </div>
+
+        <div class="form-group form-group--full">
+          <label class="form-label">Remarks</label>
+          <textarea class="form-textarea" name="remarks" [(ngModel)]="booking.remarks" rows="2"
+            placeholder="Internal operation remarks..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn-outline" (click)="onCancel()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="bookingForm.invalid">Create Booking</button>
+    </div>
+  </form>
+</div>

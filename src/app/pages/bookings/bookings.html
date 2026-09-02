@@ -144,3 +144,8 @@
         </div>
     </div>
 </div>
+<app-booking-modal
+  [isOpen]="showNewBookingModal"
+  (closeModal)="onModalClose()"
+  (create)="onBookingCreate($event)"
+></app-booking-modal>

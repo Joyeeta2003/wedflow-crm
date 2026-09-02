@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { BookingModal , NewBookingData } from './booking-modal/booking-modal';
 
 type WorkflowStage = 'Booking Confirmed' | 'Advance Received' | 'Full Payment Received';
 
@@ -20,11 +21,12 @@ interface Booking {
 @Component({
   selector: 'app-bookings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink,BookingModal],
   templateUrl: './bookings.html',
   styleUrl: './bookings.scss',
 })
 export class Bookings {
+  showNewBookingModal = false;
   // TODO: real API theke fetch hobe
   bookings: Booking[] = [
     { id: '1', bookingId: 'DRVSTU-BKG-000009', clientName: 'Arnab', eventDate: '2026-06-13', venue: 'ITC', packageName: 'Royal Wedding Package', workflowStage: 'Full Payment Received', amount: 350000, amountPaid: 665000 },
@@ -110,6 +112,15 @@ export class Bookings {
   }
 
   onNewBooking(): void {
-    // TODO: New Booking modal (screenshot lagবে form fields dekhার jonno)
+    this.showNewBookingModal = true;
+  }
+    onModalClose(): void {
+    this.showNewBookingModal = false;
+  }
+
+  onBookingCreate(data: NewBookingData): void {
+    // TODO: real create logic — client/package lookup kore Booking object banate hobe
+    console.log('New booking:', data);
+    this.showNewBookingModal = false;
   }
 }
