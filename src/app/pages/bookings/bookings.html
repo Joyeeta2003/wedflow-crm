@@ -1,0 +1,151 @@
+<div class="bookings-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Bookings</h1>
+            <p class="page-subtitle">Track every booking like an order pipeline, from lead to final delivery.</p>
+        </div>
+
+
+        <div class="header-actions">
+            <input type="file" accept=".xlsx,.xls,.csv" class="hidden-input" #fileInput
+                (change)="onImportExcel($event)" />
+            <button class="btn-outline" (click)="onTemplate()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                </svg>
+                Template
+            </button>
+            <button class="btn-outline" (click)="fileInput.click()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Import Excel
+            </button>
+            <button class="btn-outline" (click)="onExportExcel()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export Excel
+            </button>
+            <button class="btn-primary" (click)="onNewBooking()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14" />
+                    <path d="M12 5v14" />
+                </svg>
+                New Booking
+            </button>
+        </div>
+    </div>
+
+    <div class="bookings-card">
+        <div class="filter-row">
+            <div class="search-field">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input class="search-input" type="text" placeholder="Booking ID, name, phone or venue"
+                    [(ngModel)]="searchTerm" />
+            </div>
+
+            <div class="date-field">
+                <input class="date-input" type="text" placeholder="DD-MM-YYYY" [(ngModel)]="dateFrom" maxlength="10" />
+                <button class="calendar-btn" type="button" aria-label="Open calendar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="4" rx="2" />
+                        <path d="M3 10h18" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="date-field">
+                <input class="date-input" type="text" placeholder="DD-MM-YYYY" [(ngModel)]="dateTo" maxlength="10" />
+                <button class="calendar-btn" type="button" aria-label="Open calendar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="4" rx="2" />
+                        <path d="M3 10h18" />
+                    </svg>
+                </button>
+            </div>
+
+            <select class="select-field" [(ngModel)]="selectedEvent">
+                <option value="all">All Events</option>
+                <!-- TODO: real event-type options -->
+            </select>
+
+            <select class="select-field" [(ngModel)]="selectedStage">
+                <option value="all">All Workflow Stages</option>
+                <option value="Booking Confirmed">Booking Confirmed</option>
+                <option value="Advance Received">Advance Received</option>
+                <option value="Full Payment Received">Full Payment Received</option>
+            </select>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="bookings-table">
+                <thead>
+                    <tr>
+                        <th>Booking</th>
+                        <th>Event Date</th>
+                        <th>Venue</th>
+                        <th>Package</th>
+                        <th>Workflow Stage</th>
+                        <th>Amount</th>
+                        <th class="col-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let b of filteredBookings">
+                        <td>
+                            <div class="booking-name">{{ b.clientName }}</div>
+                            <div class="booking-id">{{ b.bookingId }}</div>
+                        </td>
+                        <td>
+                            <div class="event-date-cell">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <rect width="18" height="18" x="3" y="4" rx="2" />
+                                    <path d="M3 10h18" />
+                                </svg>
+                                {{ formatDate(b.eventDate) }}
+                            </div>
+                        </td>
+                        <td class="venue-cell">{{ b.venue }}</td>
+                        <td class="package-cell">{{ b.packageName }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="badgeClass(b.workflowStage)">{{ b.workflowStage }}</span>
+                        </td>
+                        <td>
+                            <div class="amount-main">{{ formatAmount(b.amount) }}</div>
+                            <div class="amount-paid" *ngIf="b.amountPaid">{{ formatAmount(b.amountPaid) }} paid</div>
+                        </td>
+                        <td class="col-actions">
+                            <a [routerLink]="['/bookings', b.id]" class="manage-btn">Manage</a>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="filteredBookings.length === 0">
+                        <td colspan="7" class="empty-state">No bookings found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<app-booking-modal
+  [isOpen]="showNewBookingModal"
+  (closeModal)="onModalClose()"
+  (create)="onBookingCreate($event)"
+></app-booking-modal>
