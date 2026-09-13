@@ -216,3 +216,13 @@ html {
     transform: translateY(0);
   }
 }
+
+// styles.scss-e add koro
+button:not([role="switch"]),
+[role="button"],
+a.inline-flex,
+[role="tab"],
+[role="option"],
+[role="menuitem"] {
+  min-height: 44px;
+}
