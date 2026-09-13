@@ -1,0 +1,93 @@
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+export type EquipmentType = 'camera' | 'drone' | 'tripod' | 'lighting' | 'audio' | 'other';
+
+export interface NewEquipmentPayload {
+  name: string;
+  type: EquipmentType;
+  typeLabel: string;
+  serialNumber?: string;
+  description?: string;
+}
+
+interface TypeOption {
+  value: EquipmentType;
+  label: string;
+}
+
+@Component({
+  selector: 'app-equipment-modal',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './equipment-modal.html',
+  styleUrl: './equipment-modal.scss'
+})
+export class EquipmentModal {
+  @Input() isOpen = false;
+  @Output() closed = new EventEmitter<void>();
+  @Output() submitted = new EventEmitter<NewEquipmentPayload>();
+
+  typeOptions: TypeOption[] = [
+    { value: 'camera', label: 'Camera' },
+    { value: 'drone', label: 'Drone' },
+    { value: 'tripod', label: 'Tripod' },
+    { value: 'lighting', label: 'Lighting' }, // UNCONFIRMED
+    { value: 'audio', label: 'Audio' }, // UNCONFIRMED
+    { value: 'other', label: 'Other' } // UNCONFIRMED
+  ];
+
+  name = signal('');
+  selectedType = signal<EquipmentType>('camera');
+  serialNumber = signal('');
+  description = signal('');
+  isTypeMenuOpen = signal(false);
+
+  toggleTypeMenu() {
+    this.isTypeMenuOpen.set(!this.isTypeMenuOpen());
+  }
+
+  selectType(value: EquipmentType) {
+    this.selectedType.set(value);
+    this.isTypeMenuOpen.set(false);
+  }
+
+  get typeLabel(): string {
+    return this.typeOptions.find(o => o.value === this.selectedType())?.label ?? 'Camera';
+  }
+
+  onOverlayClick() {
+    this.close();
+  }
+
+  close() {
+    this.resetForm();
+    this.closed.emit();
+  }
+
+  submit() {
+    const trimmedName = this.name().trim();
+    if (!trimmedName) return; // TODO: proper validation/error message once confirmed
+
+    const typeOpt = this.typeOptions.find(o => o.value === this.selectedType());
+
+    this.submitted.emit({
+      name: trimmedName,
+      type: this.selectedType(),
+      typeLabel: typeOpt?.label ?? 'Camera',
+      serialNumber: this.serialNumber().trim() || undefined,
+      description: this.description().trim() || undefined
+    });
+
+    this.resetForm();
+  }
+
+  private resetForm() {
+    this.name.set('');
+    this.selectedType.set('camera');
+    this.serialNumber.set('');
+    this.description.set('');
+    this.isTypeMenuOpen.set(false);
+  }
+}

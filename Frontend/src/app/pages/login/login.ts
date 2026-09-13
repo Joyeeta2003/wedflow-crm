@@ -132,6 +132,10 @@ export class Login implements AfterViewInit, OnDestroy {
         throw new Error(data.error || 'Failed to send OTP');
       }
 
+      if (data?.devOtp) {
+        alert(`Development mode: your OTP is ${data.devOtp}`);
+      }
+
       localStorage.setItem('otp_email', this.email());
       this.router.navigate(['/verify-otp']);
     } catch (error) {

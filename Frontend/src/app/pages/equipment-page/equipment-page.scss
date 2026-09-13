@@ -1,0 +1,376 @@
+:host {
+  display: block;
+
+  --bg: hsl(var(--background));
+  --card-bg: hsl(var(--card));
+  --border-color: hsl(var(--border));
+  --brand: hsl(var(--primary));
+  --brand-fg: hsl(var(--primary-foreground));
+  --muted-fg: hsl(var(--muted-foreground));
+  --fg: hsl(var(--foreground));
+}
+
+.equipment-page {
+  display: block;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.equipment-inner {
+  margin: 0 auto;
+  max-width: 1152px;
+  padding: 12px;
+  padding-bottom: 112px;
+
+  @media (min-width: 640px) {
+    padding: 16px;
+  }
+
+  @media (min-width: 768px) {
+    padding: 32px;
+    padding-bottom: 32px;
+  }
+
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+// flex items-start justify-between gap-4
+.equipment-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+}
+
+.header-subtitle {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--muted-fg);
+}
+
+// bg-primary text-primary-foreground min-h-9 px-4 py-2
+.add-equipment-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px; // global touch-target rule (see marketplace.scss discussion)
+  border-radius: 6px;
+  border: 1px solid hsl(var(--primary-border, transparent));
+  background: var(--brand);
+  color: var(--brand-fg);
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+
+  svg {
+    height: 16px;
+    width: 16px;
+  }
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+// flex gap-3 flex-wrap
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+// relative flex-1 min-w-[180px]
+.field-with-icon {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.field-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  width: 16px;
+  color: var(--muted-fg);
+  pointer-events: none;
+}
+
+.text-input {
+  display: flex;
+  height: 36px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 4px 12px;
+  font-size: 14px;
+  color: var(--fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  &::placeholder {
+    color: var(--muted-fg);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+  }
+
+  &--icon {
+    padding-left: 36px;
+  }
+}
+
+// ==== shared select/dropdown (same convention as marketplace/storage) ====
+.select-wrap {
+  position: relative;
+
+  &--fixed {
+    width: 160px;
+  }
+}
+
+.select-trigger {
+  display: flex;
+  height: 36px;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+  }
+
+  &--open {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3);
+  }
+}
+
+.select-chevron {
+  height: 16px;
+  width: 16px;
+  opacity: 0.5;
+}
+
+.select-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 100%;
+  width: max-content;
+  max-width: 240px;
+  margin: 0;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.select-panel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--fg);
+  cursor: pointer;
+  white-space: nowrap;
+  list-style: none;
+  transition: background 0.12s ease, color 0.12s ease;
+
+  &--selected {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  &:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+}
+
+.select-panel:hover .select-panel-item--selected:not(:hover) {
+  background: transparent;
+  color: var(--fg);
+}
+
+// ==== equipment sections ====
+.equipment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// text-sm font-semibold uppercase tracking-widest flex items-center gap-2
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  svg {
+    height: 16px;
+    width: 16px;
+  }
+
+  &--available {
+    color: #33cc6b; // matches DevTools rgb(51,204,107)
+  }
+
+  // UNCONFIRMED color — guessed muted/amber for checked-out state
+  &--checked-out {
+    color: var(--muted-fg);
+  }
+}
+
+// grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3
+.equipment-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+// rounded-xl bg-card border, p-4
+.equipment-card {
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  padding: 16px;
+}
+
+// flex items-start justify-between gap-2
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.item-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+// flex items-center gap-2
+.item-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-icon {
+  height: 16px;
+  width: 16px;
+  color: var(--muted-fg);
+  flex-shrink: 0;
+}
+
+.item-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.item-type {
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+
+// small pill badge, font-size 10px
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+
+  &--available {
+    background: rgba(41, 163, 86, 0.15);
+    color: #3cdd77; // matches DevTools rgb(60,221,119)
+    border: 1px solid rgba(41, 163, 86, 0.3);
+  }
+
+  // UNCONFIRMED exact color — no screenshot with a checked-out item
+  &--checked-out {
+    background: hsl(var(--muted) / 0.3);
+    color: var(--muted-fg);
+    border: 1px solid var(--border-color);
+  }
+}
+
+// outline amber button, min-h-8, mt-3, w-full
+.checkout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px; // global touch-target rule
+  margin-top: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(243, 180, 22, 0.3);
+  background: transparent;
+  color: hsl(var(--primary));
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background: hsl(var(--primary) / 0.08);
+  }
+}
+
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted-fg);
+}

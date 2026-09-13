@@ -66,13 +66,13 @@ async function resolveWorkspaceId() {
   return null;
 }
 
-async function logUserActivity({ userId, action, description, req }) {
+async function logUserActivity({ userId, action, description, req, workspaceId }) {
   if (!userId) return;
 
   try {
     await pool.query(
-      'INSERT INTO user_activity_log (user_id, action, description, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5)',
-      [userId, action, description, getClientIp(req), req.headers['user-agent'] || null]
+      'INSERT INTO user_activity_log (user_id, action, description, ip_address, user_agent, workspace_id) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, action, description, getClientIp(req), req.headers['user-agent'] || null, workspaceId || null]
     );
   } catch (error) {
     console.error('Error writing activity log:', error);
@@ -113,7 +113,17 @@ function getVerifyAttemptState(email, tracker) {
   };
 }
 
+function shouldBypassEmailDelivery(email) {
+  const normalizedEmail = normalizeEmail(email);
+  return process.env.NODE_ENV !== 'production' && /@example\.(com|net|org)$/i.test(normalizedEmail);
+}
+
 async function sendOTPEmail(email, otp) {
+  if (shouldBypassEmailDelivery(email)) {
+    console.warn(`Development mode: bypassing email delivery for ${email}. OTP: ${otp}`);
+    return { devMode: true, otp };
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from: 'WedFlow CRM <onboarding@resend.dev>',
@@ -335,12 +345,13 @@ app.post('/api/auth/send-otp', async (req, res) => {
       [normalizedEmail, otpHash, expiresAt]
     );
 
-    await sendOTPEmail(normalizedEmail, otp);
+    const emailResult = await sendOTPEmail(normalizedEmail, otp);
 
     return res.json({
       success: true,
       message: 'OTP sent successfully',
       expiresAt: expiresAt.toISOString(),
+      devOtp: emailResult?.devMode ? otp : undefined,
     });
   } catch (error) {
     console.error('Error sending OTP:', error);
@@ -388,6 +399,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
           action: 'failed_otp_verification',
           description: 'OTP verification failed or expired',
           req,
+          workspaceId: userResult.rows[0]?.workspace_id,
         });
       }
 
@@ -418,6 +430,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       action: 'login',
       description: isNewUser ? 'New user signed in via OTP' : 'User signed in via OTP',
       req,
+      workspaceId: user.workspace_id,
     });
 
     return res.json({
@@ -469,6 +482,7 @@ app.post('/api/users', requireAdmin, async (req, res) => {
       action: 'user_created',
       description: `Created user ${email} with role ${userRole}`,
       req,
+      workspaceId: req.user.workspace_id,
     });
 
     return res.status(201).json({ success: true, user: result.rows[0] });
@@ -540,6 +554,7 @@ app.put('/api/users/:id', requireAdmin, async (req, res) => {
       action: 'user_updated',
       description: `Updated user ${id}`,
       req,
+      workspaceId: req.user.workspace_id,
     });
 
     return res.json({
@@ -574,6 +589,7 @@ app.delete('/api/users/:id', requireAdmin, async (req, res) => {
       action: 'user_deleted',
       description: `Deleted user ${deletedUser.email}`,
       req,
+      workspaceId: req.user.workspace_id,
     });
 
     return res.json({
@@ -689,6 +705,7 @@ app.post('/api/clients', async (req, res) => {
       action: 'client_created',
       description: `Created client: ${name}`,
       req,
+      workspaceId: req.user.workspace_id,
     });
 
     return res.status(201).json({
@@ -787,6 +804,7 @@ app.put('/api/clients/:id', async (req, res) => {
       action: 'client_updated',
       description: `Updated client: ${name}`,
       req,
+      workspaceId: req.user.workspace_id,
     });
 
     return res.json({
@@ -823,6 +841,7 @@ app.delete('/api/clients/:id', async (req, res) => {
       action: 'client_deleted',
       description: `Deleted client: ${result.rows[0].name}`,
       req,
+      workspaceId: req.user.workspace_id,
     });
 
     return res.json({
@@ -839,8 +858,10 @@ app.delete('/api/clients/:id', async (req, res) => {
 app.get('/api/packages', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, duration_days, status, price, description,
-              reminder_day, reminder_email_days, created_at, updated_at
+            `SELECT id, name, duration_days, status, price, description,
+              reminder_day, reminder_email_days, created_at, updated_at,
+              COALESCE((SELECT json_agg(d.item_name ORDER BY d.display_order, d.created_at)
+            FROM deliverables d WHERE d.package_id = packages.id), '[]'::json) AS deliverables
        FROM packages
        WHERE workspace_id = $1
        ORDER BY created_at DESC`,
@@ -855,7 +876,7 @@ app.get('/api/packages', async (req, res) => {
 
 // POST /api/packages - Create a package for the authenticated user's workspace
 app.post('/api/packages', requireAdmin, async (req, res) => {
-  const { name, durationDays, price, description, status, reminderDay, reminderEmailDays } = req.body;
+  const { name, durationDays, price, description, status, reminderDay, reminderEmailDays, deliverables } = req.body;
 
   if (!name || !durationDays || price === undefined) {
     return res.status(400).json({ error: 'Name, duration days, and price are required' });
@@ -869,11 +890,110 @@ app.post('/api/packages', requireAdmin, async (req, res) => {
       [req.user.workspace_id, name.trim(), Number(durationDays), status || 'active', Number(price),
         description?.trim() || null, reminderDay || null, reminderEmailDays || 7]
     );
-    return res.status(201).json({ success: true, package: result.rows[0] });
+    const packageRow = result.rows[0];
+    const items = Array.isArray(deliverables) ? deliverables.map(item => String(item).trim()).filter(Boolean) : [];
+    if (items.length > 0) {
+      await pool.query(
+        `INSERT INTO deliverables (workspace_id, package_id, item_name, display_order)
+         SELECT $1, $2, item_name, ordinal - 1
+         FROM unnest($3::text[]) WITH ORDINALITY AS values(item_name, ordinal)`,
+        [req.user.workspace_id, packageRow.id, items]
+      );
+    }
+    packageRow.deliverables = items;
+    return res.status(201).json({ success: true, package: packageRow });
   } catch (error) {
     console.error('Error creating package:', error);
     if (error.code === '23505') return res.status(409).json({ error: 'A package with this name already exists' });
     return res.status(500).json({ error: 'Failed to create package' });
+  }
+});
+
+// PUT /api/packages/:id - Update a package
+app.put('/api/packages/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { name, durationDays, price, description, status, reminderDay, reminderEmailDays, deliverables } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE packages
+       SET name = COALESCE($1, name),
+           duration_days = COALESCE($2, duration_days),
+           status = COALESCE($3, status),
+           price = COALESCE($4, price),
+           description = $5,
+           reminder_day = COALESCE($6, reminder_day),
+           reminder_email_days = COALESCE($7, reminder_email_days),
+           updated_at = NOW()
+       WHERE id = $8 AND workspace_id = $9
+       RETURNING id, name, duration_days, status, price, description, reminder_day, reminder_email_days, created_at, updated_at`,
+      [
+        name?.trim() || null,
+        durationDays !== undefined ? Number(durationDays) : null,
+        status || null,
+        price !== undefined ? Number(price) : null,
+        description?.trim() || null,
+        reminderDay !== undefined ? Number(reminderDay) : null,
+        reminderEmailDays !== undefined ? Number(reminderEmailDays) : null,
+        id,
+        req.user.workspace_id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    if (Array.isArray(deliverables)) {
+      await pool.query('DELETE FROM deliverables WHERE package_id = $1', [id]);
+      const items = deliverables.map(item => String(item).trim()).filter(Boolean);
+      if (items.length > 0) {
+        await pool.query(
+          `INSERT INTO deliverables (workspace_id, package_id, item_name, display_order)
+           SELECT $1, $2, item_name, ordinal - 1
+           FROM unnest($3::text[]) WITH ORDINALITY AS values(item_name, ordinal)`,
+          [req.user.workspace_id, id, items]
+        );
+      }
+      result.rows[0].deliverables = items;
+    }
+
+    return res.json({ success: true, package: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating package:', error);
+    if (error.code === '23505') return res.status(409).json({ error: 'A package with this name already exists' });
+    return res.status(500).json({ error: 'Failed to update package' });
+  }
+});
+
+// DELETE /api/packages/:id - Delete a package
+app.delete('/api/packages/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM packages
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING name`,
+      [id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'package_deleted',
+      description: `Deleted package ${result.rows[0].name}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, message: 'Package deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting package:', error);
+    return res.status(500).json({ error: 'Failed to delete package' });
   }
 });
 
@@ -1022,6 +1142,1824 @@ app.get('/api/bookings/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching booking:', error);
     return res.status(500).json({ error: 'Failed to fetch booking' });
+  }
+});
+
+// ============================================
+// SERVICE MASTER API
+// ============================================
+app.get('/api/services', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM service_master
+       WHERE workspace_id = $1
+       ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, services: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    return res.status(500).json({ error: 'Failed to fetch services' });
+  }
+});
+
+app.post('/api/services', requireAdmin, async (req, res) => {
+  const { name, description, category, is_active } = req.body;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Service name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO service_master (workspace_id, name, description, category, is_active)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), description?.trim() || null, category || null, is_active !== undefined ? Boolean(is_active) : true]
+    );
+
+    return res.status(201).json({ success: true, service: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating service:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A service with this name already exists in this workspace' });
+    }
+    return res.status(500).json({ error: 'Failed to create service' });
+  }
+});
+
+app.get('/api/services/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM service_master WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    return res.json({ success: true, service: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching service:', error);
+    return res.status(500).json({ error: 'Failed to fetch service' });
+  }
+});
+
+app.put('/api/services/:id', requireAdmin, async (req, res) => {
+  const { name, description, category, is_active } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE service_master
+       SET name = COALESCE($1, name),
+           description = $2,
+           category = $3,
+           is_active = COALESCE($4, is_active),
+           updated_at = NOW()
+       WHERE id = $5 AND workspace_id = $6
+       RETURNING *`,
+      [name?.trim() || null, description?.trim() || null, category || null, is_active !== undefined ? Boolean(is_active) : null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    return res.json({ success: true, service: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating service:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A service with this name already exists in this workspace' });
+    }
+    return res.status(500).json({ error: 'Failed to update service' });
+  }
+});
+
+// ============================================
+// STAFF API
+// ============================================
+app.get('/api/staff', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM staff
+       WHERE workspace_id = $1
+       ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, staff: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching staff:', error);
+    return res.status(500).json({ error: 'Failed to fetch staff' });
+  }
+});
+
+app.post('/api/staff', requireAdmin, async (req, res) => {
+  const { name, email, phone, role, availability, joining_date, status, notes } = req.body;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Staff name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO staff (workspace_id, user_id, name, email, phone, role, availability, joining_date, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [req.user.workspace_id, null, String(name).trim(), email?.trim() || null, phone?.trim() || null, role || 'team_member', availability || 'available', joining_date || null, status || 'active', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, member: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating staff member:', error);
+    return res.status(500).json({ error: 'Failed to create staff member' });
+  }
+});
+
+app.get('/api/staff/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM staff WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    return res.json({ success: true, member: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching staff member:', error);
+    return res.status(500).json({ error: 'Failed to fetch staff member' });
+  }
+});
+
+app.put('/api/staff/:id', requireAdmin, async (req, res) => {
+  const { name, email, phone, role, availability, joining_date, status, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE staff
+       SET name = COALESCE($1, name),
+           email = $2,
+           phone = $3,
+           role = COALESCE($4, role),
+           availability = COALESCE($5, availability),
+           joining_date = $6,
+           status = COALESCE($7, status),
+           notes = $8,
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [name?.trim() || null, email?.trim() || null, phone?.trim() || null, role || null, availability || null, joining_date || null, status || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    return res.json({ success: true, member: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating staff member:', error);
+    return res.status(500).json({ error: 'Failed to update staff member' });
+  }
+});
+
+// ============================================
+// FREELANCERS API
+// ============================================
+app.get('/api/freelancers', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM freelancers
+       WHERE workspace_id = $1
+       ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, freelancers: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching freelancers:', error);
+    return res.status(500).json({ error: 'Failed to fetch freelancers' });
+  }
+});
+
+app.post('/api/freelancers', requireAdmin, async (req, res) => {
+  const { name, email, phone, specialization, availability, status, rate, notes } = req.body;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Freelancer name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO freelancers (workspace_id, name, email, phone, specialization, availability, status, rate, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), email?.trim() || null, phone?.trim() || null, specialization || 'general', availability || 'available', status || 'active', rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, freelancer: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating freelancer:', error);
+    return res.status(500).json({ error: 'Failed to create freelancer' });
+  }
+});
+
+app.get('/api/freelancers/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM freelancers WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Freelancer not found' });
+    }
+
+    return res.json({ success: true, freelancer: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching freelancer:', error);
+    return res.status(500).json({ error: 'Failed to fetch freelancer' });
+  }
+});
+
+app.put('/api/freelancers/:id', requireAdmin, async (req, res) => {
+  const { name, email, phone, specialization, availability, status, rate, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE freelancers
+       SET name = COALESCE($1, name),
+           email = $2,
+           phone = $3,
+           specialization = COALESCE($4, specialization),
+           availability = COALESCE($5, availability),
+           status = COALESCE($6, status),
+           rate = $7,
+           notes = $8,
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [name?.trim() || null, email?.trim() || null, phone?.trim() || null, specialization || null, availability || null, status || null, rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Freelancer not found' });
+    }
+
+    return res.json({ success: true, freelancer: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating freelancer:', error);
+    return res.status(500).json({ error: 'Failed to update freelancer' });
+  }
+});
+
+// ============================================
+// CLIENT REVIEWS API
+// ============================================
+app.get('/api/client-reviews', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM client_reviews
+       WHERE workspace_id = $1
+       ORDER BY sent_date DESC, created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, clientReviews: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching client reviews:', error);
+    return res.status(500).json({ error: 'Failed to fetch client reviews' });
+  }
+});
+
+app.post('/api/client-reviews', requireAdmin, async (req, res) => {
+  const { booking_id, production_job_id, client_id, sent_date, response_date, review_status, comments } = req.body;
+
+  if (!booking_id || !production_job_id || !client_id) {
+    return res.status(400).json({ error: 'Booking, production job, and client are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const jobCheck = await pool.query(
+      `SELECT id FROM production_jobs WHERE id = $1 AND workspace_id = $2`,
+      [production_job_id, req.user.workspace_id]
+    );
+    if (jobCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Production job not found in this workspace' });
+    }
+
+    const clientCheck = await pool.query(
+      `SELECT id FROM client WHERE id = $1 AND workspace_id = $2`,
+      [client_id, req.user.workspace_id]
+    );
+    if (clientCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Client not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO client_reviews (workspace_id, booking_id, production_job_id, client_id, sent_date, response_date, review_status, comments)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, production_job_id, client_id, sent_date || new Date().toISOString().slice(0, 10), response_date || null, review_status || 'pending', comments?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, clientReview: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating client review:', error);
+    return res.status(500).json({ error: 'Failed to create client review' });
+  }
+});
+
+// ============================================
+// INVOICES API
+// ============================================
+app.get('/api/invoices', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT i.*, b.booking_number, c.name AS client_name
+       FROM invoices i
+       JOIN bookings b ON b.id = i.booking_id AND b.workspace_id = i.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = i.workspace_id
+       WHERE i.workspace_id = $1
+       ORDER BY i.invoice_date DESC, i.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, invoices: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    return res.status(500).json({ error: 'Failed to fetch invoices' });
+  }
+});
+
+app.post('/api/invoices', requireAdmin, async (req, res) => {
+  const { booking_id, invoice_number, invoice_date, due_date, total_amount, status, notes } = req.body;
+
+  if (!booking_id || !invoice_number || total_amount === undefined) {
+    return res.status(400).json({ error: 'Booking, invoice number, and total amount are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO invoices (workspace_id, booking_id, invoice_number, invoice_date, due_date, total_amount, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, String(invoice_number).trim(), invoice_date || new Date().toISOString().slice(0, 10), due_date || null, Number(total_amount), status || 'draft', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, invoice: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating invoice:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Invoice number already exists in this workspace' });
+    }
+    return res.status(500).json({ error: 'Failed to create invoice' });
+  }
+});
+
+app.get('/api/invoices/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT i.*, b.booking_number, c.name AS client_name
+       FROM invoices i
+       JOIN bookings b ON b.id = i.booking_id AND b.workspace_id = i.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = i.workspace_id
+       WHERE i.id = $1 AND i.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    return res.json({ success: true, invoice: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching invoice:', error);
+    return res.status(500).json({ error: 'Failed to fetch invoice' });
+  }
+});
+
+app.put('/api/invoices/:id', requireAdmin, async (req, res) => {
+  const { booking_id, invoice_number, invoice_date, due_date, total_amount, status, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE invoices
+       SET booking_id = COALESCE($1, booking_id),
+           invoice_number = COALESCE($2, invoice_number),
+           invoice_date = COALESCE($3, invoice_date),
+           due_date = $4,
+           total_amount = COALESCE($5, total_amount),
+           status = COALESCE($6, status),
+           notes = $7,
+           updated_at = NOW()
+       WHERE id = $8 AND workspace_id = $9
+       RETURNING *`,
+      [booking_id || null, invoice_number?.trim() || null, invoice_date || null, due_date || null, total_amount !== undefined ? Number(total_amount) : null, status || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    return res.json({ success: true, invoice: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating invoice:', error);
+    return res.status(500).json({ error: 'Failed to update invoice' });
+  }
+});
+
+// ============================================
+// PAYMENTS API
+// ============================================
+app.get('/api/payments', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.*, i.invoice_number, b.booking_number
+       FROM payments p
+       JOIN invoices i ON i.id = p.invoice_id AND i.workspace_id = p.workspace_id
+       JOIN bookings b ON b.id = p.booking_id AND b.workspace_id = p.workspace_id
+       WHERE p.workspace_id = $1
+       ORDER BY p.payment_date DESC, p.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, payments: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    return res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+app.post('/api/payments', requireAdmin, async (req, res) => {
+  const { invoice_id, booking_id, amount, payment_date, payment_method, transaction_reference, status, notes } = req.body;
+
+  if (!invoice_id || !booking_id || amount === undefined) {
+    return res.status(400).json({ error: 'Invoice, booking, and amount are required' });
+  }
+
+  try {
+    const invoiceCheck = await pool.query(
+      `SELECT id, booking_id FROM invoices WHERE id = $1 AND workspace_id = $2`,
+      [invoice_id, req.user.workspace_id]
+    );
+    if (invoiceCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Invoice not found in this workspace' });
+    }
+
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO payments (workspace_id, invoice_id, booking_id, amount, payment_date, payment_method, transaction_reference, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, invoice_id, booking_id, Number(amount), payment_date || new Date().toISOString().slice(0, 10), payment_method || null, transaction_reference?.trim() || null, status || 'pending', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, payment: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    return res.status(500).json({ error: 'Failed to create payment' });
+  }
+});
+
+app.get('/api/payments/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.*, i.invoice_number, b.booking_number
+       FROM payments p
+       JOIN invoices i ON i.id = p.invoice_id AND i.workspace_id = p.workspace_id
+       JOIN bookings b ON b.id = p.booking_id AND b.workspace_id = p.workspace_id
+       WHERE p.id = $1 AND p.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    return res.json({ success: true, payment: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching payment:', error);
+    return res.status(500).json({ error: 'Failed to fetch payment' });
+  }
+});
+
+app.put('/api/payments/:id', requireAdmin, async (req, res) => {
+  const { invoice_id, booking_id, amount, payment_date, payment_method, transaction_reference, status, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE payments
+       SET invoice_id = COALESCE($1, invoice_id),
+           booking_id = COALESCE($2, booking_id),
+           amount = COALESCE($3, amount),
+           payment_date = COALESCE($4, payment_date),
+           payment_method = $5,
+           transaction_reference = $6,
+           status = COALESCE($7, status),
+           notes = $8,
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [invoice_id || null, booking_id || null, amount !== undefined ? Number(amount) : null, payment_date || null, payment_method || null, transaction_reference?.trim() || null, status || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    return res.json({ success: true, payment: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating payment:', error);
+    return res.status(500).json({ error: 'Failed to update payment' });
+  }
+});
+
+// ============================================
+// PRODUCTION JOBS API
+// ============================================
+app.get('/api/production-jobs', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pj.*, b.booking_number, s.name AS service_name, st.name AS assigned_staff_name
+       FROM production_jobs pj
+       JOIN bookings b ON b.id = pj.booking_id AND b.workspace_id = pj.workspace_id
+       JOIN service_master s ON s.id = pj.service_id AND s.workspace_id = pj.workspace_id
+       LEFT JOIN staff st ON st.id = pj.assigned_staff_id AND st.workspace_id = pj.workspace_id
+       WHERE pj.workspace_id = $1
+       ORDER BY pj.due_date ASC NULLS LAST, pj.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, jobs: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching production jobs:', error);
+    return res.status(500).json({ error: 'Failed to fetch production jobs' });
+  }
+});
+
+app.post('/api/production-jobs', requireAdmin, async (req, res) => {
+  const { booking_id, service_id, assigned_staff_id, job_name, start_date, due_date, status, priority, completion_date, notes } = req.body;
+
+  if (!booking_id || !service_id || !job_name) {
+    return res.status(400).json({ error: 'Booking, service, and job name are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const serviceCheck = await pool.query(
+      `SELECT id FROM service_master WHERE id = $1 AND workspace_id = $2`,
+      [service_id, req.user.workspace_id]
+    );
+    if (serviceCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Service not found in this workspace' });
+    }
+
+    if (assigned_staff_id) {
+      const staffCheck = await pool.query(
+        `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
+        [assigned_staff_id, req.user.workspace_id]
+      );
+      if (staffCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Assigned staff not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO production_jobs (workspace_id, booking_id, service_id, assigned_staff_id, job_name, start_date, due_date, status, priority, completion_date, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, service_id, assigned_staff_id || null, String(job_name).trim(), start_date || null, due_date || null, status || 'pending', priority || 'normal', completion_date || null, notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, job: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating production job:', error);
+    return res.status(500).json({ error: 'Failed to create production job' });
+  }
+});
+
+app.get('/api/production-jobs/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pj.*, b.booking_number, s.name AS service_name, st.name AS assigned_staff_name
+       FROM production_jobs pj
+       JOIN bookings b ON b.id = pj.booking_id AND b.workspace_id = pj.workspace_id
+       JOIN service_master s ON s.id = pj.service_id AND s.workspace_id = pj.workspace_id
+       LEFT JOIN staff st ON st.id = pj.assigned_staff_id AND st.workspace_id = pj.workspace_id
+       WHERE pj.id = $1 AND pj.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Production job not found' });
+    }
+
+    return res.json({ success: true, job: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching production job:', error);
+    return res.status(500).json({ error: 'Failed to fetch production job' });
+  }
+});
+
+app.put('/api/production-jobs/:id', requireAdmin, async (req, res) => {
+  const { booking_id, service_id, assigned_staff_id, job_name, start_date, due_date, status, priority, completion_date, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE production_jobs
+       SET booking_id = COALESCE($1, booking_id),
+           service_id = COALESCE($2, service_id),
+           assigned_staff_id = $3,
+           job_name = COALESCE($4, job_name),
+           start_date = $5,
+           due_date = $6,
+           status = COALESCE($7, status),
+           priority = COALESCE($8, priority),
+           completion_date = $9,
+           notes = $10,
+           updated_at = NOW()
+       WHERE id = $11 AND workspace_id = $12
+       RETURNING *`,
+      [booking_id || null, service_id || null, assigned_staff_id || null, job_name?.trim() || null, start_date || null, due_date || null, status || null, priority || null, completion_date || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Production job not found' });
+    }
+
+    return res.json({ success: true, job: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating production job:', error);
+    return res.status(500).json({ error: 'Failed to update production job' });
+  }
+});
+
+// ============================================
+// QC REVIEWS API
+// ============================================
+app.get('/api/qc-reviews', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT qr.*, pj.job_name, s.name AS reviewer_name
+       FROM qc_reviews qr
+       JOIN production_jobs pj ON pj.id = qr.production_job_id AND pj.workspace_id = qr.workspace_id
+       JOIN staff s ON s.id = qr.reviewer_staff_id AND s.workspace_id = qr.workspace_id
+       WHERE qr.workspace_id = $1
+       ORDER BY qr.review_date DESC, qr.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, qcReviews: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching QC reviews:', error);
+    return res.status(500).json({ error: 'Failed to fetch QC reviews' });
+  }
+});
+
+app.post('/api/qc-reviews', requireAdmin, async (req, res) => {
+  const { production_job_id, reviewer_staff_id, review_date, result, comments, status } = req.body;
+
+  if (!production_job_id || !reviewer_staff_id) {
+    return res.status(400).json({ error: 'Production job and reviewer are required' });
+  }
+
+  try {
+    const jobCheck = await pool.query(
+      `SELECT id FROM production_jobs WHERE id = $1 AND workspace_id = $2`,
+      [production_job_id, req.user.workspace_id]
+    );
+    if (jobCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Production job not found in this workspace' });
+    }
+
+    const reviewerCheck = await pool.query(
+      `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
+      [reviewer_staff_id, req.user.workspace_id]
+    );
+    if (reviewerCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Reviewer staff not found in this workspace' });
+    }
+
+    const resultRow = await pool.query(
+      `INSERT INTO qc_reviews (workspace_id, production_job_id, reviewer_staff_id, review_date, result, comments, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [req.user.workspace_id, production_job_id, reviewer_staff_id, review_date || new Date().toISOString().slice(0, 10), result || 'needs_correction', comments?.trim() || null, status || 'pending']
+    );
+
+    return res.status(201).json({ success: true, qcReview: resultRow.rows[0] });
+  } catch (error) {
+    console.error('Error creating QC review:', error);
+    return res.status(500).json({ error: 'Failed to create QC review' });
+  }
+});
+
+app.get('/api/qc-reviews/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT qr.*, pj.job_name, s.name AS reviewer_name
+       FROM qc_reviews qr
+       JOIN production_jobs pj ON pj.id = qr.production_job_id AND pj.workspace_id = qr.workspace_id
+       JOIN staff s ON s.id = qr.reviewer_staff_id AND s.workspace_id = qr.workspace_id
+       WHERE qr.id = $1 AND qr.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'QC review not found' });
+    }
+
+    return res.json({ success: true, qcReview: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching QC review:', error);
+    return res.status(500).json({ error: 'Failed to fetch QC review' });
+  }
+});
+
+app.put('/api/qc-reviews/:id', requireAdmin, async (req, res) => {
+  const { production_job_id, reviewer_staff_id, review_date, result, comments, status } = req.body;
+
+  try {
+    const resultRow = await pool.query(
+      `UPDATE qc_reviews
+       SET production_job_id = COALESCE($1, production_job_id),
+           reviewer_staff_id = COALESCE($2, reviewer_staff_id),
+           review_date = COALESCE($3, review_date),
+           result = COALESCE($4, result),
+           comments = $5,
+           status = COALESCE($6, status),
+           updated_at = NOW()
+       WHERE id = $7 AND workspace_id = $8
+       RETURNING *`,
+      [production_job_id || null, reviewer_staff_id || null, review_date || null, result || null, comments?.trim() || null, status || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (resultRow.rows.length === 0) {
+      return res.status(404).json({ error: 'QC review not found' });
+    }
+
+    return res.json({ success: true, qcReview: resultRow.rows[0] });
+  } catch (error) {
+    console.error('Error updating QC review:', error);
+    return res.status(500).json({ error: 'Failed to update QC review' });
+  }
+});
+
+// ============================================
+// REVISIONS API
+// ============================================
+app.get('/api/revisions', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, pj.job_name, cr.review_status, s.name AS assigned_staff_name
+       FROM revisions r
+       JOIN production_jobs pj ON pj.id = r.production_job_id AND pj.workspace_id = r.workspace_id
+       LEFT JOIN client_reviews cr ON cr.id = r.client_review_id AND cr.workspace_id = r.workspace_id
+       LEFT JOIN staff s ON s.id = r.assigned_staff_id AND s.workspace_id = r.workspace_id
+       WHERE r.workspace_id = $1
+       ORDER BY r.due_date ASC NULLS LAST, r.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, revisions: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching revisions:', error);
+    return res.status(500).json({ error: 'Failed to fetch revisions' });
+  }
+});
+
+app.post('/api/revisions', requireAdmin, async (req, res) => {
+  const { client_review_id, production_job_id, revision_number, requested_changes, assigned_staff_id, due_date, completion_date, status } = req.body;
+
+  if (!client_review_id || !production_job_id || !revision_number || !requested_changes) {
+    return res.status(400).json({ error: 'Client review, production job, revision number, and requested changes are required' });
+  }
+
+  try {
+    const clientReviewCheck = await pool.query(
+      `SELECT id FROM client_reviews WHERE id = $1 AND workspace_id = $2`,
+      [client_review_id, req.user.workspace_id]
+    );
+    if (clientReviewCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Client review not found in this workspace' });
+    }
+
+    const jobCheck = await pool.query(
+      `SELECT id FROM production_jobs WHERE id = $1 AND workspace_id = $2`,
+      [production_job_id, req.user.workspace_id]
+    );
+    if (jobCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Production job not found in this workspace' });
+    }
+
+    if (assigned_staff_id) {
+      const staffCheck = await pool.query(
+        `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
+        [assigned_staff_id, req.user.workspace_id]
+      );
+      if (staffCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Assigned staff not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO revisions (workspace_id, client_review_id, production_job_id, revision_number, requested_changes, assigned_staff_id, due_date, completion_date, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, client_review_id, production_job_id, Number(revision_number), String(requested_changes).trim(), assigned_staff_id || null, due_date || null, completion_date || null, status || 'pending']
+    );
+
+    return res.status(201).json({ success: true, revision: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating revision:', error);
+    return res.status(500).json({ error: 'Failed to create revision' });
+  }
+});
+
+app.get('/api/revisions/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, pj.job_name, cr.review_status, s.name AS assigned_staff_name
+       FROM revisions r
+       JOIN production_jobs pj ON pj.id = r.production_job_id AND pj.workspace_id = r.workspace_id
+       LEFT JOIN client_reviews cr ON cr.id = r.client_review_id AND cr.workspace_id = r.workspace_id
+       LEFT JOIN staff s ON s.id = r.assigned_staff_id AND s.workspace_id = r.workspace_id
+       WHERE r.id = $1 AND r.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Revision not found' });
+    }
+
+    return res.json({ success: true, revision: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching revision:', error);
+    return res.status(500).json({ error: 'Failed to fetch revision' });
+  }
+});
+
+app.put('/api/revisions/:id', requireAdmin, async (req, res) => {
+  const { client_review_id, production_job_id, revision_number, requested_changes, assigned_staff_id, due_date, completion_date, status } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE revisions
+       SET client_review_id = COALESCE($1, client_review_id),
+           production_job_id = COALESCE($2, production_job_id),
+           revision_number = COALESCE($3, revision_number),
+           requested_changes = COALESCE($4, requested_changes),
+           assigned_staff_id = $5,
+           due_date = $6,
+           completion_date = $7,
+           status = COALESCE($8, status),
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [client_review_id || null, production_job_id || null, revision_number !== undefined ? Number(revision_number) : null, requested_changes?.trim() || null, assigned_staff_id || null, due_date || null, completion_date || null, status || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Revision not found' });
+    }
+
+    return res.json({ success: true, revision: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating revision:', error);
+    return res.status(500).json({ error: 'Failed to update revision' });
+  }
+});
+
+// ============================================
+// EQUIPMENT API
+// ============================================
+app.get('/api/equipment', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM equipment WHERE workspace_id = $1 ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, equipment: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching equipment:', error);
+    return res.status(500).json({ error: 'Failed to fetch equipment' });
+  }
+});
+
+app.post('/api/equipment', requireAdmin, async (req, res) => {
+  const { name, equipment_type, serial_number, purchase_date, purchase_price, status, notes } = req.body;
+
+  if (!name || !equipment_type) {
+    return res.status(400).json({ error: 'Equipment name and type are required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO equipment (workspace_id, name, equipment_type, serial_number, purchase_date, purchase_price, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), String(equipment_type).trim(), serial_number?.trim() || null, purchase_date || null, purchase_price !== undefined && purchase_price !== null ? Number(purchase_price) : null, status || 'available', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, equipment: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating equipment:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'An equipment item with this serial number already exists' });
+    }
+    return res.status(500).json({ error: 'Failed to create equipment' });
+  }
+});
+
+app.get('/api/equipment/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM equipment WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Equipment item not found' });
+    }
+
+    return res.json({ success: true, equipment: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching equipment item:', error);
+    return res.status(500).json({ error: 'Failed to fetch equipment item' });
+  }
+});
+
+app.put('/api/equipment/:id', requireAdmin, async (req, res) => {
+  const { name, equipment_type, serial_number, purchase_date, purchase_price, status, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE equipment
+       SET name = COALESCE($1, name),
+           equipment_type = COALESCE($2, equipment_type),
+           serial_number = $3,
+           purchase_date = $4,
+           purchase_price = $5,
+           status = COALESCE($6, status),
+           notes = $7,
+           updated_at = NOW()
+       WHERE id = $8 AND workspace_id = $9
+       RETURNING *`,
+      [name?.trim() || null, equipment_type?.trim() || null, serial_number?.trim() || null, purchase_date || null, purchase_price !== undefined && purchase_price !== null ? Number(purchase_price) : null, status || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Equipment item not found' });
+    }
+
+    return res.json({ success: true, equipment: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating equipment:', error);
+    return res.status(500).json({ error: 'Failed to update equipment' });
+  }
+});
+
+// ============================================
+// EQUIPMENT ASSIGNMENTS API
+// ============================================
+app.get('/api/equipment-assignments', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ea.*, e.name AS equipment_name, s.name AS staff_name, be.event_name, be.event_date, be.venue
+       FROM equipment_assignments ea
+       JOIN equipment e ON e.id = ea.equipment_id
+       LEFT JOIN staff s ON s.id = ea.staff_id
+       JOIN booking_events be ON be.id = ea.booking_event_id
+       WHERE e.workspace_id = $1
+       ORDER BY ea.assigned_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, assignments: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching equipment assignments:', error);
+    return res.status(500).json({ error: 'Failed to fetch equipment assignments' });
+  }
+});
+
+app.post('/api/equipment-assignments', requireAdmin, async (req, res) => {
+  const { equipment_id, booking_event_id, staff_id, assigned_at, returned_at, status, notes } = req.body;
+
+  if (!equipment_id || !booking_event_id) {
+    return res.status(400).json({ error: 'Equipment and booking event are required' });
+  }
+
+  try {
+    const equipmentCheck = await pool.query(
+      `SELECT id FROM equipment WHERE id = $1 AND workspace_id = $2`,
+      [equipment_id, req.user.workspace_id]
+    );
+    if (equipmentCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Equipment not found in this workspace' });
+    }
+
+    const eventCheck = await pool.query(
+      `SELECT id FROM booking_events WHERE id = $1 AND workspace_id = $2`,
+      [booking_event_id, req.user.workspace_id]
+    );
+    if (eventCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking event not found in this workspace' });
+    }
+
+    if (staff_id) {
+      const staffCheck = await pool.query(
+        `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
+        [staff_id, req.user.workspace_id]
+      );
+      if (staffCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Staff member not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO equipment_assignments (equipment_id, booking_event_id, staff_id, assigned_at, returned_at, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [equipment_id, booking_event_id, staff_id || null, assigned_at || new Date().toISOString(), returned_at || null, status || 'assigned', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, assignment: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating equipment assignment:', error);
+    return res.status(500).json({ error: 'Failed to create equipment assignment' });
+  }
+});
+
+// ============================================
+// EQUIPMENT MAINTENANCE API
+// ============================================
+app.get('/api/equipment-maintenance', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT em.*, e.name AS equipment_name
+       FROM equipment_maintenance em
+       JOIN equipment e ON e.id = em.equipment_id AND e.workspace_id = em.workspace_id
+       WHERE em.workspace_id = $1
+       ORDER BY em.maintenance_date DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, maintenance: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching equipment maintenance:', error);
+    return res.status(500).json({ error: 'Failed to fetch equipment maintenance' });
+  }
+});
+
+app.post('/api/equipment-maintenance', requireAdmin, async (req, res) => {
+  const { equipment_id, maintenance_type, description, maintenance_date, next_maintenance_date, cost, performed_by, status, notes } = req.body;
+
+  if (!equipment_id || !description || !maintenance_type) {
+    return res.status(400).json({ error: 'Equipment, maintenance type, and description are required' });
+  }
+
+  try {
+    const equipmentCheck = await pool.query(
+      `SELECT id FROM equipment WHERE id = $1 AND workspace_id = $2`,
+      [equipment_id, req.user.workspace_id]
+    );
+    if (equipmentCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Equipment not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO equipment_maintenance (workspace_id, equipment_id, maintenance_type, description, maintenance_date, next_maintenance_date, cost, performed_by, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [req.user.workspace_id, equipment_id, maintenance_type, String(description).trim(), maintenance_date || new Date().toISOString().slice(0, 10), next_maintenance_date || null, cost !== undefined && cost !== null ? Number(cost) : 0, performed_by?.trim() || null, status || 'completed', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, maintenance: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating equipment maintenance:', error);
+    return res.status(500).json({ error: 'Failed to create equipment maintenance' });
+  }
+});
+
+// ============================================
+// FILES API
+// ============================================
+app.get('/api/files', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM files WHERE workspace_id = $1 ORDER BY upload_date DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, files: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    return res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+app.post('/api/files', requireAdmin, async (req, res) => {
+  const { booking_id, file_name, file_type, category, storage_path, file_size, status, notes } = req.body;
+
+  if (!booking_id || !file_name || !storage_path) {
+    return res.status(400).json({ error: 'Booking, file name, and storage path are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO files (workspace_id, booking_id, file_name, file_type, category, storage_path, file_size, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, String(file_name).trim(), file_type || null, category || 'general', String(storage_path).trim(), file_size !== undefined && file_size !== null ? Number(file_size) : null, status || 'active', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, file: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating file record:', error);
+    return res.status(500).json({ error: 'Failed to create file record' });
+  }
+});
+
+// ============================================
+// DELIVERIES API
+// ============================================
+app.get('/api/deliveries', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM deliveries WHERE workspace_id = $1 ORDER BY delivery_date DESC NULLS LAST, created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, deliveries: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching deliveries:', error);
+    return res.status(500).json({ error: 'Failed to fetch deliveries' });
+  }
+});
+
+app.post('/api/deliveries', requireAdmin, async (req, res) => {
+  const { booking_id, delivery_type, delivery_date, delivery_status, delivery_link, recipient, confirmation, notes } = req.body;
+
+  if (!booking_id || !delivery_type) {
+    return res.status(400).json({ error: 'Booking and delivery type are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO deliveries (workspace_id, booking_id, delivery_type, delivery_date, delivery_status, delivery_link, recipient, confirmation, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, String(delivery_type).trim(), delivery_date || null, delivery_status || 'pending', delivery_link?.trim() || null, recipient?.trim() || null, Boolean(confirmation), notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, delivery: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating delivery:', error);
+    return res.status(500).json({ error: 'Failed to create delivery' });
+  }
+});
+
+// ============================================
+// STORAGE CATEGORIES API
+// ============================================
+app.get('/api/storage-categories', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM storage_categories WHERE workspace_id = $1 ORDER BY name ASC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, categories: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching storage categories:', error);
+    return res.status(500).json({ error: 'Failed to fetch storage categories' });
+  }
+});
+
+app.post('/api/storage-categories', requireAdmin, async (req, res) => {
+  const { name, description, is_active } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO storage_categories (workspace_id, name, description, is_active)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), description?.trim() || null, is_active !== undefined ? Boolean(is_active) : true]
+    );
+
+    return res.status(201).json({ success: true, category: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating storage category:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A storage category with this name already exists' });
+    }
+    return res.status(500).json({ error: 'Failed to create storage category' });
+  }
+});
+
+// ============================================
+// STORAGE ITEMS API
+// ============================================
+app.get('/api/storage-items', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT si.*, sc.name AS category_name, b.booking_number
+       FROM storage_items si
+       LEFT JOIN storage_categories sc ON sc.id = si.category_id AND sc.workspace_id = si.workspace_id
+       LEFT JOIN bookings b ON b.id = si.booking_id AND b.workspace_id = si.workspace_id
+       WHERE si.workspace_id = $1
+       ORDER BY si.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, items: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching storage items:', error);
+    return res.status(500).json({ error: 'Failed to fetch storage items' });
+  }
+});
+
+app.post('/api/storage-items', requireAdmin, async (req, res) => {
+  const { booking_id, category_id, name, storage_type, storage_path, size_bytes, status, notes } = req.body;
+
+  if (!name || !storage_type || !storage_path) {
+    return res.status(400).json({ error: 'Name, storage type, and storage path are required' });
+  }
+
+  try {
+    if (booking_id) {
+      const bookingCheck = await pool.query(
+        `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+        [booking_id, req.user.workspace_id]
+      );
+      if (bookingCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Booking not found in this workspace' });
+      }
+    }
+
+    if (category_id) {
+      const categoryCheck = await pool.query(
+        `SELECT id FROM storage_categories WHERE id = $1 AND workspace_id = $2`,
+        [category_id, req.user.workspace_id]
+      );
+      if (categoryCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Storage category not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO storage_items (workspace_id, booking_id, category_id, name, storage_type, storage_path, size_bytes, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id || null, category_id || null, String(name).trim(), storage_type, String(storage_path).trim(), size_bytes !== undefined && size_bytes !== null ? Number(size_bytes) : null, status || 'active', notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, item: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating storage item:', error);
+    return res.status(500).json({ error: 'Failed to create storage item' });
+  }
+});
+
+// ============================================
+// WORKFLOWS API
+// ============================================
+app.get('/api/workflows', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM workflows WHERE workspace_id = $1 ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, workflows: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching workflows:', error);
+    return res.status(500).json({ error: 'Failed to fetch workflows' });
+  }
+});
+
+app.post('/api/workflows', requireAdmin, async (req, res) => {
+  const { name, description, is_active } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Workflow name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO workflows (workspace_id, name, description, is_active)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), description?.trim() || null, is_active !== undefined ? Boolean(is_active) : true]
+    );
+
+    return res.status(201).json({ success: true, workflow: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating workflow:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A workflow with this name already exists' });
+    }
+    return res.status(500).json({ error: 'Failed to create workflow' });
+  }
+});
+
+// ============================================
+// WORKFLOW STEPS API
+// ============================================
+app.get('/api/workflow-steps', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ws.*, w.name AS workflow_name
+       FROM workflow_steps ws
+       JOIN workflows w ON w.id = ws.workflow_id AND w.workspace_id = $1
+       WHERE w.workspace_id = $1
+       ORDER BY ws.step_order ASC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, workflowSteps: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching workflow steps:', error);
+    return res.status(500).json({ error: 'Failed to fetch workflow steps' });
+  }
+});
+
+app.post('/api/workflow-steps', requireAdmin, async (req, res) => {
+  const { workflow_id, name, description, step_order, status } = req.body;
+
+  if (!workflow_id || !name || !step_order) {
+    return res.status(400).json({ error: 'Workflow, name, and step order are required' });
+  }
+
+  try {
+    const workflowCheck = await pool.query(
+      `SELECT id FROM workflows WHERE id = $1 AND workspace_id = $2`,
+      [workflow_id, req.user.workspace_id]
+    );
+    if (workflowCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Workflow not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO workflow_steps (workflow_id, name, description, step_order, status)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [workflow_id, String(name).trim(), description?.trim() || null, Number(step_order), status || 'active']
+    );
+
+    return res.status(201).json({ success: true, workflowStep: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating workflow step:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Step order already exists for this workflow' });
+    }
+    return res.status(500).json({ error: 'Failed to create workflow step' });
+  }
+});
+
+// ============================================
+// BOARDS API
+// ============================================
+app.get('/api/boards', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM boards WHERE workspace_id = $1 ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, boards: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching boards:', error);
+    return res.status(500).json({ error: 'Failed to fetch boards' });
+  }
+});
+
+app.post('/api/boards', requireAdmin, async (req, res) => {
+  const { name, description, board_type, is_active } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Board name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO boards (workspace_id, name, description, board_type, is_active)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), description?.trim() || null, board_type || 'general', is_active !== undefined ? Boolean(is_active) : true]
+    );
+
+    return res.status(201).json({ success: true, board: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating board:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A board with this name already exists' });
+    }
+    return res.status(500).json({ error: 'Failed to create board' });
+  }
+});
+
+// ============================================
+// BOARD COLUMNS API
+// ============================================
+app.get('/api/board-columns', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT bc.*, b.name AS board_name
+       FROM board_columns bc
+       JOIN boards b ON b.id = bc.board_id AND b.workspace_id = $1
+       WHERE b.workspace_id = $1
+       ORDER BY bc.column_order ASC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, boardColumns: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching board columns:', error);
+    return res.status(500).json({ error: 'Failed to fetch board columns' });
+  }
+});
+
+app.post('/api/board-columns', requireAdmin, async (req, res) => {
+  const { board_id, name, description, column_order, color } = req.body;
+
+  if (!board_id || !name || !column_order) {
+    return res.status(400).json({ error: 'Board, name, and column order are required' });
+  }
+
+  try {
+    const boardCheck = await pool.query(
+      `SELECT id FROM boards WHERE id = $1 AND workspace_id = $2`,
+      [board_id, req.user.workspace_id]
+    );
+    if (boardCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Board not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO board_columns (board_id, name, description, column_order, color)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [board_id, String(name).trim(), description?.trim() || null, Number(column_order), color?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, boardColumn: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating board column:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Board column order or name already exists for this board' });
+    }
+    return res.status(500).json({ error: 'Failed to create board column' });
+  }
+});
+
+// ============================================
+// DASHBOARD / ANALYTICS API
+// ============================================
+app.get('/api/dashboard/summary', async (req, res) => {
+  try {
+    const stats = await pool.query(
+      `WITH booking_stats AS (
+         SELECT
+           COUNT(*)::int AS total_bookings,
+           COUNT(*) FILTER (WHERE status NOT IN ('cancelled', 'completed'))::int AS active_bookings,
+           COALESCE(SUM(total_amount), 0)::numeric AS booking_value
+         FROM bookings
+         WHERE workspace_id = $1
+       ),
+       payment_stats AS (
+         SELECT
+           COALESCE(SUM(amount), 0)::numeric AS paid_revenue
+         FROM payments
+         WHERE workspace_id = $1 AND status = 'completed'
+       ),
+       invoice_stats AS (
+         SELECT
+           COALESCE(SUM(CASE WHEN status != 'paid' THEN total_amount ELSE 0 END), 0)::numeric AS outstanding_value,
+           COUNT(*) FILTER (WHERE status != 'paid')::int AS outstanding_invoices
+         FROM invoices
+         WHERE workspace_id = $1
+       ),
+       job_stats AS (
+         SELECT
+           COUNT(*)::int AS total_jobs,
+           COUNT(*) FILTER (WHERE status IN ('pending', 'in_progress', 'queued'))::int AS active_jobs,
+           COUNT(*) FILTER (WHERE status = 'completed')::int AS completed_jobs
+         FROM production_jobs
+         WHERE workspace_id = $1
+       ),
+       review_stats AS (
+         SELECT
+           COUNT(*)::int AS total_reviews,
+           COUNT(*) FILTER (WHERE review_status = 'pending')::int AS pending_reviews,
+           COUNT(*) FILTER (WHERE review_status = 'completed')::int AS completed_reviews,
+           COUNT(*) FILTER (WHERE review_status = 'overdue')::int AS overdue_reviews
+         FROM client_reviews
+         WHERE workspace_id = $1
+       ),
+       event_stats AS (
+         SELECT COUNT(*)::int AS upcoming_events
+         FROM booking_events
+         WHERE workspace_id = $1 AND event_date >= CURRENT_DATE
+       )
+       SELECT
+         bs.total_bookings,
+         bs.active_bookings,
+         bs.booking_value,
+         ps.paid_revenue,
+         is_.outstanding_value,
+         is_.outstanding_invoices,
+         js.total_jobs,
+         js.active_jobs,
+         js.completed_jobs,
+         rs.total_reviews,
+         rs.pending_reviews,
+         rs.completed_reviews,
+         rs.overdue_reviews,
+         es.upcoming_events
+       FROM booking_stats bs
+       CROSS JOIN payment_stats ps
+       CROSS JOIN invoice_stats is_
+       CROSS JOIN job_stats js
+       CROSS JOIN review_stats rs
+       CROSS JOIN event_stats es;`,
+      [req.user.workspace_id]
+    );
+
+    const recentBookings = await pool.query(
+      `SELECT b.id, b.booking_number, b.status, b.total_amount, c.name AS client_name, b.booking_date
+       FROM bookings b
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE b.workspace_id = $1
+       ORDER BY b.booking_date DESC, b.created_at DESC
+       LIMIT 5`,
+      [req.user.workspace_id]
+    );
+
+    const recentJobs = await pool.query(
+      `SELECT pj.id, pj.job_name, pj.status, pj.priority, c.name AS client_name, pj.due_date
+       FROM production_jobs pj
+       JOIN bookings b ON b.id = pj.booking_id AND b.workspace_id = pj.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE pj.workspace_id = $1
+       ORDER BY pj.due_date ASC NULLS LAST, pj.created_at DESC
+       LIMIT 5`,
+      [req.user.workspace_id]
+    );
+
+    const dashboard = stats.rows[0] || {};
+
+    return res.json({
+      success: true,
+      summary: {
+        totalBookings: Number(dashboard.total_bookings || 0),
+        activeBookings: Number(dashboard.active_bookings || 0),
+        bookingValue: Number(dashboard.booking_value || 0),
+        paidRevenue: Number(dashboard.paid_revenue || 0),
+        outstandingValue: Number(dashboard.outstanding_value || 0),
+        outstandingInvoices: Number(dashboard.outstanding_invoices || 0),
+        totalJobs: Number(dashboard.total_jobs || 0),
+        activeJobs: Number(dashboard.active_jobs || 0),
+        completedJobs: Number(dashboard.completed_jobs || 0),
+        totalReviews: Number(dashboard.total_reviews || 0),
+        pendingReviews: Number(dashboard.pending_reviews || 0),
+        completedReviews: Number(dashboard.completed_reviews || 0),
+        overdueReviews: Number(dashboard.overdue_reviews || 0),
+        upcomingEvents: Number(dashboard.upcoming_events || 0),
+      },
+      recentBookings: recentBookings.rows,
+      recentJobs: recentJobs.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard summary:', error);
+    return res.status(500).json({ error: 'Failed to fetch dashboard summary' });
+  }
+});
+
+// ============================================
+// CREW ASSIGNMENTS API
+// ============================================
+app.get('/api/crew-assignments', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ca.*, s.name AS staff_name, s.email AS staff_email, s.phone AS staff_phone,
+              be.event_name, be.event_date, be.venue,
+              b.booking_number, c.name AS client_name
+       FROM crew_assignments ca
+       JOIN staff s ON s.id = ca.staff_id AND s.workspace_id = ca.workspace_id
+       JOIN booking_events be ON be.id = ca.booking_event_id AND be.workspace_id = ca.workspace_id
+       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = ca.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE ca.workspace_id = $1
+       ORDER BY be.event_date ASC, ca.assignment_date DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, crewAssignments: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching crew assignments:', error);
+    return res.status(500).json({ error: 'Failed to fetch crew assignments' });
+  }
+});
+
+app.post('/api/crew-assignments', requireAdmin, async (req, res) => {
+  const { booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes } = req.body;
+
+  if (!booking_event_id || !staff_id || !assigned_role) {
+    return res.status(400).json({ error: 'Booking event, staff, and role are required' });
+  }
+
+  try {
+    const eventCheck = await pool.query(
+      `SELECT id FROM booking_events WHERE id = $1 AND workspace_id = $2`,
+      [booking_event_id, req.user.workspace_id]
+    );
+    if (eventCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking event not found in this workspace' });
+    }
+
+    const staffCheck = await pool.query(
+      `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
+      [staff_id, req.user.workspace_id]
+    );
+    if (staffCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Staff member not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO crew_assignments (workspace_id, booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, booking_event_id, staff_id, String(assigned_role).trim(), assignment_date || new Date().toISOString().slice(0, 10), start_time || null, end_time || null, status || 'assigned', notes?.trim() || null]
+    );
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'crew_assignment_created',
+      description: `Created crew assignment for staff ${staff_id} to event ${booking_event_id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.status(201).json({ success: true, crewAssignment: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating crew assignment:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'This staff member is already assigned to this event' });
+    }
+    return res.status(500).json({ error: 'Failed to create crew assignment' });
+  }
+});
+
+app.get('/api/crew-assignments/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ca.*, s.name AS staff_name, s.email AS staff_email, s.phone AS staff_phone,
+              be.event_name, be.event_date, be.venue,
+              b.booking_number, c.name AS client_name
+       FROM crew_assignments ca
+       JOIN staff s ON s.id = ca.staff_id AND s.workspace_id = ca.workspace_id
+       JOIN booking_events be ON be.id = ca.booking_event_id AND be.workspace_id = ca.workspace_id
+       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = ca.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE ca.id = $1 AND ca.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Crew assignment not found' });
+    }
+
+    return res.json({ success: true, crewAssignment: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching crew assignment:', error);
+    return res.status(500).json({ error: 'Failed to fetch crew assignment' });
+  }
+});
+
+app.put('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
+  const { booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE crew_assignments
+       SET booking_event_id = COALESCE($1, booking_event_id),
+           staff_id = COALESCE($2, staff_id),
+           assigned_role = COALESCE($3, assigned_role),
+           assignment_date = COALESCE($4, assignment_date),
+           start_time = $5,
+           end_time = $6,
+           status = COALESCE($7, status),
+           notes = $8,
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [booking_event_id || null, staff_id || null, assigned_role?.trim() || null, assignment_date || null, start_time || null, end_time || null, status || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Crew assignment not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'crew_assignment_updated',
+      description: `Updated crew assignment ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, crewAssignment: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating crew assignment:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'This staff member is already assigned to this event' });
+    }
+    return res.status(500).json({ error: 'Failed to update crew assignment' });
+  }
+});
+
+app.delete('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM crew_assignments
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING id`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Crew assignment not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'crew_assignment_deleted',
+      description: `Deleted crew assignment ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, message: 'Crew assignment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting crew assignment:', error);
+    return res.status(500).json({ error: 'Failed to delete crew assignment' });
   }
 });
 

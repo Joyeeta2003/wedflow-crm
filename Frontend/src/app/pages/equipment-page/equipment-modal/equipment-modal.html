@@ -1,0 +1,55 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Add Equipment</h2>
+      <button type="button" class="modal-close-btn" (click)="close()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Name</label>
+        <input class="form-input" placeholder="e.g. Sony A7IV Body #1" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Type</label>
+        <div class="select-wrap">
+          <button type="button" role="combobox" [attr.aria-expanded]="isTypeMenuOpen()" class="select-trigger" [class.select-trigger--open]="isTypeMenuOpen()" (click)="toggleTypeMenu()">
+            <span>{{ typeLabel }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-chevron" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"></path>
+            </svg>
+          </button>
+          <ul class="select-panel" *ngIf="isTypeMenuOpen()">
+            <li *ngFor="let opt of typeOptions" class="select-panel-item" [class.select-panel-item--selected]="opt.value === selectedType()" (click)="selectType(opt.value)">
+              <span>{{ opt.label }}</span>
+              <svg *ngIf="opt.value === selectedType()" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-check" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Serial Number (optional)</label>
+        <input class="form-input" [ngModel]="serialNumber()" (ngModelChange)="serialNumber.set($event)" />
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Description (optional)</label>
+        <textarea class="form-input form-textarea" rows="3" [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="modal-cancel-btn" (click)="close()">Cancel</button>
+      <button type="button" class="modal-add-btn" (click)="submit()">Add</button>
+    </div>
+  </div>
+</div>

@@ -15,6 +15,9 @@ import { Bookings } from './pages/bookings/bookings';
 import { BookingDetail } from './pages/bookings/booking-detail/booking-detail';
 import { CrewAssign } from './pages/crew-assign/crew-assign';
 import {Marketplace} from './pages/marketplace/marketplace'
+import {Storage} from './pages/storage/storage'
+import {Equipment} from "./pages/equipment-page/equipment-page"
+
 
 const authGuard: CanActivateFn = () => {
   const auth = inject(Auth);
@@ -62,6 +65,8 @@ export const routes: Routes = [
       { path: 'bookings/:id', component: BookingDetail },
       { path: 'crew-assignments', component: CrewAssign },
       { path: 'marketplace', component: Marketplace },
+      { path: 'storage', component: Storage },
+      { path: 'equipment', component: Equipment },
     ],
   },
 ];
