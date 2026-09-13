@@ -11,6 +11,7 @@ export interface Package {
   description: string | null;
   reminder_day: number | null;
   reminder_email_days: number;
+  deliverables?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +24,7 @@ export interface CreatePackageRequest {
   status?: string;
   reminderDay?: number;
   reminderEmailDays?: number;
+  deliverables?: string[];
 }
 
 export interface UpdatePackageRequest {
@@ -33,6 +35,7 @@ export interface UpdatePackageRequest {
   status?: string;
   reminderDay?: number;
   reminderEmailDays?: number;
+  deliverables?: string[];
 }
 
 export interface PackageListResponse {

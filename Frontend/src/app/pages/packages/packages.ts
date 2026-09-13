@@ -94,7 +94,7 @@ export class Packages implements OnInit {
         ? `Reminders use Day ${dbPackage.reminder_day}; crew details mail: ${dbPackage.reminder_email_days} days before each event day.`
         : '',
       editorPlan: [],
-      deliverables: [],
+      deliverables: dbPackage.deliverables || [],
     };
   }
 
@@ -512,12 +512,20 @@ export class Packages implements OnInit {
     return Math.max(pkg.deliverables.length - 3, 0);
   }
 
+  showModal = false;
+  editMode = false;
+  editingPackage: UIPackage | null = null;
+
   onNewPackage(): void {
-    // TODO: new package form/modal
+    this.editMode = false;
+    this.editingPackage = null;
+    this.showModal = true;
   }
 
   onEdit(pkg: UIPackage): void {
-    // TODO: edit form/modal
+    this.editMode = true;
+    this.editingPackage = pkg;
+    this.showModal = true;
   }
 
   onDelete(pkg: UIPackage): void {
@@ -537,46 +545,78 @@ export class Packages implements OnInit {
     });
   }
 
-  showModal = false;
-
   onPackageCreated(formValue: any) {
     const packageName = (formValue.name || '').trim();
-    const isDuplicate = this.packages.some(pkg => pkg.name.toLowerCase() === packageName.toLowerCase());
-
+    
     if (!packageName) {
       alert('Package name is required.');
       return;
     }
 
-    if (isDuplicate) {
-      alert(`Package "${packageName}" already exists in this workspace. Please use a unique name.`);
-      return;
-    }
+    if (this.editMode && this.editingPackage) {
+      // Update existing package
+      const updateRequest = {
+        name: packageName,
+        durationDays: Number(formValue.durationDays),
+        price: parseFloat(formValue.price.toString()),
+        description: formValue.description,
+        status: formValue.availability ? 'active' : 'inactive',
+        reminderDay: formValue.reminderReferenceDay,
+        reminderEmailDays: formValue.crewMailBeforeEvent,
+        deliverables: this.toDeliverables(formValue.deliverables)
+      };
 
-    const createRequest = {
-      name: packageName,
-      durationDays: Number(formValue.durationDays),
-      price: parseFloat(formValue.price.toString()),
-      description: formValue.description,
-      status: formValue.availability ? 'active' : 'inactive',
-      reminderDay: formValue.reminderReferenceDay,
-      reminderEmailDays: formValue.crewMailBeforeEvent
-    };
+      this.packageService.updatePackage(this.editingPackage.id, updateRequest).subscribe({
+        next: (response) => {
+          const updatedPackage = this.mapDbPackageToUIPackage(response.package);
+          this.packages = this.packages.map(p => p.id === this.editingPackage?.id ? updatedPackage : p);
+          this.showModal = false;
+          this.editMode = false;
+          this.editingPackage = null;
+          this.cdr.detectChanges();
+          this.loadPackages();
+        },
+        error: (error) => {
+          console.error('Error updating package:', error);
+          const message = error?.error?.error || error?.message || 'Failed to update package.';
+          alert(message);
+        }
+      });
+    } else {
+      // Create new package
+      const isDuplicate = this.packages.some(pkg => pkg.name.toLowerCase() === packageName.toLowerCase());
 
-    this.packageService.createPackage(createRequest).subscribe({
-      next: (response) => {
-        const newPackage = this.mapDbPackageToUIPackage(response.package);
-        this.packages = [...this.packages, newPackage];
-        this.showModal = false;
-        this.cdr.detectChanges();
-        this.loadPackages();
-      },
-      error: (error) => {
-        console.error('Error creating package:', error);
-        const message = error?.error?.error || error?.message || 'Failed to create package.';
-        alert(message);
+      if (isDuplicate) {
+        alert(`Package "${packageName}" already exists in this workspace. Please use a unique name.`);
+        return;
       }
-    });
+
+      const createRequest = {
+        name: packageName,
+        durationDays: Number(formValue.durationDays),
+        price: parseFloat(formValue.price.toString()),
+        description: formValue.description,
+        status: formValue.availability ? 'active' : 'inactive',
+        reminderDay: formValue.reminderReferenceDay,
+        reminderEmailDays: formValue.crewMailBeforeEvent,
+        deliverables: this.toDeliverables(formValue.deliverables)
+      };
+
+      this.packageService.createPackage(createRequest).subscribe({
+        next: (response) => {
+          const newPackage = this.mapDbPackageToUIPackage(response.package);
+          this.packages = [...this.packages, newPackage];
+          this.showModal = false;
+          this.cdr.detectChanges();
+          this.loadPackages();
+        },
+        error: (error) => {
+          console.error('Error creating package:', error);
+          const message = error?.error?.error || error?.message || 'Failed to create package.';
+          alert(message);
+        }
+      });
+    }
   }
 
   private mapFormToPackage(formValue: any): UIPackage {
@@ -620,5 +660,9 @@ export class Packages implements OnInit {
 
   private formatIndianCurrency(value: number): string {
     return '₹' + Number(value).toLocaleString('en-IN');
+  }
+
+  private toDeliverables(value: string): string[] {
+    return (value || '').split('\n').map(item => item.trim()).filter(Boolean);
   }
 }

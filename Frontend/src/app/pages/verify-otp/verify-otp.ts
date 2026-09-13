@@ -103,7 +103,11 @@ export class VerifyOtp {
         throw new Error(data?.error || 'Failed to resend OTP');
       }
 
-      alert('New OTP sent successfully!');
+      if (data?.devOtp) {
+        alert(`Development mode: your new OTP is ${data.devOtp}`);
+      } else {
+        alert('New OTP sent successfully!');
+      }
     } catch (error) {
       console.error('Error resending OTP:', error);
       this.errorMessage.set(error instanceof Error ? error.message : 'Network error. Please try again.');
