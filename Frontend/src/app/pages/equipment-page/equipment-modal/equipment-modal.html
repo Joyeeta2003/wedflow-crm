@@ -1,19 +1,14 @@
 <div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2 class="modal-title">Add Equipment</h2>
-      <button type="button" class="modal-close-btn" (click)="close()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18"></path>
-          <path d="m6 6 12 12"></path>
-        </svg>
-      </button>
+  <div class="dialog-content" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2 class="dialog-title">Add Equipment</h2>
     </div>
 
-    <div class="modal-body">
+    <form class="dialog-form" (ngSubmit)="submit()">
       <div class="form-field">
         <label class="form-label">Name</label>
-        <input class="form-input" placeholder="e.g. Sony A7IV Body #1" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+        <input class="form-input" [class.form-input--error]="showValidationError()" placeholder="e.g. Sony A7IV Body #1" [ngModel]="name()" (ngModelChange)="name.set($event)" name="name" />
+        <p *ngIf="showValidationError()" class="field-error">Name is required.</p>
       </div>
 
       <div class="form-field">
@@ -38,18 +33,26 @@
 
       <div class="form-field">
         <label class="form-label">Serial Number (optional)</label>
-        <input class="form-input" [ngModel]="serialNumber()" (ngModelChange)="serialNumber.set($event)" />
+        <input class="form-input" [ngModel]="serialNumber()" (ngModelChange)="serialNumber.set($event)" name="serialNumber" />
       </div>
 
       <div class="form-field">
         <label class="form-label">Description (optional)</label>
-        <textarea class="form-input form-textarea" rows="3" [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea>
+        <input class="form-input" [ngModel]="description()" (ngModelChange)="description.set($event)" name="description" />
       </div>
-    </div>
 
-    <div class="modal-footer">
-      <button type="button" class="modal-cancel-btn" (click)="close()">Cancel</button>
-      <button type="button" class="modal-add-btn" (click)="submit()">Add</button>
-    </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn--cancel" (click)="close()">Cancel</button>
+        <button type="submit" class="btn btn--add">Add</button>
+      </div>
+    </form>
+
+    <button type="button" class="dialog-close-btn" (click)="close()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18"></path>
+        <path d="m6 6 12 12"></path>
+      </svg>
+      <span class="sr-only">Close</span>
+    </button>
   </div>
 </div>

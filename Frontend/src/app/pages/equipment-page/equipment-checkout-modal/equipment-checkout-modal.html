@@ -1,0 +1,53 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onOverlayClick()">
+  <div class="dialog-content" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2 class="dialog-title">Checkout Equipment</h2>
+    </div>
+
+    <form class="dialog-form" (ngSubmit)="submit()">
+      <div class="form-field">
+        <label class="form-label" [class.form-label--error]="showValidationError()">Staff Member</label>
+        <div class="select-wrap">
+          <button type="button" role="combobox" [attr.aria-expanded]="isStaffMenuOpen()" class="select-trigger" [class.select-trigger--open]="isStaffMenuOpen()" [class.select-trigger--error]="showValidationError()" (click)="toggleStaffMenu()">
+            <span [class.select-placeholder]="!selectedStaffId()">{{ staffLabel }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-chevron" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"></path>
+            </svg>
+          </button>
+          <ul class="select-panel" *ngIf="isStaffMenuOpen()">
+            <li *ngFor="let staff of staffOptions()" class="select-panel-item" [class.select-panel-item--selected]="staff.id === selectedStaffId()" (click)="selectStaff(staff.id)">
+              <span>{{ staff.name }}</span>
+              <svg *ngIf="staff.id === selectedStaffId()" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-check" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+            </li>
+          </ul>
+        </div>
+        <p *ngIf="showValidationError()" class="field-error">Required</p>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Expected Return Date (optional)</label>
+        <input type="datetime-local" class="form-input" [ngModel]="expectedReturnDate()" (ngModelChange)="expectedReturnDate.set($event)" name="expectedReturnAt" />
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Notes (optional)</label>
+        <input class="form-input" [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes" />
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn--cancel" (click)="close()">Cancel</button>
+        <button type="submit" class="btn btn--add">Checkout</button>
+      </div>
+    </form>
+
+    <button type="button" class="dialog-close-btn" (click)="close()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18"></path>
+        <path d="m6 6 12 12"></path>
+      </svg>
+      <span class="sr-only">Close</span>
+    </button>
+  </div>
+</div>

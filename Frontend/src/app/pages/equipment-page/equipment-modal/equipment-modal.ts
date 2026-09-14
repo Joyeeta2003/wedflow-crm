@@ -2,8 +2,7 @@ import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-export type EquipmentType = 'camera' | 'drone' | 'tripod' | 'lighting' | 'audio' | 'other';
-
+export type EquipmentType = 'camera' | 'drone' | 'memory_card' | 'hard_disk' | 'lens' | 'tripod' | 'light' | 'other';
 export interface NewEquipmentPayload {
   name: string;
   type: EquipmentType;
@@ -28,15 +27,18 @@ export class EquipmentModal {
   @Input() isOpen = false;
   @Output() closed = new EventEmitter<void>();
   @Output() submitted = new EventEmitter<NewEquipmentPayload>();
+  showValidationError = signal(false);
 
   typeOptions: TypeOption[] = [
-    { value: 'camera', label: 'Camera' },
-    { value: 'drone', label: 'Drone' },
-    { value: 'tripod', label: 'Tripod' },
-    { value: 'lighting', label: 'Lighting' }, // UNCONFIRMED
-    { value: 'audio', label: 'Audio' }, // UNCONFIRMED
-    { value: 'other', label: 'Other' } // UNCONFIRMED
-  ];
+  { value: 'camera', label: 'Camera' },
+  { value: 'drone', label: 'Drone' },
+  { value: 'memory_card', label: 'Memory Card' },
+  { value: 'hard_disk', label: 'Hard Disk' },
+  { value: 'lens', label: 'Lens' },
+  { value: 'tripod', label: 'Tripod' },
+  { value: 'light', label: 'Light' },
+  { value: 'other', label: 'Other' }
+];
 
   name = signal('');
   selectedType = signal<EquipmentType>('camera');
@@ -66,28 +68,33 @@ export class EquipmentModal {
     this.closed.emit();
   }
 
-  submit() {
-    const trimmedName = this.name().trim();
-    if (!trimmedName) return; // TODO: proper validation/error message once confirmed
-
-    const typeOpt = this.typeOptions.find(o => o.value === this.selectedType());
-
-    this.submitted.emit({
-      name: trimmedName,
-      type: this.selectedType(),
-      typeLabel: typeOpt?.label ?? 'Camera',
-      serialNumber: this.serialNumber().trim() || undefined,
-      description: this.description().trim() || undefined
-    });
-
-    this.resetForm();
+ submit() {
+  const trimmedName = this.name().trim();
+  if (!trimmedName) {
+    this.showValidationError.set(true);
+    return;
   }
+  this.showValidationError.set(false);
 
-  private resetForm() {
-    this.name.set('');
-    this.selectedType.set('camera');
-    this.serialNumber.set('');
-    this.description.set('');
-    this.isTypeMenuOpen.set(false);
-  }
+  const typeOpt = this.typeOptions.find(o => o.value === this.selectedType());
+
+  this.submitted.emit({
+    name: trimmedName,
+    type: this.selectedType(),
+    typeLabel: typeOpt?.label ?? 'Camera',
+    serialNumber: this.serialNumber().trim() || undefined,
+    description: this.description().trim() || undefined
+  });
+   this.resetForm();
+}
+
+private resetForm() {
+  this.name.set('');
+  this.selectedType.set('camera');
+  this.serialNumber.set('');
+  this.description.set('');
+  this.isTypeMenuOpen.set(false);
+  this.showValidationError.set(false); // ← add koro
+}
+
 }
