@@ -30,9 +30,14 @@ export interface BookingEvent {
 }
 
 export interface PaymentSchedule {
+  id: string; // ASSUMPTION — delete/update-er jonno lagবে
   installment_name: string;
-  percentage: number;
-  timing: string | null;
+  amount: number; // ASSUMPTION — percentage-er bodole direct amount, screenshot onujayi
+  percentage?: number; // rakhলাম, jodi kothaও ব্যবহার hocche
+  due_date: string | null; // ASSUMPTION
+  paid_date: string | null; // ASSUMPTION
+  status: string; // ASSUMPTION — 'approved' | 'pending' etc.
+  notes?: string | null; // ASSUMPTION
 }
 
 export interface CrewPlanDay {
@@ -55,8 +60,19 @@ export interface CrewAssignment {
   handover_status?: 'submitted' | 'pending'; // ASSUMPTION
   files_status?: 'submitted' | 'pending'; // ASSUMPTION
   submitted_at?: string | null; // ASSUMPTION
+    deliveries?: DeliveryItem[]; // ASSUMPTION — new field, not in original interface
 }
 
+export interface DeliveryItem {
+  id: string;
+  type: string; // 'Album Design' | 'Album Print' | 'Video Edit' | etc.
+  description: string;
+  due_date: string | null;
+  status: 'Pending' | 'In Progress' | 'Delivered'; // ASSUMPTION
+  delivered_date: string | null;
+  notes?: string | null;
+}
+  
 export interface CreateBookingRequest {
   clientId: string;
   packageId: string;

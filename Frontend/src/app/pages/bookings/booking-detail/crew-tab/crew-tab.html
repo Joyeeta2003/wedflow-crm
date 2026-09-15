@@ -1,0 +1,125 @@
+<div class="crew-tab">
+  <!-- Event Days -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+        Event Days
+      </div>
+      <button class="btn-outline btn-sm" (click)="addDay.emit()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        Add Day
+      </button>
+    </div>
+    <div class="event-day-chips">
+      <div class="event-day-chip" *ngFor="let day of booking.event_days">
+        <div>
+          <div class="chip-title">{{ day.event_name }}</div>
+          <div class="chip-sub">{{ formatDate(day.event_date) }}</div>
+          <div class="chip-sub" *ngIf="day.venue">{{ day.venue }}</div>
+        </div>
+        <button class="chip-delete" type="button" (click)="removeDay.emit(day)" aria-label="Remove day">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Package Crew Plan -->
+  <div class="section-card">
+    <div class="section-header">
+      <div>
+        <div class="section-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+          Package Crew Plan
+        </div>
+        <p class="section-subtitle">Role-wise assignment from {{ booking.package_name }}: {{ totalCrewSlots - pendingCrewSlots }}/{{ totalCrewSlots }} slots filled</p>
+      </div>
+      <span class="badge badge-neutral" *ngIf="pendingCrewSlots > 0">{{ pendingCrewSlots }} pending</span>
+    </div>
+
+    <div class="day-group" *ngFor="let day of booking.package_crew_plan">
+      <div class="day-group-header">
+        <div>
+          <div class="day-group-title">{{ day.event_type }}</div>
+          <div class="day-group-sub">Day {{ day.day_number }} - {{ day.event_type }} - {{ formatDate(eventForDay(day)?.event_date ?? null) }}</div>
+        </div>
+        <div class="day-group-venue" *ngIf="eventForDay(day)?.venue as venue">{{ venue }}</div>
+      </div>
+
+      <div class="role-grid">
+        <div class="role-card" *ngFor="let role of day.roles">
+          <div class="role-card-top">
+            <div>
+              <div class="role-name">{{ role.role }}</div>
+              <div class="role-count">{{ assignedCount(day, role.role) }}/{{ role.quantity }} assigned</div>
+            </div>
+            <span class="role-badge" [ngClass]="roleStatus(day, role) === 'done' ? 'role-badge-done' : 'role-badge-left'">
+              {{ roleStatus(day, role) === 'done' ? 'Done' : (role.quantity - assignedCount(day, role.role)) + ' left' }}
+            </span>
+          </div>
+          <div class="role-progress-track">
+            <div class="role-progress-fill" [style.width.%]="roleProgress(day, role)"></div>
+          </div>
+          <button
+            class="role-assign-btn"
+            [class.role-assign-btn-primary]="roleStatus(day, role) === 'left'"
+            type="button"
+            (click)="assignRole.emit({ day, role: role.role })"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Assign {{ role.role }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crew Assignments -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-plain">Crew Assignments</div>
+      <button class="btn-primary btn-sm" (click)="assignCrew.emit()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        Assign Crew
+      </button>
+    </div>
+
+    <div class="assignment-list">
+      <div class="assignment-row" *ngFor="let a of booking.crew_assignments">
+        <div class="assignment-left">
+          <div class="assignment-avatar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
+          <div>
+            <div class="assignment-name">{{ a.staff_name }}</div>
+            <div class="assignment-meta">
+              <span>{{ a.assigned_role }}</span><span>•</span>
+              <span class="assignment-meta-strong">{{ a.event_name }}</span>
+              <span>{{ formatDate(a.event_date) }}</span>
+              <span *ngIf="a.event_time">• {{ a.event_time }}</span>
+              <span *ngIf="a.venue">• {{ a.venue }}</span>
+            </div>
+            <div class="assignment-badges">
+              <span class="badge" [ngClass]="a.handover_status === 'submitted' ? 'badge-secondary' : 'badge-neutral'">
+                {{ a.handover_status === 'submitted' ? 'Handover submitted' : 'Handover pending' }}
+              </span>
+              <span class="badge" [ngClass]="a.files_status === 'submitted' ? 'badge-secondary' : 'badge-neutral'">
+                {{ a.files_status === 'submitted' ? 'Files submitted' : 'Files pending' }}
+              </span>
+              <span class="assignment-submitted" *ngIf="a.submitted_at">Submitted {{ a.submitted_at }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="assignment-right">
+          <span class="badge badge-fullday" *ngIf="a.is_full_day">Full Day</span>
+          <span class="badge badge-secondary" *ngIf="a.is_notified">Notified</span>
+          <button class="btn-primary btn-sm" *ngIf="a.files_status === 'submitted'" (click)="verifyFiles.emit(a)">Verify Files</button>
+          <button class="icon-btn-destructive" type="button" (click)="removeAssignment.emit(a)" aria-label="Remove crew assignment">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

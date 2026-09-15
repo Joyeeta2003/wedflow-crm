@@ -4,10 +4,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   Booking,
   BookingService,
+  BookingEvent,
   CrewPlanDay,
   CrewAssignment,
-  BookingEvent
+  PaymentSchedule
 } from '../../../services/booking.service';
+import { CrewTab } from './crew-tab/crew-tab';
+import { PaymentsTab } from './payments-tab/payments-tab';
 
 interface WorkflowStageDef {
   number: number;
@@ -130,7 +133,7 @@ type TabKey = 'crew' | 'payments' | 'deliveries' | 'tracker' | 'media' | 'remind
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink,CrewTab,PaymentsTab],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -239,6 +242,12 @@ private mockBooking: Booking = {
     { id: 'a9', staff_name: 'Kathakali Mondal', assigned_role: 'Cinematographer', event_name: 'Mehendi', event_date: '2026-06-13', venue: 'ITC', status: 'assigned', is_full_day: true, is_notified: true, handover_status: 'pending', files_status: 'pending', submitted_at: null },
     { id: 'a10', staff_name: 'ytewtywty', assigned_role: 'Photographer', event_name: 'Wedding', event_date: '2026-06-14', venue: 'ITC', status: 'assigned', is_full_day: true, is_notified: true, handover_status: 'pending', files_status: 'pending', submitted_at: null },
   ],
+  payment_schedule: [
+    { id: 'p1', installment_name: 'Advance', amount: 105000, due_date: '2026-06-13', paid_date: '2026-06-30', status: 'Approved', notes: null },
+    { id: 'p2', installment_name: 'Advance', amount: 105000, due_date: '2026-06-10', paid_date: '2026-06-30', status: 'Approved', notes: null },
+    { id: 'p3', installment_name: 'Advance', amount: 105000, due_date: '2026-06-14', paid_date: '2026-06-30', status: 'Approved', notes: null },
+    { id: 'p4', installment_name: 'Advance', amount: 350000, due_date: '2026-06-10', paid_date: '2026-06-30', status: 'Approved', notes: null },
+  ],
 };
 
   ngOnInit(): void {
@@ -317,69 +326,16 @@ private mockBooking: Booking = {
     return 'badge-neutral';
   }
 
-  // Stage 2 helper — used by Crew tab (Package Crew Plan cards)
-  assignedCount(day: CrewPlanDay, role: string): number {
-    if (!this.booking?.crew_assignments) return 0;
-    return this.booking.crew_assignments.filter(
-      (a: CrewAssignment) => a.event_name === day.event_type && a.assigned_role === role,
-    ).length;
-  }
+  // --- Crew tab event handlers (STUBBED — wire up once API endpoints confirmed) ---
+  onCrewAddDay(): void { /* TODO */ }
+  onCrewRemoveDay(e: BookingEvent): void { /* TODO */ }
+  onCrewAssignRole(payload: { day: CrewPlanDay; role: string }): void { /* TODO */ }
+  onCrewAssignCrew(): void { /* TODO */ }
+  onCrewVerifyFiles(a: CrewAssignment): void { /* TODO */ }
+  onCrewRemoveAssignment(a: CrewAssignment): void { /* TODO */ }
 
-  // --- Package Crew Plan helpers ---
-eventForDay(day: CrewPlanDay) {
-  return this.booking?.event_days?.find(e => e.event_name === day.event_type);
-}
-
-roleStatus(day: CrewPlanDay, role: { role: string; quantity: number }): 'done' | 'left' {
-  return this.assignedCount(day, role.role) >= role.quantity ? 'done' : 'left';
-}
-
-roleProgress(day: CrewPlanDay, role: { role: string; quantity: number }): number {
-  if (!role.quantity) return 0;
-  return Math.min(100, Math.round((this.assignedCount(day, role.role) / role.quantity) * 100));
-}
-
-get totalCrewSlots(): number {
-  if (!this.booking?.package_crew_plan) return 0;
-  return this.booking.package_crew_plan.reduce(
-    (sum, day) => sum + day.roles.reduce((s, r) => s + r.quantity, 0), 0
-  );
-}
-
-get pendingCrewSlots(): number {
-  if (!this.booking?.package_crew_plan) return 0;
-  let pending = 0;
-  for (const day of this.booking.package_crew_plan) {
-    for (const role of day.roles) {
-      pending += Math.max(0, role.quantity - this.assignedCount(day, role.role));
-    }
-  }
-  return pending;
-}
-
-// --- Actions (STUBBED — wire up to real service calls once endpoints confirmed) ---
-onAddDay(): void {
-  // TODO: open add-day modal / call bookingService
-}
-
-onRemoveDay(event: BookingEvent): void {
-  // TODO: confirm + call bookingService
-}
-
-onAssignRole(day: CrewPlanDay, role: string): void {
-  // TODO: open assign-crew modal scoped to this day+role
-}
-
-onAssignCrew(): void {
-  // TODO: open general assign-crew modal
-}
-
-onVerifyFiles(assignment: CrewAssignment): void {
-  // TODO: call bookingService
-}
-
-onRemoveAssignment(assignment: CrewAssignment): void {
-  // TODO: confirm + call bookingService
-}
+  // --- Payments tab event handlers (STUBBED) ---
+  onPaymentCreate(data: any): void { /* TODO */ }
+  onPaymentDelete(p: PaymentSchedule): void { /* TODO */ }
 
 }

@@ -1,0 +1,51 @@
+<div class="section-card">
+  <div class="section-header">
+    <div class="section-title-plain">Payment Schedule</div>
+    <button class="btn-primary btn-sm" (click)="onOpenAdd()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      Add Installment
+    </button>
+  </div>
+
+  <div class="assignment-list">
+    <div class="assignment-row" *ngFor="let p of booking.payment_schedule">
+      <div class="assignment-left">
+        <div class="assignment-avatar assignment-avatar-green">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3"/><path d="M9 13c6.667 0 6.667-10 0-10"/></svg>
+        </div>
+        <div>
+          <div class="assignment-name">{{ p.installment_name }}</div>
+          <div class="assignment-meta">
+            <span>{{ formatAmount(p.amount) }}</span>
+            <span *ngIf="p.due_date">• Due {{ formatDate(p.due_date) }}</span>
+            <span *ngIf="p.paid_date">• Paid {{ formatDate(p.paid_date) }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="assignment-right">
+        <span class="badge badge-success">{{ p.status }}</span>
+        <button class="icon-btn-destructive" type="button" (click)="onDeleteClick(p)" aria-label="Delete installment">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-payment-modal
+  [isOpen]="showAddModal"
+  [remainingAmount]="remainingSchedulable"
+  (closeModal)="onCloseAdd()"
+  (create)="onSubmitAdd($event)"
+></app-payment-modal>
+
+<div class="dialog-overlay" *ngIf="confirmDeleteTarget">
+  <div class="dialog-content confirm-dialog">
+    <h2>Confirm Delete</h2>
+    <p class="confirm-text">Delete this payment installment?</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn-outline" (click)="onCancelDelete()">Cancel</button>
+      <button type="button" class="btn-destructive" (click)="onConfirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
