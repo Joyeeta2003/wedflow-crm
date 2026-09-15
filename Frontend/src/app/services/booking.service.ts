@@ -42,12 +42,19 @@ export interface CrewPlanDay {
 }
 
 export interface CrewAssignment {
+  id: string; // ASSUMPTION — needed for delete/verify actions
   staff_name: string;
   assigned_role: string;
   event_name: string;
   event_date: string;
+  event_time?: string; // ASSUMPTION — "10:00 am" screenshot-e dekha gele, sob row-e nei
   venue: string | null;
   status: string;
+  is_full_day?: boolean; // ASSUMPTION
+  is_notified?: boolean; // ASSUMPTION
+  handover_status?: 'submitted' | 'pending'; // ASSUMPTION
+  files_status?: 'submitted' | 'pending'; // ASSUMPTION
+  submitted_at?: string | null; // ASSUMPTION
 }
 
 export interface CreateBookingRequest {
