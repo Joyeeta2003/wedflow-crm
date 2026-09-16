@@ -25,9 +25,12 @@ export interface Booking {
 }
 
 export interface BookingEvent {
+  id: string; // ASSUMPTION — needed to uniquely target a day for delete (duplicate event_names possible)
   event_name: string;
-  event_date: string;
+  event_date: string | null; // ASSUMPTION — null when date is pending
   venue: string | null;
+  notes?: string | null; // ASSUMPTION
+  date_pending?: boolean; // ASSUMPTION
 }
 
 export interface PaymentSchedule {

@@ -14,7 +14,8 @@ import {
 import { CrewTab } from './crew-tab/crew-tab';
 import { PaymentsTab } from './payments-tab/payments-tab';
 import { DeliveriesTab } from './deliveries-tab/deliveries-tab';
-import { NewDeliveryData } from './deliveries-tab/delivery-modal/delivery-modal';
+import { NewDeliveryData } from './deliveries-tab/delivery-modal/delivery-modal'
+import { NewEventDayData } from './crew-tab/event-day-modal/event-day-modal';
 import { Toast } from '../../../components/toast/toast';
 
 interface WorkflowStageDef {
@@ -124,10 +125,10 @@ export class BookingDetail implements OnInit {
     venue: 'ITC',
     notes: null,
     amount_paid: 665000,
-    event_days: [
-      { event_name: 'Mehendi', event_date: '2026-06-13', venue: 'ITC' },
-      { event_name: 'Wedding', event_date: '2026-06-14', venue: 'ITC' },
-      { event_name: 'Reception', event_date: '2026-06-15', venue: 'ITC' },
+        event_days: [
+      { id: 'e1', event_name: 'Mehendi', event_date: '2026-06-13', venue: 'ITC' },
+      { id: 'e2', event_name: 'Wedding', event_date: '2026-06-14', venue: 'ITC' },
+      { id: 'e3', event_name: 'Reception', event_date: '2026-06-15', venue: 'ITC' },
     ],
     package_crew_plan: [
       {
@@ -275,13 +276,36 @@ export class BookingDetail implements OnInit {
     clearTimeout(this.toastTimeout);
   }
 
-  // --- Crew tab event handlers (STUBBED — wire up once API endpoints confirmed) ---
-  onCrewAddDay(): void { /* TODO */ }
-  onCrewRemoveDay(e: BookingEvent): void { /* TODO */ }
-  onCrewAssignRole(payload: { day: CrewPlanDay; role: string }): void { /* TODO */ }
-  onCrewAssignCrew(): void { /* TODO */ }
+  // --- Crew tab event handlers ---
+  onCrewAddDay(data: NewEventDayData): void {
+    if (!this.booking) return;
+    const newDay: BookingEvent = {
+      id: 'e' + Date.now(), // ASSUMPTION — real id backend theke ashবে
+      event_name: data.eventType,
+      event_date: data.datePending ? null : (data.date || null),
+      venue: data.venue || null,
+      notes: data.notes || null,
+      date_pending: data.datePending,
+    };
+    this.booking.event_days = [...(this.booking.event_days ?? []), newDay];
+    this.showToast('Event day added', 'The event day has been added successfully.');
+  }
+
+  onCrewRemoveDay(e: BookingEvent): void {
+    if (!this.booking?.event_days) return;
+    this.booking.event_days = this.booking.event_days.filter((x) => x.id !== e.id);
+    this.showToast('Deleted', 'The event day has been removed.');
+  }
+
+  onCrewAssignRole(payload: { day: CrewPlanDay; role: string }): void { /* TODO — needs Assign Crew modal */ }
+  onCrewAssignCrew(): void { /* TODO — needs Assign Crew modal */ }
   onCrewVerifyFiles(a: CrewAssignment): void { /* TODO */ }
-  onCrewRemoveAssignment(a: CrewAssignment): void { /* TODO */ }
+
+  onCrewRemoveAssignment(a: CrewAssignment): void {
+    if (!this.booking?.crew_assignments) return;
+    this.booking.crew_assignments = this.booking.crew_assignments.filter((x) => x.id !== a.id);
+    this.showToast('Deleted', 'The crew assignment has been removed.');
+  }
 
   // --- Payments tab event handlers ---
   onPaymentCreate(data: any): void {

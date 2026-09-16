@@ -19,6 +19,15 @@
   border-radius: 0.5rem;
   border: 1px solid hsl(var(--border));
   background: hsl(var(--muted) / 0.2);
+
+  // group-hover pattern: delete icon hidden until row hover
+  .chip-delete {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  &:hover .chip-delete {
+    opacity: 1;
+  }
 }
 .chip-title {
   font-size: 0.875rem;
@@ -158,4 +167,14 @@
     border-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
   }
+}
+
+.confirm-dialog {
+  max-width: 24rem;
+}
+.confirm-text {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
 }

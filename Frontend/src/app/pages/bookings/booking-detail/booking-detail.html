@@ -281,7 +281,7 @@
 
     <div class="tab-panel">
       <div *ngIf="activeTab === 'crew'">
-        <app-crew-tab [booking]="b" (addDay)="onCrewAddDay()" (removeDay)="onCrewRemoveDay($event)"
+        <app-crew-tab [booking]="b" (addDay)="onCrewAddDay($event)" (removeDay)="onCrewRemoveDay($event)"
           (assignRole)="onCrewAssignRole($event)" (assignCrew)="onCrewAssignCrew()"
           (verifyFiles)="onCrewVerifyFiles($event)" (removeAssignment)="onCrewRemoveAssignment($event)"></app-crew-tab>
       </div>

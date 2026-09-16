@@ -1,31 +1,43 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Booking, BookingEvent, CrewPlanDay, CrewAssignment } from '../../../../services/booking.service';
+import { EventDayModal, NewEventDayData } from './event-day-modal/event-day-modal';
 
 @Component({
   selector: 'app-crew-tab',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, EventDayModal],
   templateUrl: './crew-tab.html',
   styleUrl: './crew-tab.scss',
 })
 export class CrewTab {
   @Input({ required: true }) booking!: Booking;
 
-  @Output() addDay = new EventEmitter<void>();
+  @Output() addDay = new EventEmitter<NewEventDayData>();
   @Output() removeDay = new EventEmitter<BookingEvent>();
   @Output() assignRole = new EventEmitter<{ day: CrewPlanDay; role: string }>();
   @Output() assignCrew = new EventEmitter<void>();
   @Output() verifyFiles = new EventEmitter<CrewAssignment>();
   @Output() removeAssignment = new EventEmitter<CrewAssignment>();
 
+  showAddDayModal = false;
+  confirmDeleteDayTarget: BookingEvent | null = null;
+
   formatDate(value: string | null): string {
     if (!value) return '—';
     return new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  trackByDayId(index: number, item: BookingEvent): string {
+    return item.id;
+  }
+
+  trackByAssignmentId(index: number, item: CrewAssignment): string {
+    return item.id;
+  }
+
   eventForDay(day: CrewPlanDay) {
-    return this.booking.event_days?.find(e => e.event_name === day.event_type);
+    return this.booking.event_days?.find((e) => e.event_name === day.event_type);
   }
 
   assignedCount(day: CrewPlanDay, role: string): number {
@@ -57,7 +69,30 @@ export class CrewTab {
     }
     return pending;
   }
-  trackByAssignmentId(index: number, item: CrewAssignment): string {
-  return item.id;
-}
+
+  onOpenAddDay(): void {
+    this.showAddDayModal = true;
+  }
+
+  onCloseAddDay(): void {
+    this.showAddDayModal = false;
+  }
+
+  onSubmitAddDay(data: NewEventDayData): void {
+    this.showAddDayModal = false;
+    this.addDay.emit(data);
+  }
+
+  onDeleteDayClick(day: BookingEvent): void {
+    this.confirmDeleteDayTarget = day;
+  }
+
+  onCancelDeleteDay(): void {
+    this.confirmDeleteDayTarget = null;
+  }
+
+  onConfirmDeleteDay(): void {
+    if (this.confirmDeleteDayTarget) this.removeDay.emit(this.confirmDeleteDayTarget);
+    this.confirmDeleteDayTarget = null;
+  }
 }
