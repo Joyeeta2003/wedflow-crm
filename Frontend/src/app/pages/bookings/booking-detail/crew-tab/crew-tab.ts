@@ -57,4 +57,7 @@ export class CrewTab {
     }
     return pending;
   }
+  trackByAssignmentId(index: number, item: CrewAssignment): string {
+  return item.id;
+}
 }

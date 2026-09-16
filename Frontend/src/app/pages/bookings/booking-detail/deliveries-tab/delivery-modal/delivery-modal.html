@@ -1,1 +1,70 @@
-<p>delivery-modal works!</p>
+<div class="dialog-overlay">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h2>Add Delivery Item</h2>
+      <button type="button" class="dialog-close" (click)="onCancel()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form #deliveryForm="ngForm" (ngSubmit)="onSubmit(deliveryForm)" class="dialog-form">
+      <div class="form-group">
+        <label>Type *</label>
+        <div class="custom-select">
+          <button
+            type="button"
+            class="custom-select-trigger"
+            [class.input-error]="typeInvalid"
+            (click)="toggleTypeDropdown()"
+          >
+            <span [class.placeholder]="!delivery.type">{{ delivery.type || 'Select type' }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isTypeOpen"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+
+          <div class="custom-select-backdrop" *ngIf="isTypeOpen" (click)="closeTypeDropdown()"></div>
+
+          <div class="custom-select-menu" *ngIf="isTypeOpen">
+            <button
+              type="button"
+              class="custom-select-option"
+              *ngFor="let t of deliveryTypes"
+              [class.selected]="delivery.type === t"
+              (click)="selectType(t)"
+            >{{ t }}</button>
+          </div>
+        </div>
+        <p class="field-error" *ngIf="typeInvalid">Type is required</p>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <input
+          id="description" name="description" type="text" class="form-input"
+          placeholder="e.g. 2 Royal Look Albums 12x36, 60 pages"
+          [(ngModel)]="delivery.description" required
+          #descField="ngModel"
+          [class.input-error]="descField.invalid && descField.touched"
+        />
+        <p class="field-error" *ngIf="descField.invalid && descField.touched">Description is required</p>
+      </div>
+
+      <div class="form-group">
+        <label for="dueDate">Expected Delivery Date</label>
+        <input id="dueDate" name="dueDate" type="date" class="form-input" [(ngModel)]="delivery.dueDate" />
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" class="form-textarea" rows="2" placeholder="Any notes..." [(ngModel)]="delivery.notes"></textarea>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn-outline" (click)="onCancel()" [disabled]="isSubmitting">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          <svg *ngIf="isSubmitting" class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          {{ isSubmitting ? 'Add' : 'Add' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

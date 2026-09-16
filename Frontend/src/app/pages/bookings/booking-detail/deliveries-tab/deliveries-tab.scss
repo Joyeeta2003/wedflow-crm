@@ -1,0 +1,10 @@
+@import '../tab-shared';
+
+.assignment-avatar-amber { background: hsl(38 92% 50% / 0.15); color: hsl(38 92% 50%); }
+
+.status-pending { background: hsl(38 92% 50% / 0.15); color: hsl(38 92% 60%); border-color: hsl(38 92% 50% / 0.3); }
+.status-progress { background: hsl(217 91% 60% / 0.15); color: hsl(217 91% 65%); border-color: hsl(217 91% 60% / 0.3); }
+.status-delivered { background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); border-color: transparent; }
+
+.confirm-dialog { max-width: 24rem; }
+.confirm-text { margin: 0.75rem 0 0; font-size: 0.875rem; color: hsl(var(--muted-foreground)); }

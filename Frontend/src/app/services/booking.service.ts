@@ -21,6 +21,7 @@ export interface Booking {
   payment_schedule?: PaymentSchedule[];
   package_crew_plan?: CrewPlanDay[];
   crew_assignments?: CrewAssignment[];
+  deliveries?: DeliveryItem[]; // ASSUMPTION — new field, not in original interface
 }
 
 export interface BookingEvent {
@@ -60,7 +61,6 @@ export interface CrewAssignment {
   handover_status?: 'submitted' | 'pending'; // ASSUMPTION
   files_status?: 'submitted' | 'pending'; // ASSUMPTION
   submitted_at?: string | null; // ASSUMPTION
-    deliveries?: DeliveryItem[]; // ASSUMPTION — new field, not in original interface
 }
 
 export interface DeliveryItem {
@@ -72,7 +72,7 @@ export interface DeliveryItem {
   delivered_date: string | null;
   notes?: string | null;
 }
-  
+
 export interface CreateBookingRequest {
   clientId: string;
   packageId: string;

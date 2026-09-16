@@ -289,7 +289,12 @@
         <app-payments-tab [booking]="b" (createPayment)="onPaymentCreate($event)"
           (deletePayment)="onPaymentDelete($event)"></app-payments-tab>
       </div>
-      <div *ngIf="activeTab !== 'crew' && activeTab !== 'payments'">
+      <div *ngIf="activeTab === 'deliveries'">
+        <app-deliveries-tab [booking]="b" (createDelivery)="onDeliveryCreate($event)" 
+          (startDelivery)="onDeliveryStart($event)" (markReady)="onDeliveryMarkReady($event)"
+          (deleteDelivery)="onDeliveryDelete($event)"></app-deliveries-tab>
+      </div>
+      <div *ngIf="activeTab !== 'crew' && activeTab !== 'payments' && activeTab !== 'deliveries' ">
         <p class="coming-soon">Coming soon</p>
       </div>
     </div>
@@ -298,3 +303,5 @@
 
 <div class="state-message" *ngIf="loading">Loading booking...</div>
 <div class="state-message state-error" *ngIf="!loading && error">{{ error }}</div>
+<app-toast [visible]="toastVisible" [title]="toastTitle" [message]="toastMsg" [variant]="toastVariant"
+  (closed)="onToastClosed()"></app-toast>

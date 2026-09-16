@@ -52,4 +52,7 @@ export class PaymentsTab {
     if (this.confirmDeleteTarget) this.deletePayment.emit(this.confirmDeleteTarget);
     this.confirmDeleteTarget = null;
   }
+  trackByPaymentId(index: number, item: PaymentSchedule): string {
+  return item.id;
+}
 }
