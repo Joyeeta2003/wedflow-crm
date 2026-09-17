@@ -2066,6 +2066,30 @@ app.put('/api/revisions/:id', requireAdmin, async (req, res) => {
 });
 
 // ============================================
+// BOOKING EVENTS API
+// ============================================
+
+// Get all booking events
+app.get('/api/booking-events', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT be.*, b.booking_number, c.name AS client_name
+       FROM booking_events be
+       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = be.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = be.workspace_id
+       WHERE be.workspace_id = $1
+       ORDER BY be.event_date ASC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, events: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching booking events:', error);
+    return res.status(500).json({ error: 'Failed to fetch booking events' });
+  }
+});
+
+// ============================================
 // EQUIPMENT API
 // ============================================
 app.get('/api/equipment', async (req, res) => {

@@ -1,15 +1,7 @@
 import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-export type EquipmentType = 'camera' | 'drone' | 'memory_card' | 'hard_disk' | 'lens' | 'tripod' | 'light' | 'other';
-export interface NewEquipmentPayload {
-  name: string;
-  type: EquipmentType;
-  typeLabel: string;
-  serialNumber?: string;
-  description?: string;
-}
+import { EquipmentType, NewEquipmentPayload } from '../../../services/equipment.service';
 
 interface TypeOption {
   value: EquipmentType;

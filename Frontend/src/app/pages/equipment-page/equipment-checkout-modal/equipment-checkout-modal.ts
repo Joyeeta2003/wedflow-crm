@@ -1,18 +1,19 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, inject, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-export interface CheckoutPayload {
-  equipmentId: string;
-  staffId: string;
-  staffName: string;
-  expectedReturnDate?: string;
-  notes?: string;
-}
+import { CheckoutPayload } from '../../../services/equipment.service';
+import { EquipmentService } from '../../../services/equipment.service';
 
 interface StaffOption {
   id: string;
   name: string;
+}
+
+interface BookingEventOption {
+  id: string;
+  name: string;
+  date: string;
+  venue: string;
 }
 
 @Component({
@@ -22,37 +23,69 @@ interface StaffOption {
   templateUrl: './equipment-checkout-modal.html',
   styleUrl: './equipment-checkout-modal.scss'
 })
-export class EquipmentCheckoutModal {
+export class EquipmentCheckoutModal implements OnChanges {
+  private equipmentService = inject(EquipmentService);
   @Input() isOpen = false;
   @Input() equipmentId: string | null = null;
   @Input() equipmentName = '';
+  @Input() bookingEvents: BookingEventOption[] = [];
   @Output() closed = new EventEmitter<void>();
   @Output() submitted = new EventEmitter<CheckoutPayload>();
 
-  // real ids/names from devtools option list
-  staffOptions = signal<StaffOption[]>([
-    { id: '6a5685de7a427311e7ce0739', name: 'Abhirup (video editor)' },
-    { id: '6a27ece8544a263c2cffe486', name: 'Akash Sarkar (photographer)' },
-    { id: '6a94202ed3376a07f970bcd7', name: 'Joy (drone operator)' },
-    { id: '6a1df2aeaddaa11f075b3ba7', name: 'Kathakali Mondal (cinematographer)' },
-    { id: '6a27f0be544a263c2cffe4b4', name: 'Putul Sarkar (photo editor)' },
-    { id: '6a45204dcf4d7fe2486b48c7', name: 'Rajib (photo editor)' },
-    { id: '6a287ed299cc8d99623fc245', name: 'Rohan Gupta (photographer)' },
-    { id: '6a27f0ed544a263c2cffe4cb', name: 'Srabani Dey (video editor)' },
-    { id: '6a27f089544a263c2cffe49d', name: 'Sujan Das (videographer)' },
-    { id: '6a43649beff108acd0166116', name: 'fjdfjhjd (cinematographer)' },
-    { id: '6a437638eff108acd01664e5', name: 'srijon chakrabortty (videographer)' },
-    { id: '6a5b230f7a427311e7ce1af6', name: 'ytewtywty (photographer)' }
-  ]);
+  staffOptions = signal<StaffOption[]>([]);
+  isLoadingStaff = signal(false);
 
   selectedStaffId = signal<string | null>(null);
+  selectedBookingEventId = signal<string | null>(null);
   expectedReturnDate = signal('');
   notes = signal('');
   isStaffMenuOpen = signal(false);
+  isBookingEventMenuOpen = signal(false);
   showValidationError = signal(false);
+
+  // Load staff when modal opens
+  ngOnChanges() {
+    if (this.isOpen) {
+      this.loadStaff();
+    }
+  }
+
+  loadStaff() {
+    this.isLoadingStaff.set(true);
+    this.equipmentService.getStaff().subscribe({
+      next: (response) => {
+        const staff = response.users
+          .filter(user => user.role !== 'client') // Filter out clients, only show staff
+          .map(user => {
+            // Build name without showing null for missing last name
+            let name = user.staff_name || user.first_name || '';
+            if (user.last_name) {
+              name += ` ${user.last_name}`;
+            }
+            name = name.trim();
+
+            // Add role/position in parentheses
+            const role = user.role || 'staff';
+            const displayName = name ? `${name} (${role})` : role;
+
+            return {
+              id: user.id,
+              name: displayName
+            };
+          });
+        this.staffOptions.set(staff);
+        this.isLoadingStaff.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading staff:', error);
+        this.isLoadingStaff.set(false);
+      }
+    });
+  }
 
   toggleStaffMenu() {
     this.isStaffMenuOpen.set(!this.isStaffMenuOpen());
+    this.isBookingEventMenuOpen.set(false);
   }
 
   selectStaff(id: string) {
@@ -61,8 +94,25 @@ export class EquipmentCheckoutModal {
     this.showValidationError.set(false);
   }
 
+  toggleBookingEventMenu() {
+    this.isBookingEventMenuOpen.set(!this.isBookingEventMenuOpen());
+    this.isStaffMenuOpen.set(false);
+  }
+
+  selectBookingEvent(id: string) {
+    this.selectedBookingEventId.set(id);
+    this.isBookingEventMenuOpen.set(false);
+  }
+
   get staffLabel(): string {
+    if (this.isLoadingStaff()) return 'Loading staff...';
     return this.staffOptions().find(s => s.id === this.selectedStaffId())?.name ?? 'Select staff...';
+  }
+
+  get bookingEventLabel(): string {
+    const event = this.bookingEvents.find(e => e.id === this.selectedBookingEventId());
+    if (!event) return 'Select event (optional)';
+    return `${event.name} - ${event.date}`;
   }
 
   onOverlayClick() {
@@ -87,6 +137,7 @@ export class EquipmentCheckoutModal {
       equipmentId: this.equipmentId ?? '',
       staffId,
       staffName: staff?.name ?? '',
+      bookingEventId: this.selectedBookingEventId() || undefined,
       expectedReturnDate: this.expectedReturnDate() || undefined,
       notes: this.notes().trim() || undefined
     });
@@ -96,9 +147,11 @@ export class EquipmentCheckoutModal {
 
   private resetForm() {
     this.selectedStaffId.set(null);
+    this.selectedBookingEventId.set(null);
     this.expectedReturnDate.set('');
     this.notes.set('');
     this.isStaffMenuOpen.set(false);
+    this.isBookingEventMenuOpen.set(false);
     this.showValidationError.set(false);
   }
 }

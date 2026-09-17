@@ -1,23 +1,9 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EquipmentModal, NewEquipmentPayload } from './equipment-modal/equipment-modal';
-import { EquipmentCheckoutModal, CheckoutPayload } from './equipment-checkout-modal/equipment-checkout-modal';
-
-export type EquipmentType = 'camera' | 'drone' | 'memory_card' | 'hard_disk' | 'lens' | 'tripod' | 'light' | 'other';
-type EquipmentStatus = 'available' | 'checked_out';
-
-interface EquipmentItem {
-  id: string;
-  name: string;
-  type: EquipmentType;
-  typeLabel: string;
-  idNumber?: string;
-  status: EquipmentStatus;
-  checkedOutWith?: string;
-  checkedOutSince?: Date;
-  checkedOutDue?: Date;
-}
+import { EquipmentModal } from './equipment-modal/equipment-modal';
+import { EquipmentCheckoutModal } from './equipment-checkout-modal/equipment-checkout-modal';
+import { EquipmentService, EquipmentItem, EquipmentType, NewEquipmentPayload, CheckoutPayload } from '../../services/equipment.service';
 
 type TypeFilter = 'all' | EquipmentType;
 
@@ -28,10 +14,12 @@ type TypeFilter = 'all' | EquipmentType;
   templateUrl: './equipment-page.html',
   styleUrl: './equipment-page.scss',
 })
-export class Equipment {
+export class Equipment implements OnInit {
+  private equipmentService = inject(EquipmentService);
   searchTerm = signal('');
   typeFilter = signal<TypeFilter>('all');
   isTypeMenuOpen = signal(false);
+  isLoading = signal(false);
 
   typeOptions: { value: TypeFilter; label: string }[] = [
     { value: 'all', label: 'All Types' },
@@ -45,14 +33,45 @@ export class Equipment {
     { value: 'other', label: 'Other' },
   ];
 
-  equipment = signal<EquipmentItem[]>([
-    { id: 'e1', name: 'Canon', type: 'camera', typeLabel: 'Camera', status: 'available' },
-    { id: 'e2', name: 'DJI', type: 'drone', typeLabel: 'Drone', status: 'available' },
-    { id: 'e3', name: 'Nikon', type: 'camera', typeLabel: 'Camera', status: 'available' },
-    { id: 'e4', name: 'Samsumg Ultra', type: 'tripod', typeLabel: 'Tripod', status: 'available' },
-    { id: 'e5', name: 'Sony', type: 'camera', typeLabel: 'Camera', status: 'available' },
-    { id: 'e6', name: 'Sony DSLR', type: 'camera', typeLabel: 'Camera', idNumber: '11198', status: 'available' },
-  ]);
+  equipment = signal<EquipmentItem[]>([]);
+
+  ngOnInit() {
+    this.loadEquipment();
+    this.loadBookingEvents();
+  }
+
+  loadBookingEvents() {
+    this.equipmentService.getBookingEvents().subscribe({
+      next: (response) => {
+        const events = response.events.map(event => ({
+          id: event.id,
+          name: event.event_name,
+          date: event.event_date,
+          venue: event.venue
+        }));
+        this.bookingEvents.set(events);
+      },
+      error: (error) => {
+        console.error('Error loading booking events:', error);
+      }
+    });
+  }
+
+  loadEquipment() {
+    this.isLoading.set(true);
+    this.equipmentService.getEquipment().subscribe({
+      next: (response) => {
+        const equipmentItems = response.equipment.map(item => this.equipmentService.mapToEquipmentFormat(item));
+        this.equipment.set(equipmentItems);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading equipment:', error);
+        this.isLoading.set(false);
+        this.showToast('Failed to load equipment');
+      }
+    });
+  }
 
   filteredEquipment = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -66,10 +85,10 @@ export class Equipment {
   });
 
   availableItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'available'));
-  checkedOutItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'checked_out'));
+  checkedOutItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'assigned' || i.status === 'checked_out'));
 
   totalAvailable = computed(() => this.equipment().filter((i) => i.status === 'available').length);
-  totalCheckedOut = computed(() => this.equipment().filter((i) => i.status === 'checked_out').length);
+  totalCheckedOut = computed(() => this.equipment().filter((i) => i.status === 'assigned' || i.status === 'checked_out').length);
 
   toggleTypeMenu() {
     this.isTypeMenuOpen.set(!this.isTypeMenuOpen());
@@ -96,24 +115,25 @@ export class Equipment {
   }
 
   onModalSubmitted(payload: NewEquipmentPayload) {
-    this.equipment.update((list) => [
-      ...list,
-      {
-        id: `e${Date.now()}`,
-        name: payload.name,
-        type: payload.type,
-        typeLabel: payload.typeLabel,
-        idNumber: payload.serialNumber,
-        status: 'available',
+    this.equipmentService.createEquipment(payload).subscribe({
+      next: (response) => {
+        const newEquipment = this.equipmentService.mapToEquipmentFormat(response.equipment);
+        this.equipment.update(list => [...list, newEquipment]);
+        this.isAddModalOpen.set(false);
+        this.showToast('Equipment added successfully');
       },
-    ]);
-    this.isAddModalOpen.set(false);
+      error: (error) => {
+        console.error('Error creating equipment:', error);
+        this.showToast('Failed to add equipment');
+      }
+    });
   }
 
   // ==== Checkout modal ====
   isCheckoutModalOpen = signal(false);
   checkoutTargetId = signal<string | null>(null);
   checkoutTargetName = signal('');
+  bookingEvents = signal<any[]>([]);
 
   onCheckout(item: EquipmentItem) {
     this.checkoutTargetId.set(item.id);
@@ -127,35 +147,59 @@ export class Equipment {
   }
 
   onCheckoutSubmitted(payload: CheckoutPayload) {
-    console.log('onCheckoutSubmitted fired', payload); // TEMP debug line — remove once confirmed working
-    this.equipment.update((list) =>
-      list.map((item) =>
-        item.id === payload.equipmentId
-          ? {
-              ...item,
-              status: 'checked_out' as const,
-              checkedOutWith: payload.staffName,
-              checkedOutSince: new Date(),
-              checkedOutDue: payload.expectedReturnDate ? new Date(payload.expectedReturnDate) : undefined,
-            }
-          : item
-      )
-    );
-    this.isCheckoutModalOpen.set(false);
-    this.checkoutTargetId.set(null);
-    this.showToast('Equipment checked out');
+    this.equipmentService.createAssignment(payload).subscribe({
+      next: (response) => {
+        // Update equipment status locally and via API
+        this.equipmentService.updateEquipment(payload.equipmentId, { status: 'assigned' }).subscribe({
+          next: (updateResponse) => {
+            this.equipment.update((list) =>
+              list.map((item) =>
+                item.id === payload.equipmentId
+                  ? {
+                      ...item,
+                      status: 'assigned' as const,
+                      checkedOutWith: payload.staffName,
+                      checkedOutSince: new Date(),
+                      checkedOutDue: payload.expectedReturnDate ? new Date(payload.expectedReturnDate) : undefined,
+                    }
+                  : item
+              )
+            );
+            this.isCheckoutModalOpen.set(false);
+            this.checkoutTargetId.set(null);
+            this.showToast('Equipment checked out successfully');
+          },
+          error: (error) => {
+            console.error('Error updating equipment status:', error);
+            this.showToast('Equipment checked out but status update failed');
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error checking out equipment:', error);
+        this.showToast('Failed to checkout equipment');
+      }
+    });
   }
 
   // ==== Mark Returned ====
   markReturned(item: EquipmentItem) {
-    this.equipment.update((list) =>
-      list.map((i) =>
-        i.id === item.id
-          ? { ...i, status: 'available' as const, checkedOutWith: undefined, checkedOutSince: undefined, checkedOutDue: undefined }
-          : i
-      )
-    );
-    this.showToast('Equipment returned successfully');
+    this.equipmentService.updateEquipment(item.id, { status: 'available' }).subscribe({
+      next: (response) => {
+        this.equipment.update((list) =>
+          list.map((i) =>
+            i.id === item.id
+              ? { ...i, status: 'available' as const, checkedOutWith: undefined, checkedOutSince: undefined, checkedOutDue: undefined }
+              : i
+          )
+        );
+        this.showToast('Equipment returned successfully');
+      },
+      error: (error) => {
+        console.error('Error returning equipment:', error);
+        this.showToast('Failed to return equipment');
+      }
+    });
   }
 
   formatShortDate(date?: Date): string {

@@ -139,6 +139,7 @@
     [isOpen]="isCheckoutModalOpen()"
     [equipmentId]="checkoutTargetId()"
     [equipmentName]="checkoutTargetName()"
+    [bookingEvents]="bookingEvents()"
     (closed)="onCheckoutModalClosed()"
     (submitted)="onCheckoutSubmitted($event)">
   </app-equipment-checkout-modal>
