@@ -98,7 +98,7 @@
                     <div class="select-wrap">
                         <button type="button" role="combobox" [attr.aria-expanded]="isBookingMenuOpen()"
                             class="select-trigger" [class.select-trigger--open]="isBookingMenuOpen()"
-                            (click)="toggleBookingMenu()">
+                            (click)="toggleBookingMenu()" [disabled]="isLoadingBookings()">
                             <span [class.select-placeholder]="!selectedBookingId()">{{ bookingLabel }}</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -107,6 +107,7 @@
                             </svg>
                         </button>
                         <ul class="select-panel" *ngIf="isBookingMenuOpen()">
+                            <li *ngIf="isLoadingBookings()" class="select-panel-empty">Loading bookings...</li>
                             <li *ngFor="let b of bookingOptions()" class="select-panel-item"
                                 [class.select-panel-item--selected]="b.id === selectedBookingId()"
                                 (click)="selectBooking(b.id)">
@@ -118,7 +119,7 @@
                                     <path d="M20 6 9 17l-5-5"></path>
                                 </svg>
                             </li>
-                            <li *ngIf="bookingOptions().length === 0" class="select-panel-empty">No bookings found</li>
+                            <li *ngIf="!isLoadingBookings() && bookingOptions().length === 0" class="select-panel-empty">No bookings found</li>
                         </ul>
                     </div>
 
@@ -248,7 +249,7 @@
                         </div>
                         <div class="file-info">
                             <div class="file-name">{{ file.name }}</div>
-                            <div class="file-meta">{{ file.customer }} / {{ file.bookingId }} / {{ file.sizeLabel }}
+                            <div class="file-meta">{{ file.customer }} / {{ file.bookingNumber || file.bookingId }} / {{ file.sizeLabel }}
                             </div>
                         </div>
                         <div class="file-badge">{{ file.badge }}</div>

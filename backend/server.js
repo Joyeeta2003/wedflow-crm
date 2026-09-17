@@ -2963,6 +2963,283 @@ app.delete('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// ============================================
+// STORAGE ENHANCED API
+// ============================================
+
+// Get storage statistics
+app.get('/api/storage/stats', async (req, res) => {
+  try {
+    const workspaceId = req.user?.workspace_id || await resolveWorkspaceId();
+    
+    // Get total storage usage
+    const sizeResult = await pool.query(
+      `SELECT COALESCE(SUM(file_size), 0) as total_size, COUNT(*) as file_count
+       FROM files 
+       WHERE workspace_id = $1 AND status != 'deleted'`,
+      [workspaceId]
+    );
+
+    const totalSize = parseInt(sizeResult.rows[0].total_size) || 0;
+    const fileCount = parseInt(sizeResult.rows[0].file_count) || 0;
+
+    // Format sizes
+    const formatBytes = (bytes) => {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    const totalStorageBytes = 1024 * 1024 * 1024 * 1024; // 1 TB
+    const availableBytes = totalStorageBytes - totalSize;
+
+    return res.json({
+      success: true,
+      usedBytes: totalSize,
+      usedLabel: formatBytes(totalSize),
+      uploadingLabel: '0 B',
+      availableLabel: formatBytes(availableBytes),
+      totalLabel: '1.00 TB',
+      filesCount: fileCount,
+      usagePercent: Math.max((totalSize / totalStorageBytes) * 100, 0.05)
+    });
+  } catch (error) {
+    console.error('Error fetching storage stats:', error);
+    return res.status(500).json({ error: 'Failed to fetch storage statistics' });
+  }
+});
+
+// Enhanced file listing with booking information
+app.get('/api/files/enhanced', async (req, res) => {
+  try {
+    const workspaceId = req.user?.workspace_id || await resolveWorkspaceId();
+    if (!workspaceId) {
+      return res.status(400).json({ error: 'Unable to determine workspace' });
+    }
+    
+    const { search, category, status } = req.query;
+
+    let query = `
+      SELECT f.*, 
+             b.booking_number, 
+             c.client_name,
+             COALESCE(c.client_name, 'Unknown') as customer_name
+      FROM files f
+      LEFT JOIN bookings b ON b.id = f.booking_id AND b.workspace_id = f.workspace_id
+      LEFT JOIN clients c ON c.id = b.client_id AND c.workspace_id = f.workspace_id
+      WHERE f.workspace_id = $1 AND f.status != 'deleted'
+    `;
+    
+    const params = [workspaceId];
+    let paramCount = 1;
+
+    if (search) {
+      paramCount++;
+      query += ` AND (f.file_name ILIKE $${paramCount} OR b.booking_number ILIKE $${paramCount} OR c.client_name ILIKE $${paramCount})`;
+      params.push(`%${search}%`);
+    }
+
+    if (category && category !== 'all') {
+      paramCount++;
+      query += ` AND f.category = $${paramCount}`;
+      params.push(category);
+    }
+
+    if (status) {
+      paramCount++;
+      query += ` AND f.status = $${paramCount}`;
+      params.push(status);
+    }
+
+    query += ` ORDER BY f.upload_date DESC`;
+
+    const result = await pool.query(query, params);
+
+    const files = result.rows.map(row => ({
+      id: row.id,
+      name: row.file_name,
+      customer: row.customer_name,
+      bookingId: row.booking_id,
+      bookingNumber: row.booking_number,
+      sizeLabel: formatBytes(row.file_size || 0),
+      sizeBytes: row.file_size || 0,
+      badge: row.status === 'archived' ? 'Deep Archive' : mapCategoryToBadge(row.category),
+      action: row.status === 'archived' ? 'restore' : 'download',
+      uploadDate: row.upload_date,
+      fileType: row.file_type,
+      category: row.category,
+      storagePath: row.storage_path,
+      status: row.status
+    }));
+
+    return res.json({ success: true, files, count: files.length });
+  } catch (error) {
+    console.error('Error fetching enhanced files:', error);
+    return res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+// File upload with JSON body (simplified version - in production use multipart with actual file upload)
+app.post('/api/files/upload', async (req, res) => {
+  try {
+    const { booking_id, file_name, file_type, category, storage_path, file_size, status, notes } = req.body;
+    
+    if (!booking_id || !file_name || !storage_path) {
+      return res.status(400).json({ error: 'Booking, file name, and storage path are required' });
+    }
+
+    const bookingCheck = await pool.query(
+      `SELECT id, booking_number FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    // In a real implementation, you would handle the actual file upload to S3/cloud storage here
+    // For now, we'll just create the database record
+    const result = await pool.query(
+      `INSERT INTO files (workspace_id, booking_id, file_name, file_type, category, storage_path, file_size, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, String(file_name).trim(), file_type || null, category || 'general', 
+       String(storage_path).trim(), file_size !== undefined && file_size !== null ? Number(file_size) : null, 
+       status || 'active', notes?.trim() || null]
+    );
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'file_uploaded',
+      description: `Uploaded file ${file_name} to booking ${bookingCheck.rows[0].booking_number}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.status(201).json({ success: true, file: result.rows[0] });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    return res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
+// File download
+app.get('/api/files/:id/download', async (req, res) => {
+  try {
+    const fileResult = await pool.query(
+      `SELECT * FROM files WHERE id = $1 AND workspace_id = $2 AND status != 'deleted'`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (fileResult.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const file = fileResult.rows[0];
+
+    // In a real implementation, you would stream the file from S3/cloud storage here
+    // For now, we'll return a placeholder response
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.file_name}"`);
+    
+    // Placeholder - in production, stream actual file content
+    res.send('File content would be streamed from cloud storage here');
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'file_downloaded',
+      description: `Downloaded file ${file.file_name}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    return res.status(500).json({ error: 'Failed to download file' });
+  }
+});
+
+// Restore file from archive
+app.put('/api/files/:id/restore', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE files 
+       SET status = 'active', updated_at = now()
+       WHERE id = $1 AND workspace_id = $2 AND status = 'archived'
+       RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found or not archived' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'file_restored',
+      description: `Restored file ${result.rows[0].file_name} from archive`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, file: result.rows[0] });
+  } catch (error) {
+    console.error('Error restoring file:', error);
+    return res.status(500).json({ error: 'Failed to restore file' });
+  }
+});
+
+// Archive file
+app.put('/api/files/:id/archive', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE files 
+       SET status = 'archived', updated_at = now()
+       WHERE id = $1 AND workspace_id = $2 AND status = 'active'
+       RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found or not active' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'file_archived',
+      description: `Archived file ${result.rows[0].file_name}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, file: result.rows[0] });
+  } catch (error) {
+    console.error('Error archiving file:', error);
+    return res.status(500).json({ error: 'Failed to archive file' });
+  }
+});
+
+// Helper functions
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function mapCategoryToBadge(category) {
+  const categoryMap = {
+    'raw': 'Raw',
+    'edited': 'Edited',
+    'album': 'Album',
+    'final': 'Final',
+    'general': 'Other'
+  };
+  return categoryMap[category?.toLowerCase()] || 'Other';
+}
+
 app.listen(port, () => {
   console.log(`WedFlow CRM Backend running on port ${port}`);
   console.log(`Health check: http://localhost:${port}/api/health`);

@@ -1,21 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface StorageFile {
-  id: string;
-  name: string;
-  customer: string;
-  bookingId: string;
-  sizeLabel: string;
-  badge: string; // e.g. "Album" | "Deep Archive" — UNCONFIRMED full set of values
-  action: 'download' | 'restore';
-}
-
-interface BookingOption {
-  id: string;
-  label: string;
-}
+import { StorageService, StorageFile, BookingOption } from '../../services/storage.service';
 
 type FileTypeOption = { value: string; label: string };
 
@@ -26,14 +12,16 @@ type FileTypeOption = { value: string; label: string };
   templateUrl: './storage.html',
   styleUrl: './storage.scss',
 })
-export class Storage {
+export class Storage implements OnInit {
+  private storageService = inject(StorageService);
   // ==== stats ====
-  usedBytes = signal(193 * 1024); // 193.0 KB
-  usedLabel = signal('193.0 KB');
+  usedBytes = signal(0);
+  usedLabel = signal('0 B');
   uploadingLabel = signal('0 B');
-  availableLabel = signal('1024.00 GB');
+  availableLabel = signal('1.00 TB');
   totalLabel = signal('1.00 TB');
-  filesCount = signal(2);
+  filesCount = signal(0);
+  isLoadingStats = signal(false);
 
   // percentage — real calculation (1TB = 1024*1024*1024*1024 bytes... using GB-based approx here for simplicity)
   usagePercent = computed(() => {
@@ -45,16 +33,8 @@ export class Storage {
   archiveEligibleDays = signal(30);
 
   // ==== upload form ====
-  bookingOptions = signal<BookingOption[]>([
-    { id: 'DRVSTU-BKG-000009', label: 'DRVSTU-BKG-000009 - Arnab' },
-    { id: 'DRVSTU-BKG-000010', label: 'DRVSTU-BKG-000010 - Swagatam & Swagata' },
-    { id: 'DRVSTU-BKG-000012', label: 'DRVSTU-BKG-000012 - Subha' },
-    { id: 'DRVSTU-BKG-000018', label: 'DRVSTU-BKG-000018 - Swagatam & Swagata' },
-    { id: 'DRVSTU-BKG-000017', label: 'DRVSTU-BKG-000017 - Soham Biswas' },
-    { id: 'DRVSTU-BKG-000019', label: 'DRVSTU-BKG-000019 - Jason' },
-    { id: 'DRVSTU-BKG-000013', label: 'DRVSTU-BKG-000013 - Aniket' },
-    { id: 'DRVSTU-BKG-000014', label: 'DRVSTU-BKG-000014 - Soumik & Shrya' }, // UNCONFIRMED — cut off in screenshot, name guessed from file-list row
-  ]);
+  bookingOptions = signal<BookingOption[]>([]);
+  isLoadingBookings = signal(false);
   selectedBookingId = signal<string | null>(null);
   isChooseFileDisabled = computed(() => !this.selectedBookingId());
 
@@ -95,26 +75,9 @@ categoryOptions: FileTypeOption[] = [
   selectedCategory = signal('all');
   isCategoryMenuOpen = signal(false);
 
-  files = signal<StorageFile[]>([
-    {
-      id: 'f1',
-      name: 'WhatsApp Image 2026-07-17 at 17.46.17.jpeg',
-      customer: 'Soumik & Shrya',
-      bookingId: 'DRVSTU-BKG-000014',
-      sizeLabel: '109.4 KB',
-      badge: 'Album',
-      action: 'download',
-    },
-    {
-      id: 'f2',
-      name: 'WhatsApp Image 2025-12-05 at 10.22.36 AM (2) - Copy.jpeg',
-      customer: 'Swagatam & Swagata',
-      bookingId: 'DRVSTU-BKG-000010',
-      sizeLabel: '83.6 KB',
-      badge: 'Deep Archive',
-      action: 'restore',
-    },
-  ]);
+  files = signal<StorageFile[]>([]);
+  isLoadingFiles = signal(false);
+  isUploading = signal(false);
 
   filteredFiles = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -125,10 +88,11 @@ categoryOptions: FileTypeOption[] = [
         !term ||
         f.name.toLowerCase().includes(term) ||
         f.customer.toLowerCase().includes(term) ||
-        f.bookingId.toLowerCase().includes(term);
+        f.bookingId.toLowerCase().includes(term) ||
+        (f.bookingNumber && f.bookingNumber.toLowerCase().includes(term));
 
       const matchesCategory =
-        category === 'all' || f.badge.toLowerCase().replace(/\s+/g, '_') === category;
+        category === 'all' || f.badge.toLowerCase().replace(/\s+/g, '_') === category || f.category === category;
 
       return matchesTerm && matchesCategory;
     });
@@ -207,23 +171,156 @@ categoryOptions: FileTypeOption[] = [
     );
   }
 
+  ngOnInit() {
+    this.loadStorageStats();
+    this.loadBookings();
+    this.loadFiles();
+  }
+
+  loadStorageStats() {
+    this.isLoadingStats.set(true);
+    this.storageService.getStorageStats().subscribe({
+      next: (stats) => {
+        this.usedBytes.set(stats.usedBytes);
+        this.usedLabel.set(stats.usedLabel);
+        this.uploadingLabel.set(stats.uploadingLabel);
+        this.availableLabel.set(stats.availableLabel);
+        this.totalLabel.set(stats.totalLabel);
+        this.filesCount.set(stats.filesCount);
+        this.isLoadingStats.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading storage stats:', error);
+        // Set default values on error
+        this.usedLabel.set('0 B');
+        this.filesCount.set(0);
+        this.isLoadingStats.set(false);
+      }
+    });
+  }
+
+  loadBookings() {
+    this.isLoadingBookings.set(true);
+    this.storageService.getBookingOptions().subscribe({
+      next: (response) => {
+        const bookings = response.bookings || [];
+        this.bookingOptions.set(bookings.map((booking: any) => ({
+          id: booking.id,
+          label: `${booking.booking_number} - ${booking.client_name}`,
+          clientName: booking.client_name
+        })));
+        this.isLoadingBookings.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading bookings:', error);
+        this.bookingOptions.set([]);
+        this.isLoadingBookings.set(false);
+      }
+    });
+  }
+
+  loadFiles() {
+    this.isLoadingFiles.set(true);
+    const filters = {
+      searchTerm: this.searchTerm(),
+      category: this.selectedCategory() !== 'all' ? this.selectedCategory() : undefined
+    };
+
+    this.storageService.getFiles(filters).subscribe({
+      next: (response) => {
+        this.files.set(response.files);
+        this.isLoadingFiles.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading files:', error);
+        this.files.set([]);
+        this.isLoadingFiles.set(false);
+      }
+    });
+  }
+
   onChooseFile(input: HTMLInputElement) {
     input.click();
   }
 
   onFileSelected(event: Event) {
-    // TODO: wire up actual upload flow once booking/type selection + backend endpoint are confirmed
     const input = event.target as HTMLInputElement;
-    console.log('Files chosen:', input.files);
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      this.uploadFile(file);
+    }
+  }
+
+  uploadFile(file: File) {
+    if (!this.selectedBookingId()) {
+      alert('Please select a booking first');
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.uploadingLabel.set(this.storageService.formatFileSize(file.size));
+
+    const fileData = {
+      bookingId: this.selectedBookingId()!,
+      fileName: file.name,
+      fileType: this.selectedMediaType(),
+      category: this.selectedRawType(),
+      storagePath: `bookings/${this.selectedBookingId()}/${this.selectedRawType()}/${file.name}`,
+      fileSize: file.size,
+      status: 'active',
+      notes: `Uploaded via storage management`
+    };
+
+    this.storageService.uploadFile(fileData, file).subscribe({
+      next: (response) => {
+        console.log('File uploaded successfully:', response);
+        alert('File uploaded successfully!');
+        this.loadFiles(); // Refresh file list
+        this.loadStorageStats(); // Refresh stats
+        this.isUploading.set(false);
+        this.uploadingLabel.set('0 B');
+      },
+      error: (error) => {
+        console.error('Error uploading file:', error);
+        alert('Failed to upload file. Please try again.');
+        this.isUploading.set(false);
+        this.uploadingLabel.set('0 B');
+      }
+    });
   }
 
   onDownload(file: StorageFile) {
-    // TODO: wire up actual download
-    console.log('Download', file.id);
+    this.storageService.downloadFile(file.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Error downloading file:', error);
+        alert('Failed to download file. Please try again.');
+      }
+    });
   }
 
   onRestore(file: StorageFile) {
-    // TODO: wire up actual restore-from-archive flow
-    console.log('Restore', file.id);
+    if (confirm(`Restore "${file.name}" from archive?`)) {
+      this.storageService.restoreFile(file.id).subscribe({
+        next: (response) => {
+          console.log('File restored successfully:', response);
+          alert('File restored successfully!');
+          this.loadFiles(); // Refresh file list
+        },
+        error: (error) => {
+          console.error('Error restoring file:', error);
+          alert('Failed to restore file. Please try again.');
+        }
+      });
+    }
   }
 }
