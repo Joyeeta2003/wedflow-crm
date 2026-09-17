@@ -2,11 +2,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Booking, BookingEvent, CrewPlanDay, CrewAssignment } from '../../../../services/booking.service';
 import { EventDayModal, NewEventDayData } from './event-day-modal/event-day-modal';
+import { AssignCrewModal, NewAssignmentData } from './assign-crew-modal/assign-crew-modal';
 
 @Component({
   selector: 'app-crew-tab',
   standalone: true,
-  imports: [CommonModule, EventDayModal],
+  imports: [CommonModule, EventDayModal, AssignCrewModal],
   templateUrl: './crew-tab.html',
   styleUrl: './crew-tab.scss',
 })
@@ -15,13 +16,16 @@ export class CrewTab {
 
   @Output() addDay = new EventEmitter<NewEventDayData>();
   @Output() removeDay = new EventEmitter<BookingEvent>();
-  @Output() assignRole = new EventEmitter<{ day: CrewPlanDay; role: string }>();
-  @Output() assignCrew = new EventEmitter<void>();
+  @Output() assignCrewMember = new EventEmitter<NewAssignmentData>();
   @Output() verifyFiles = new EventEmitter<CrewAssignment>();
   @Output() removeAssignment = new EventEmitter<CrewAssignment>();
 
   showAddDayModal = false;
   confirmDeleteDayTarget: BookingEvent | null = null;
+
+  showAssignModal = false;
+  assignModalEventDayId: string | null = null;
+  assignModalRole: string | null = null;
 
   formatDate(value: string | null): string {
     if (!value) return '—';
@@ -70,6 +74,7 @@ export class CrewTab {
     return pending;
   }
 
+  // --- Event Day modal ---
   onOpenAddDay(): void {
     this.showAddDayModal = true;
   }
@@ -94,5 +99,28 @@ export class CrewTab {
   onConfirmDeleteDay(): void {
     if (this.confirmDeleteDayTarget) this.removeDay.emit(this.confirmDeleteDayTarget);
     this.confirmDeleteDayTarget = null;
+  }
+
+  // --- Assign Crew modal ---
+  onOpenAssignForRole(day: CrewPlanDay, role: string): void {
+    const eventDay = this.eventForDay(day);
+    this.assignModalEventDayId = eventDay?.id ?? null;
+    this.assignModalRole = role;
+    this.showAssignModal = true;
+  }
+
+  onOpenAssignCrewGeneral(): void {
+    this.assignModalEventDayId = this.booking.event_days?.[0]?.id ?? null;
+    this.assignModalRole = null;
+    this.showAssignModal = true;
+  }
+
+  onCloseAssignModal(): void {
+    this.showAssignModal = false;
+  }
+
+  onSubmitAssign(data: NewAssignmentData): void {
+    this.showAssignModal = false;
+    this.assignCrewMember.emit(data);
   }
 }

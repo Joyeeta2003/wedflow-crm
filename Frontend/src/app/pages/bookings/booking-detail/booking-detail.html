@@ -282,15 +282,15 @@
     <div class="tab-panel">
       <div *ngIf="activeTab === 'crew'">
         <app-crew-tab [booking]="b" (addDay)="onCrewAddDay($event)" (removeDay)="onCrewRemoveDay($event)"
-          (assignRole)="onCrewAssignRole($event)" (assignCrew)="onCrewAssignCrew()"
-          (verifyFiles)="onCrewVerifyFiles($event)" (removeAssignment)="onCrewRemoveAssignment($event)"></app-crew-tab>
+          (assignCrewMember)="onCrewAssignMember($event)" (verifyFiles)="onCrewVerifyFiles($event)"
+          (removeAssignment)="onCrewRemoveAssignment($event)"></app-crew-tab>
       </div>
       <div *ngIf="activeTab === 'payments'">
         <app-payments-tab [booking]="b" (createPayment)="onPaymentCreate($event)"
           (deletePayment)="onPaymentDelete($event)"></app-payments-tab>
       </div>
       <div *ngIf="activeTab === 'deliveries'">
-        <app-deliveries-tab [booking]="b" (createDelivery)="onDeliveryCreate($event)" 
+        <app-deliveries-tab [booking]="b" (createDelivery)="onDeliveryCreate($event)"
           (startDelivery)="onDeliveryStart($event)" (markReady)="onDeliveryMarkReady($event)"
           (deleteDelivery)="onDeliveryDelete($event)"></app-deliveries-tab>
       </div>

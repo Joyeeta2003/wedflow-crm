@@ -100,6 +100,12 @@ export interface BookingResponse {
   booking: Booking;
 }
 
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string; // matches CrewPlanDay role names — 'Photographer', 'Cinematographer', etc.
+}
+
 @Injectable({ providedIn: 'root' })
 export class BookingService {
   private readonly apiUrl = 'http://localhost:5001/api/bookings';

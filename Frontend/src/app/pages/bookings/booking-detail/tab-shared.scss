@@ -192,15 +192,28 @@
   justify-content: center;
   z-index: 50;
 }
+
 .dialog-content {
   width: 100%;
   max-width: 28rem;
+  max-height: 85vh;
   background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
   padding: 1.5rem;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // slim, theme-matching scrollbar
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 9999px; }
 }
+
 .dialog-actions {
   display: flex;
   flex-direction: column-reverse;

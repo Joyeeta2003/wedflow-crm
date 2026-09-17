@@ -66,7 +66,7 @@
             class="role-assign-btn"
             [class.role-assign-btn-primary]="roleStatus(day, role) === 'left'"
             type="button"
-            (click)="assignRole.emit({ day, role: role.role })"
+            (click)="onOpenAssignForRole(day, role.role)"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
             Assign {{ role.role }}
@@ -80,7 +80,7 @@
   <div class="section-card">
     <div class="section-header">
       <div class="section-title-plain">Crew Assignments</div>
-      <button class="btn-primary btn-sm" (click)="assignCrew.emit()">
+      <button class="btn-primary btn-sm" (click)="onOpenAssignCrewGeneral()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         Assign Crew
       </button>
@@ -130,6 +130,15 @@
   (closeModal)="onCloseAddDay()"
   (create)="onSubmitAddDay($event)"
 ></app-event-day-modal>
+
+<app-assign-crew-modal
+  *ngIf="showAssignModal"
+  [booking]="booking"
+  [initialEventDayId]="assignModalEventDayId"
+  [initialRole]="assignModalRole"
+  (closeModal)="onCloseAssignModal()"
+  (create)="onSubmitAssign($event)"
+></app-assign-crew-modal>
 
 <div class="dialog-overlay" *ngIf="confirmDeleteDayTarget">
   <div class="dialog-content confirm-dialog">
