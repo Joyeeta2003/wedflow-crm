@@ -1,0 +1,208 @@
+<div class="dialog-overlay">
+  <div class="dialog-content wide-dialog">
+    <button type="button" class="dialog-close-abs" (click)="onCancel()" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+
+    <div class="dialog-header-simple">
+      <h2>Change Booking Date / Details</h2>
+    </div>
+
+    <form #detailsForm="ngForm" (ngSubmit)="onSubmit(detailsForm)" class="dialog-form">
+
+      <!-- Main Event Date -->
+      <div class="form-group">
+        <label>Main Event Date *</label>
+        <div class="date-input-wrap">
+          <input
+            type="text" class="form-input"
+            [class.input-error]="mainEventDateInvalid"
+            placeholder="DD-MM-YYYY"
+            [(ngModel)]="mainEventDate" name="mainEventDate"
+            (blur)="onMainEventDateBlur()"
+          />
+          <button type="button" class="calendar-btn" aria-label="Open calendar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+          </button>
+        </div>
+        <p class="field-error" *ngIf="mainEventDateInvalid">Main event date is required</p>
+      </div>
+
+      <!-- Accordion -->
+      <div class="accordion">
+
+        <!-- Core studio information -->
+        <div class="accordion-item">
+          <button type="button" class="accordion-trigger" (click)="toggleSection('core')">
+            Core studio information
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron" [class.rotated]="openSections.core"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="accordion-content" *ngIf="openSections.core">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Booking Date</label>
+                <div class="date-input-wrap">
+                  <input type="text" class="form-input" placeholder="DD-MM-YYYY" [(ngModel)]="bookingDate" name="bookingDate" />
+                  <button type="button" class="calendar-btn" aria-label="Open calendar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Project / Division</label>
+                <input type="text" class="form-input" placeholder="Studio division / brand" [(ngModel)]="projectDivision" name="projectDivision" />
+              </div>
+              <div class="form-group">
+                <label>Event Type</label>
+                <div class="custom-select">
+                  <button type="button" class="custom-select-trigger" (click)="toggleEventTypeDropdown()">
+                    <span [class.placeholder]="!eventType">{{ eventTypeLabel }}</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isEventTypeOpen"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div class="custom-select-backdrop" *ngIf="isEventTypeOpen" (click)="closeAllDropdowns()"></div>
+                  <div class="custom-select-menu" *ngIf="isEventTypeOpen">
+                    <button type="button" class="custom-select-option" *ngFor="let o of eventTypes" [class.selected]="o.value === eventType" (click)="selectEventType(o.value)">{{ o.label }}</button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Client Manager</label>
+                <input type="text" class="form-input" placeholder="Manager name" [(ngModel)]="clientManager" name="clientManager" />
+              </div>
+              <div class="form-group">
+                <label>Selection Upload Process</label>
+                <input type="text" class="form-input" placeholder="Selection pending / uploaded / link sent" [(ngModel)]="selectionUploadProcess" name="selectionUploadProcess" />
+              </div>
+              <div class="form-group">
+                <label>Review</label>
+                <input type="text" class="form-input" placeholder="Client review notes/status" [(ngModel)]="reviewNotes" name="reviewNotes" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment collection notes -->
+        <div class="accordion-item">
+          <button type="button" class="accordion-trigger" (click)="toggleSection('payment')">
+            Payment collection notes
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron" [class.rotated]="openSections.payment"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="accordion-content" *ngIf="openSections.payment">
+            <!-- TODO/UNCONFIRMED: original site's content for this section not yet screenshotted -->
+            <p class="accordion-placeholder">Coming soon</p>
+          </div>
+        </div>
+
+        <!-- Album / photo production timeline -->
+        <div class="accordion-item">
+          <button type="button" class="accordion-trigger" (click)="toggleSection('album')">
+            Album / photo production timeline
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron" [class.rotated]="openSections.album"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="accordion-content" *ngIf="openSections.album">
+            <!-- TODO/UNCONFIRMED -->
+            <p class="accordion-placeholder">Coming soon</p>
+          </div>
+        </div>
+
+        <!-- Video / reels / social timeline -->
+        <div class="accordion-item">
+          <button type="button" class="accordion-trigger" (click)="toggleSection('video')">
+            Video / reels / social timeline
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="accordion-chevron" [class.rotated]="openSections.video"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="accordion-content" *ngIf="openSections.video">
+            <!-- TODO/UNCONFIRMED -->
+            <p class="accordion-placeholder">Coming soon</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Package -->
+      <div class="form-group">
+        <label>Package</label>
+        <div class="custom-select">
+          <button type="button" class="custom-select-trigger" (click)="togglePackageDropdown()">
+            <span [class.placeholder]="!packageId">{{ packageLabel }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isPackageOpen"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="custom-select-backdrop" *ngIf="isPackageOpen" (click)="closeAllDropdowns()"></div>
+          <div class="custom-select-menu" *ngIf="isPackageOpen">
+            <button type="button" class="custom-select-option" *ngFor="let p of packages" [class.selected]="p.value === packageId" (click)="selectPackage(p.value)">{{ p.label }}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Venue -->
+      <div class="form-group">
+        <label>Venue *</label>
+        <input
+          type="text" class="form-input"
+          [class.input-error]="venueInvalid"
+          [(ngModel)]="venue" name="venue"
+          (blur)="onVenueBlur()"
+        />
+        <p class="field-error" *ngIf="venueInvalid">Venue is required</p>
+      </div>
+
+      <!-- Google Maps Link -->
+      <div class="form-group">
+        <label>Google Maps Link</label>
+        <input type="url" class="form-input" placeholder="https://maps.app.goo.gl/..." [(ngModel)]="mapLink" name="mapLink" />
+      </div>
+
+      <!-- Status / Total Amount -->
+      <div class="form-row-2col">
+        <div class="form-group">
+          <label>Status *</label>
+          <div class="custom-select">
+            <button
+              type="button" class="custom-select-trigger"
+              [class.input-error]="statusInvalid"
+              (click)="toggleStatusDropdown()"
+            >
+              <span [class.placeholder]="!status">{{ statusLabel }}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isStatusOpen"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="custom-select-backdrop" *ngIf="isStatusOpen" (click)="closeAllDropdowns()"></div>
+            <div class="custom-select-menu" *ngIf="isStatusOpen">
+              <button type="button" class="custom-select-option" *ngFor="let s of statuses" [class.selected]="s.value === status" (click)="selectStatus(s.value)">{{ s.label }}</button>
+            </div>
+          </div>
+          <p class="field-error" *ngIf="statusInvalid">Select a status</p>
+        </div>
+        <div class="form-group">
+          <label>Total Amount *</label>
+          <input
+            type="number" class="form-input" min="1"
+            [class.input-error]="totalAmountInvalid"
+            [(ngModel)]="totalAmount" name="totalAmount"
+            (blur)="onTotalAmountBlur()"
+          />
+          <p class="field-error" *ngIf="totalAmountInvalid">Enter a valid amount</p>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea class="form-input form-textarea" rows="3" [(ngModel)]="notes" name="notes"></textarea>
+      </div>
+
+      <!-- Internal Remarks -->
+      <div class="form-group">
+        <label>Internal Remarks</label>
+        <textarea class="form-input form-textarea" rows="3" placeholder="Any operation remarks..." [(ngModel)]="remarks" name="remarks"></textarea>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn-outline" (click)="onCancel()" [disabled]="isSubmitting">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          <svg *ngIf="isSubmitting" class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
