@@ -1,0 +1,102 @@
+@import '../tab-shared';
+
+.dialog-content.wide {
+  max-width: 56rem;
+  max-height: 92svh;
+  overflow-y: auto;
+}
+
+.dialog-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;
+  h2 { font-size: 1.0625rem; font-weight: 600; margin: 0; }
+}
+.dialog-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 1.75rem; height: 1.75rem; border: none; background: transparent; border-radius: 0.25rem;
+  color: hsl(var(--muted-foreground)); cursor: pointer; flex-shrink: 0;
+  &:hover { color: inherit; background: hsl(var(--accent)); }
+}
+
+.dialog-form { display: flex; flex-direction: column; gap: 0.875rem; }
+.form-group label { display: block; font-size: 0.8125rem; font-weight: 500; margin-bottom: 0.25rem; }
+.form-grid-2 { display: grid; gap: 0.875rem; @media (min-width: 640px) { grid-template-columns: repeat(2, 1fr); } }
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.8125rem;
+  font-family: inherit;
+  &::placeholder { color: hsl(var(--muted-foreground)); }
+  &:focus { outline: none; border-color: hsl(var(--primary)); }
+}
+.form-textarea { min-height: 3.5rem; resize: vertical; }
+
+.input-error { border-color: hsl(var(--destructive)) !important; }
+.field-error { margin-top: 0.25rem; font-size: 0.75rem; color: hsl(var(--destructive)); }
+
+/* Accordion */
+.accordion { border-radius: 0.5rem; border: 1px solid hsl(var(--border)); overflow: hidden; }
+.accordion-item { border-bottom: 1px solid hsl(var(--border)); &.last { border-bottom: none; } }
+.accordion-trigger {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  border: none; background: transparent;
+  font-size: 0.8125rem; font-weight: 500;
+  color: inherit; cursor: pointer; text-align: left;
+  svg { color: hsl(var(--muted-foreground)); transition: transform 0.15s; flex-shrink: 0; }
+  svg.rotated { transform: rotate(180deg); }
+  &:hover { background: hsl(var(--accent) / 0.4); }
+}
+.accordion-content { padding: 0 0.875rem 0.875rem; }
+.accordion-empty { font-size: 0.75rem; color: hsl(var(--muted-foreground)); font-style: italic; margin: 0; }
+
+/* Custom select — same pattern as other modals */
+.custom-select { position: relative; }
+.custom-select-trigger {
+  width: 100%; height: 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.375rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+  &:focus { outline: none; border-color: hsl(var(--primary)); }
+  svg { color: hsl(var(--muted-foreground)); transition: transform 0.15s; flex-shrink: 0; }
+  svg.rotated { transform: rotate(180deg); }
+  span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.placeholder { color: hsl(var(--muted-foreground)); }
+.custom-select-backdrop { position: fixed; inset: 0; z-index: 60; }
+.custom-select-menu {
+  position: absolute; top: calc(100% + 0.25rem); left: 0; right: 0; z-index: 61;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 0.375rem;
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.35);
+  max-height: 14rem;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.125rem;
+}
+.custom-select-option {
+  display: block; width: 100%; text-align: left;
+  padding: 0.5rem 0.75rem; border: none; background: transparent;
+  color: hsl(var(--foreground)); font-size: 0.8125rem; border-radius: 0.375rem; cursor: pointer;
+  &:hover { background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); }
+  &.selected { background: hsl(var(--primary) / 0.2); color: hsl(var(--primary)); font-weight: 500; }
+}
+
+.dialog-actions .btn-primary {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  &:disabled { opacity: 0.7; cursor: wait; }
+}
+.spinner { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

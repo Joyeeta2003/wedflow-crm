@@ -1,0 +1,77 @@
+@import '../tab-shared';
+
+.tracker-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.tracker-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.tracker-card {
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.15);
+}
+
+.tracker-card-full {
+  @media (min-width: 1024px) {
+    grid-column: 1 / -1;
+  }
+}
+
+.tracker-card-header {
+  padding: 1.5rem 1.5rem 0;
+}
+
+.tracker-card-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.tracker-card-body {
+  padding: 1.5rem;
+}
+
+.tracker-field-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  font-size: 0.875rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.tracker-field-grid-4 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.tracker-field {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted) / 0.15);
+  padding: 0.75rem;
+}
+
+.tracker-field-label {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.tracker-field-value {
+  margin-top: 0.25rem;
+  font-weight: 500;
+}

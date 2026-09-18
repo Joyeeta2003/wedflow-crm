@@ -1,0 +1,46 @@
+<div class="dialog-overlay" *ngIf="isOpen">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h2>Add Payment Installment</h2>
+      <button type="button" class="dialog-close" (click)="onCancel()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form #paymentForm="ngForm" (ngSubmit)="onSubmit(paymentForm)" class="dialog-form">
+      <div class="form-group">
+        <label for="label">Label *</label>
+        <input
+          id="label" name="label" type="text" class="form-input"
+          placeholder="e.g. Advance, 2nd Installment, Final Payment"
+          [(ngModel)]="payment.label" required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="amount">Amount (Rs.) *</label>
+        <input
+          id="amount" name="amount" type="number" class="form-input"
+          placeholder="50000" min="1" [max]="remainingAmount"
+          [(ngModel)]="payment.amount" required
+        />
+        <p class="form-hint">Remaining schedulable amount: Rs. {{ remainingAmount | number }}</p>
+      </div>
+
+      <div class="form-group">
+        <label for="dueDate">Due Date</label>
+        <input id="dueDate" name="dueDate" type="date" class="form-input" [(ngModel)]="payment.dueDate" />
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes</label>
+        <input id="notes" name="notes" type="text" class="form-input" placeholder="Any notes..." [(ngModel)]="payment.notes" />
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn-outline" (click)="onCancel()">Cancel</button>
+        <button type="submit" class="btn-primary">Add</button>
+      </div>
+    </form>
+  </div>
+</div>

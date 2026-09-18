@@ -4,7 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
 import { BookingService, Booking } from '../../services/booking.service';
-import { CrewAssignmentService, CrewAssignment, Staff } from '../../services/crew-assignment.service';
+import {
+  CrewAssignmentService,
+  CrewAssignment,
+  Staff,
+} from '../../services/crew-assignment.service';
 
 interface CrewMember {
   id: string;
@@ -69,7 +73,7 @@ export class CrewAssign implements OnInit {
   constructor(
     private http: HttpClient,
     private bookingService: BookingService,
-    private crewAssignmentService: CrewAssignmentService
+    private crewAssignmentService: CrewAssignmentService,
   ) {}
 
   ngOnInit(): void {
@@ -83,7 +87,7 @@ export class CrewAssign implements OnInit {
     forkJoin({
       bookings: this.bookingService.getBookings(),
       crewAssignments: this.crewAssignmentService.getCrewAssignments(),
-      staff: this.crewAssignmentService.getStaff()
+      staff: this.crewAssignmentService.getStaff(),
     }).subscribe({
       next: ({ bookings, crewAssignments, staff }) => {
         this.allStaff = staff.staff || [];
@@ -91,7 +95,7 @@ export class CrewAssign implements OnInit {
         this.bookingQueue = this.transformBookingsToQueue(bookings.bookings || []);
         this.updateStats();
         this.isLoading = false;
-        
+
         // Select first booking if available
         if (this.bookingQueue.length > 0) {
           this.selectedBookingId = this.bookingQueue[0].id;
@@ -101,16 +105,16 @@ export class CrewAssign implements OnInit {
         console.error('Error loading crew assignments:', err);
         this.error = 'Failed to load crew assignments. Please try again.';
         this.isLoading = false;
-      }
+      },
     });
   }
 
   transformBookingsToQueue(bookings: Booking[]): BookingQueueItem[] {
-    return bookings.map(booking => {
+    return bookings.map((booking) => {
       const eventStages = this.extractEventStages(booking);
       const pendingCount = this.calculatePendingCount(eventStages);
       const isOverdue = this.isBookingOverdue(booking);
-      
+
       return {
         id: booking.id,
         clientName: booking.client_name || 'Unknown Client',
@@ -119,82 +123,88 @@ export class CrewAssign implements OnInit {
         venue: booking.venue || 'Unknown Venue',
         pendingCount,
         overdue: isOverdue,
-        stages: eventStages
+        stages: eventStages,
       };
     });
   }
 
   extractEventStages(booking: Booking): EventStage[] {
     const eventDays = booking.event_days || [];
-    const assignments = this.crewAssignments.filter(ca => 
-      eventDays.some(ed => ed.event_name === ca.event_name && ed.event_date === ca.event_date)
+    const assignments = this.crewAssignments.filter((ca) =>
+      eventDays.some((ed) => ed.event_name === ca.event_name && ed.event_date === ca.event_date),
     );
 
-    return eventDays.map(eventDay => {
-      const eventAssignments = assignments.filter(ca => 
-        ca.event_name === eventDay.event_name && ca.event_date === eventDay.event_date
+    return eventDays.map((eventDay) => {
+      const eventAssignments = assignments.filter(
+        (ca) => ca.event_name === eventDay.event_name && ca.event_date === eventDay.event_date,
       );
-      
+
       const roleGroups = this.groupAssignmentsByRole(eventAssignments);
       const crewPlan = this.getCrewPlanForEvent(booking, eventDay);
-      
-      const roles = Object.keys(roleGroups).map(role => {
+
+      const roles = Object.keys(roleGroups).map((role) => {
         const crewRequirement = crewPlan?.roles?.find((r: any) => r.role === role);
         const required = crewRequirement?.quantity || roleGroups[role].length;
-        const assigned = roleGroups[role].map(member => ({
+        const assigned = roleGroups[role].map((member) => ({
           id: member.staff_id,
           name: member.staff_name,
-          shift: this.formatShift(member.start_time, member.end_time)
+          shift: this.formatShift(member.start_time, member.end_time),
         }));
 
         return {
           role,
           required,
-          assigned
+          assigned,
         };
       });
 
-      const isFilled = roles.every(r => r.assigned.length >= r.required);
-      const isOverdue = this.isEventOverdue(eventDay.event_date);
-      const isDone = this.isEventDone(eventDay.event_date);
+      const isFilled = roles.every((r) => r.assigned.length >= r.required);
+      const isOverdue = eventDay.event_date ? this.isEventOverdue(eventDay.event_date) : false;
+      const isDone = eventDay.event_date ? this.isEventDone(eventDay.event_date) : false;
 
       return {
         id: `${booking.id}-${eventDay.event_name}-${eventDay.event_date}`,
         name: eventDay.event_name,
-        date: this.formatDate(eventDay.event_date),
+        date: eventDay.event_date ? this.formatDate(eventDay.event_date) : 'Date TBD',
         venue: eventDay.venue || booking.venue || 'Unknown',
         done: isDone,
         overdue: isOverdue,
         filled: isFilled,
-        roles
+        roles,
       };
     });
   }
 
   groupAssignmentsByRole(assignments: CrewAssignment[]): Record<string, CrewAssignment[]> {
-    return assignments.reduce((groups, assignment) => {
-      const role = assignment.assigned_role;
-      if (!groups[role]) {
-        groups[role] = [];
-      }
-      groups[role].push(assignment);
-      return groups;
-    }, {} as Record<string, CrewAssignment[]>);
+    return assignments.reduce(
+      (groups, assignment) => {
+        const role = assignment.assigned_role;
+        if (!groups[role]) {
+          groups[role] = [];
+        }
+        groups[role].push(assignment);
+        return groups;
+      },
+      {} as Record<string, CrewAssignment[]>,
+    );
   }
 
   getCrewPlanForEvent(booking: Booking, eventDay: any): any {
     const crewPlan = booking.package_crew_plan || [];
-    const matchingDay = crewPlan.find((day: any) => 
-      day.event_type.toLowerCase() === eventDay.event_name.toLowerCase()
+    const matchingDay = crewPlan.find(
+      (day: any) => day.event_type.toLowerCase() === eventDay.event_name.toLowerCase(),
     );
     return matchingDay;
   }
 
   calculatePendingCount(stages: EventStage[]): number {
     return stages.reduce((total, stage) => {
-      return total + stage.roles.reduce((roleTotal, role) => {
-        return roleTotal + Math.max(0, role.required - role.assigned.length);
-      }, 0);
+      return (
+        total +
+        stage.roles.reduce((roleTotal, role) => {
+          return roleTotal + Math.max(0, role.required - role.assigned.length);
+        }, 0)
+      );
     }, 0);
   }
 
@@ -244,21 +254,34 @@ export class CrewAssign implements OnInit {
 
   updateStats(): void {
     this.totalBookings = this.bookingQueue.length;
-    this.pendingRoles = this.bookingQueue.reduce((total, booking) => total + booking.pendingCount, 0);
-    
+    this.pendingRoles = this.bookingQueue.reduce(
+      (total, booking) => total + booking.pendingCount,
+      0,
+    );
+
     const totalRequired = this.bookingQueue.reduce((total, booking) => {
-      return total + booking.stages.reduce((stageTotal, stage) => {
-        return stageTotal + stage.roles.reduce((roleTotal, role) => roleTotal + role.required, 0);
-      }, 0);
+      return (
+        total +
+        booking.stages.reduce((stageTotal, stage) => {
+          return stageTotal + stage.roles.reduce((roleTotal, role) => roleTotal + role.required, 0);
+        }, 0)
+      );
     }, 0);
-    
+
     const totalAssigned = this.bookingQueue.reduce((total, booking) => {
-      return total + booking.stages.reduce((stageTotal, stage) => {
-        return stageTotal + stage.roles.reduce((roleTotal, role) => roleTotal + role.assigned.length, 0);
-      }, 0);
+      return (
+        total +
+        booking.stages.reduce((stageTotal, stage) => {
+          return (
+            stageTotal +
+            stage.roles.reduce((roleTotal, role) => roleTotal + role.assigned.length, 0)
+          );
+        }, 0)
+      );
     }, 0);
-    
-    this.filledPercent = totalRequired === 0 ? 0 : Math.round((totalAssigned / totalRequired) * 100);
+
+    this.filledPercent =
+      totalRequired === 0 ? 0 : Math.round((totalAssigned / totalRequired) * 100);
   }
 
   get selectedBooking(): BookingQueueItem | undefined {
@@ -287,7 +310,7 @@ export class CrewAssign implements OnInit {
         stage,
         role,
         pending: role.required - role.assigned.length,
-      }))
+      })),
     );
   }
 
@@ -297,10 +320,12 @@ export class CrewAssign implements OnInit {
 
   overallProgressPercent(booking: BookingQueueItem): number {
     const total = booking.stages.reduce(
-      (sum, s) => sum + s.roles.reduce((rSum, r) => rSum + r.required, 0), 0
+      (sum, s) => sum + s.roles.reduce((rSum, r) => rSum + r.required, 0),
+      0,
     );
     const filled = booking.stages.reduce(
-      (sum, s) => sum + s.roles.reduce((rSum, r) => rSum + r.assigned.length, 0), 0
+      (sum, s) => sum + s.roles.reduce((rSum, r) => rSum + r.assigned.length, 0),
+      0,
     );
     return total === 0 ? 0 : Math.round((filled / total) * 100);
   }
@@ -316,10 +341,11 @@ export class CrewAssign implements OnInit {
 
   onRemoveCrew(stage: EventStage, role: RoleAssignment, member: CrewMember): void {
     // Find and remove the crew assignment
-    const assignment = this.crewAssignments.find(ca => 
-      ca.staff_id === member.id && 
-      ca.assigned_role === role.role &&
-      this.getEventStageId(ca) === stage.id
+    const assignment = this.crewAssignments.find(
+      (ca) =>
+        ca.staff_id === member.id &&
+        ca.assigned_role === role.role &&
+        this.getEventStageId(ca) === stage.id,
     );
 
     if (assignment) {
@@ -330,19 +356,23 @@ export class CrewAssign implements OnInit {
         error: (err) => {
           console.error('Error removing crew assignment:', err);
           this.error = 'Failed to remove crew assignment';
-        }
+        },
       });
     }
   }
 
   getEventStageId(assignment: CrewAssignment): string {
     // Find corresponding booking and event stage
-    const booking = this.bookingQueue.find(b => 
-      b.stages.some(s => s.name === assignment.event_name && s.date === this.formatDate(assignment.event_date))
+    const booking = this.bookingQueue.find((b) =>
+      b.stages.some(
+        (s) =>
+          s.name === assignment.event_name && s.date === this.formatDate(assignment.event_date),
+      ),
     );
     if (booking) {
-      const stage = booking.stages.find(s => 
-        s.name === assignment.event_name && s.date === this.formatDate(assignment.event_date)
+      const stage = booking.stages.find(
+        (s) =>
+          s.name === assignment.event_name && s.date === this.formatDate(assignment.event_date),
       );
       return stage?.id || '';
     }

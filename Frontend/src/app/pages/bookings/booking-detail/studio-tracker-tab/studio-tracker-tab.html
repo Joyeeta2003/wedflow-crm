@@ -1,0 +1,47 @@
+<div class="tracker-actions">
+  <button type="button" class="btn-outline btn-sm" (click)="onEditTracker()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+    Edit Tracker
+  </button>
+</div>
+
+<div class="tracker-grid">
+  <!-- Booking Operations -->
+  <div class="tracker-card">
+    <div class="tracker-card-header">
+      <div class="tracker-card-title">Booking Operations</div>
+    </div>
+    <div class="tracker-card-body tracker-field-grid">
+      <div class="tracker-field" *ngFor="let f of bookingOperationsFields; trackBy: trackBySection">
+        <div class="tracker-field-label">{{ f.label }}</div>
+        <div class="tracker-field-value">{{ f.value ?? '-' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Album / Photo Timeline -->
+  <div class="tracker-card">
+    <div class="tracker-card-header">
+      <div class="tracker-card-title">Album / Photo Timeline</div>
+    </div>
+    <div class="tracker-card-body tracker-field-grid">
+      <div class="tracker-field" *ngFor="let f of albumPhotoTimelineFields; trackBy: trackBySection">
+        <div class="tracker-field-label">{{ f.label }}</div>
+        <div class="tracker-field-value">{{ f.value ?? '-' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video / Reels / Social Timeline -->
+  <div class="tracker-card tracker-card-full">
+    <div class="tracker-card-header">
+      <div class="tracker-card-title">Video / Reels / Social Timeline</div>
+    </div>
+    <div class="tracker-card-body tracker-field-grid tracker-field-grid-4">
+      <div class="tracker-field" *ngFor="let f of videoReelsSocialTimelineFields; trackBy: trackBySection">
+        <div class="tracker-field-label">{{ f.label }}</div>
+        <div class="tracker-field-value">{{ f.value ?? '-' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
