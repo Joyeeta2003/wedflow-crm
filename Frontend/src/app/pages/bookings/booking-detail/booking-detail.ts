@@ -17,7 +17,12 @@ import { DeliveriesTab } from './deliveries-tab/deliveries-tab';
 import { NewDeliveryData } from './deliveries-tab/delivery-modal/delivery-modal';
 import { NewEventDayData } from './crew-tab/event-day-modal/event-day-modal';
 import { NewAssignmentData } from './crew-tab/assign-crew-modal/assign-crew-modal';
+import { StudioTrackerTab } from './studio-tracker-tab/studio-tracker-tab';
 import { Toast } from '../../../components/toast/toast';
+import {
+  BookingDetailsModal,
+  BookingDetailsFormData,
+} from './booking-details-modal/booking-details-modal';
 
 interface WorkflowStageDef {
   number: number;
@@ -140,7 +145,7 @@ type TabKey = 'crew' | 'payments' | 'deliveries' | 'tracker' | 'media' | 'remind
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast],
+  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -706,4 +711,34 @@ export class BookingDetail implements OnInit {
     this.booking.deliveries = this.booking.deliveries.filter((x) => x.id !== d.id);
     this.showToast('Deleted', 'The delivery item has been removed.');
   }
+
+  // state
+  isBookingDetailsModalOpen = false;
+
+  onOpenBookingDetailsModal(): void {
+    this.isBookingDetailsModalOpen = true;
+  }
+
+  onCloseBookingDetailsModal(): void {
+    this.isBookingDetailsModalOpen = false;
+  }
+
+  onSaveBookingDetails(data: BookingDetailsFormData): void {
+  // TODO: real API call once endpoint confirmed — merging into local mock for now
+  Object.assign(this.booking as any, {
+    main_event_date: data.mainEventDate,
+    venue: data.venue,
+    status: data.status,
+    total_amount: data.totalAmount,
+    // ...rest of fields once real Booking interface confirmed
+  });
+  this.isBookingDetailsModalOpen = false;
+
+  this.toastTitle = 'Booking updated';
+  this.toastMsg = '';
+  this.toastVariant = 'success';
+  this.toastVisible = true;
+}
+
+  
 }

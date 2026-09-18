@@ -294,7 +294,11 @@
           (startDelivery)="onDeliveryStart($event)" (markReady)="onDeliveryMarkReady($event)"
           (deleteDelivery)="onDeliveryDelete($event)"></app-deliveries-tab>
       </div>
-      <div *ngIf="activeTab !== 'crew' && activeTab !== 'payments' && activeTab !== 'deliveries' ">
+      <div *ngIf="activeTab === 'tracker'">
+        <app-studio-tracker-tab></app-studio-tracker-tab>
+      </div>
+      <div
+        *ngIf="activeTab !== 'crew' && activeTab !== 'payments' && activeTab !== 'deliveries' && activeTab !== 'tracker' ">
         <p class="coming-soon">Coming soon</p>
       </div>
     </div>
@@ -303,5 +307,8 @@
 
 <div class="state-message" *ngIf="loading">Loading booking...</div>
 <div class="state-message state-error" *ngIf="!loading && error">{{ error }}</div>
+<app-booking-details-modal *ngIf="isBookingDetailsModalOpen" [booking]="booking" (closeModal)="onCloseBookingDetailsModal()"
+  (save)="onSaveBookingDetails($event)"></app-booking-details-modal>
+
 <app-toast [visible]="toastVisible" [title]="toastTitle" [message]="toastMsg" [variant]="toastVariant"
   (closed)="onToastClosed()"></app-toast>
