@@ -145,7 +145,7 @@ type TabKey = 'crew' | 'payments' | 'deliveries' | 'tracker' | 'media' | 'remind
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab],
+  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -723,14 +723,25 @@ export class BookingDetail implements OnInit {
     this.isBookingDetailsModalOpen = false;
   }
 
-  onSaveBookingDetails(data: BookingDetailsFormData): void {
+onSaveBookingDetails(data: BookingDetailsFormData): void {
+  if (!this.booking) return;
+
   // TODO: real API call once endpoint confirmed — merging into local mock for now
-  Object.assign(this.booking as any, {
+  Object.assign(this.booking, {
     main_event_date: data.mainEventDate,
+    booking_date: data.bookingDate,
+    project_division: data.projectDivision,
+    event_type: data.eventType,
+    client_manager: data.clientManager,
+    selection_upload_process: data.selectionUploadProcess,
+    review_notes: data.reviewNotes,
+    package_id: data.packageId,
     venue: data.venue,
+    map_link: data.mapLink,
     status: data.status,
     total_amount: data.totalAmount,
-    // ...rest of fields once real Booking interface confirmed
+    notes: data.notes,
+    remarks: data.remarks,
   });
   this.isBookingDetailsModalOpen = false;
 

@@ -21,6 +21,13 @@ export interface Booking {
   payment_schedule?: PaymentSchedule[];
   package_crew_plan?: CrewPlanDay[];
   crew_assignments?: CrewAssignment[];
+  project_division?: string | null; // ASSUMPTION
+  event_type?: string | null; // ASSUMPTION
+  client_manager?: string | null; // ASSUMPTION
+  selection_upload_process?: string | null; // ASSUMPTION
+  review_notes?: string | null; // ASSUMPTION
+  map_link?: string | null; // ASSUMPTION
+  remarks?: string | null; // ASSUMPTION
   deliveries?: DeliveryItem[]; // ASSUMPTION — new field, not in original interface
 }
 

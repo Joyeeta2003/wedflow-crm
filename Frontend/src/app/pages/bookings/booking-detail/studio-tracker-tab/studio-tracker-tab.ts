@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface TrackerField {
@@ -14,6 +14,8 @@ interface TrackerField {
   styleUrl: './studio-tracker-tab.scss',
 })
 export class StudioTrackerTab {
+  @Output() editTracker = new EventEmitter<void>();
+
   // ASSUMPTION/UNCONFIRMED: tracker data model not yet confirmed with backend —
   // showing '-' placeholder for every field until real Booking tracker fields exist.
   // Replace `value: null` with actual booking.tracker.<field> once API confirmed.
@@ -68,9 +70,7 @@ export class StudioTrackerTab {
 
   trackBySection = (_: number, field: TrackerField): string => field.label;
 
-  // TODO: Edit Tracker click behaviour (modal vs inline edit) not yet confirmed —
-  // no screenshot of the original site's edit flow. Wire this up once that's shared.
   onEditTracker(): void {
-    console.log('TODO: implement Edit Tracker action');
+    this.editTracker.emit();
   }
 }
