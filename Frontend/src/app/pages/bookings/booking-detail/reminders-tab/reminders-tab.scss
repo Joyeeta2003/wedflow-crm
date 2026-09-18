@@ -1,0 +1,14 @@
+@import '../tab-shared';
+
+.assignment-avatar-blue { background: hsl(217 91% 60% / 0.15); color: hsl(217 91% 65%); }
+.reminder-title { text-transform: capitalize; }
+.reminder-status { text-transform: capitalize; }
+
+.reminders-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.5rem;
+}

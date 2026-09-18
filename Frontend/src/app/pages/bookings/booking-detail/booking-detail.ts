@@ -9,6 +9,8 @@ import {
   CrewAssignment,
   PaymentSchedule,
   DeliveryItem,
+  MediaItem,
+    ReminderLog,
 } from '../../../services/booking.service';
 
 import { CrewTab } from './crew-tab/crew-tab';
@@ -23,6 +25,9 @@ import {
   BookingDetailsModal,
   BookingDetailsFormData,
 } from './booking-details-modal/booking-details-modal';
+import { MediaTab } from './media-tab/media-tab';
+import { NewMediaItemData } from './media-tab/media-item-modal/media-item-modal';
+import { RemindersTab } from './reminders-tab/reminders-tab';
 
 interface WorkflowStageDef {
   number: number;
@@ -145,7 +150,7 @@ type TabKey = 'crew' | 'payments' | 'deliveries' | 'tracker' | 'media' | 'remind
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal],
+  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal, MediaTab, RemindersTab],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -510,6 +515,17 @@ export class BookingDetail implements OnInit {
         notes: null,
       },
     ],
+        reminders: [
+      { id: 'r1', reminder_type: 'client reminder', days_before_event: 1, scheduled_date: '2026-06-12', status: 'sent' },
+      { id: 'r2', reminder_type: 'client reminder', days_before_event: 3, scheduled_date: '2026-06-10', status: 'sent' },
+      { id: 'r3', reminder_type: 'crew details customer', days_before_event: 3, scheduled_date: '2026-06-10', status: 'sent' },
+      { id: 'r4', reminder_type: 'crew details customer', days_before_event: 3, scheduled_date: '2026-06-12', status: 'skipped' },
+      { id: 'r5', reminder_type: 'crew details customer', days_before_event: 3, scheduled_date: '2026-06-11', status: 'skipped' },
+      { id: 'r6', reminder_type: 'client reminder', days_before_event: 7, scheduled_date: '2026-06-06', status: 'sent' },
+      { id: 'r7', reminder_type: 'client reminder', days_before_event: 15, scheduled_date: '2026-05-29', status: 'sent' },
+      { id: 'r8', reminder_type: 'client reminder', days_before_event: 30, scheduled_date: '2026-05-14', status: 'sent' },
+      { id: 'r9', reminder_type: 'client reminder', days_before_event: 60, scheduled_date: '2026-04-14', status: 'sent' },
+    ],
   };
 
   ngOnInit(): void {
@@ -695,6 +711,27 @@ export class BookingDetail implements OnInit {
     };
     this.booking.deliveries = [...(this.booking.deliveries ?? []), newItem];
     this.showToast('Delivery added', 'The delivery item has been added successfully.');
+  }
+
+    // --- Media tab event handlers ---
+  onMediaCreate(data: NewMediaItemData): void {
+    if (!this.booking) return;
+    const newItem: MediaItem = {
+      id: 'm' + Date.now(), // ASSUMPTION — real id backend theke ashবে
+      media_type: data.mediaType,
+      label: data.label,
+      capacity: data.capacity || null,
+      photographer: data.photographer || null,
+      notes: data.notes || null,
+    };
+    this.booking.media = [...(this.booking.media ?? []), newItem];
+    this.showToast('Media added', 'The storage item has been added successfully.');
+  }
+
+  onMediaDelete(m: MediaItem): void {
+    if (!this.booking?.media) return;
+    this.booking.media = this.booking.media.filter((x) => x.id !== m.id);
+    this.showToast('Deleted', 'The storage item has been removed.');
   }
 
   onDeliveryStart(d: DeliveryItem): void {

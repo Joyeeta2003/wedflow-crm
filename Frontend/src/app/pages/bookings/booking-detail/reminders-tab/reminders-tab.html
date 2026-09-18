@@ -1,0 +1,26 @@
+<div class="section-card">
+  <div class="section-header">
+    <div class="section-title-plain">Automated Reminders</div>
+  </div>
+
+  <div class="reminders-empty" *ngIf="!booking.reminders || booking.reminders.length === 0">
+    No reminders scheduled for this booking yet.
+  </div>
+
+  <div class="assignment-list" *ngIf="booking.reminders && booking.reminders.length > 0">
+    <div class="assignment-row" *ngFor="let r of booking.reminders; trackBy: trackByReminderId">
+      <div class="assignment-left">
+        <div class="assignment-avatar assignment-avatar-blue">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <div>
+          <div class="assignment-name reminder-title">{{ r.reminder_type }}</div>
+          <div class="assignment-meta">{{ r.days_before_event }} days before event • {{ formatDate(r.scheduled_date) }}</div>
+        </div>
+      </div>
+      <div class="assignment-right">
+        <span class="badge reminder-status" [ngClass]="r.status === 'sent' ? 'badge-secondary' : 'badge-neutral'">{{ r.status }}</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -28,7 +28,9 @@ export interface Booking {
   review_notes?: string | null; // ASSUMPTION
   map_link?: string | null; // ASSUMPTION
   remarks?: string | null; // ASSUMPTION
-  deliveries?: DeliveryItem[]; // ASSUMPTION — new field, not in original interface
+  deliveries?: DeliveryItem[];
+  media?: MediaItem[];
+  reminders?: ReminderLog[]; // ASSUMPTION — new field, not in original interface
 }
 
 export interface BookingEvent {
@@ -38,6 +40,23 @@ export interface BookingEvent {
   venue: string | null;
   notes?: string | null; // ASSUMPTION
   date_pending?: boolean; // ASSUMPTION
+}
+
+export interface MediaItem {
+  id: string;
+  media_type: string; // 'Memory Card' | 'Hard Disk' | 'Pen Drive' | 'SD Card' | 'CFexpress Card'
+  label: string;
+  capacity?: string | null;
+  photographer?: string | null; // "With Photographer"
+  notes?: string | null;
+}
+
+export interface ReminderLog {
+  id: string;
+  reminder_type: string; // 'client reminder' | 'crew details customer' etc.
+  days_before_event: number;
+  scheduled_date: string;
+  status: 'sent' | 'skipped'; // ASSUMPTION — only these two seen
 }
 
 export interface PaymentSchedule {

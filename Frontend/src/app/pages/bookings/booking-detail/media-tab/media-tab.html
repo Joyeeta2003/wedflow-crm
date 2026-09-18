@@ -1,0 +1,54 @@
+<div class="section-card">
+  <div class="section-header">
+    <div class="section-title-plain">Memory Cards & Storage</div>
+    <button class="btn-primary btn-sm" (click)="onOpenAdd()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      Add Media
+    </button>
+  </div>
+
+  <div class="media-empty" *ngIf="!booking.media || booking.media.length === 0">
+    No storage media tracked. Add memory cards and hard disks to track them.
+  </div>
+
+  <div class="assignment-list" *ngIf="booking.media && booking.media.length > 0">
+    <div class="assignment-row" *ngFor="let m of booking.media; trackBy: trackByMediaId">
+      <div class="assignment-left">
+        <div class="assignment-avatar assignment-avatar-amber">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>
+        </div>
+        <div>
+          <div class="assignment-name">{{ m.label }} <span class="media-type-tag">{{ m.media_type }}</span></div>
+          <div class="assignment-meta">
+            <span *ngIf="m.capacity">{{ m.capacity }}</span>
+            <span *ngIf="m.capacity && m.photographer">•</span>
+            <span *ngIf="m.photographer">With {{ m.photographer }}</span>
+          </div>
+          <div class="assignment-meta" *ngIf="m.notes">{{ m.notes }}</div>
+        </div>
+      </div>
+      <div class="assignment-right">
+        <button class="icon-btn-destructive" type="button" (click)="onDeleteClick(m)" aria-label="Delete media item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-media-item-modal
+  *ngIf="showAddModal"
+  (closeModal)="onCloseAdd()"
+  (create)="onSubmitAdd($event)"
+></app-media-item-modal>
+
+<div class="dialog-overlay" *ngIf="confirmDeleteTarget">
+  <div class="dialog-content confirm-dialog">
+    <h2>Confirm Delete</h2>
+    <p class="confirm-text">Delete this media item?</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn-outline" (click)="onCancelDelete()">Cancel</button>
+      <button type="button" class="btn-destructive" (click)="onConfirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>

@@ -296,8 +296,15 @@
       <div *ngIf="activeTab === 'tracker'">
         <app-studio-tracker-tab (editTracker)="onOpenBookingDetailsModal()"></app-studio-tracker-tab>
       </div>
+      <div *ngIf="activeTab === 'media'">
+        <app-media-tab [booking]="b" (createMedia)="onMediaCreate($event)"
+          (deleteMedia)="onMediaDelete($event)"></app-media-tab>
+      </div>
+      <div *ngIf="activeTab === 'reminders'">
+        <app-reminders-tab [booking]="b"></app-reminders-tab>
+      </div>
       <div
-        *ngIf="activeTab !== 'crew' && activeTab !== 'payments' && activeTab !== 'deliveries' && activeTab !== 'tracker' ">
+        *ngIf="activeTab !== 'crew' && activeTab !== 'payments' && activeTab !== 'deliveries' && activeTab !== 'tracker' && activeTab !== 'media' && activeTab !== 'reminders' ">
         <p class="coming-soon">Coming soon</p>
       </div>
     </div>

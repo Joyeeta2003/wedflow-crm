@@ -1,0 +1,21 @@
+@import '../tab-shared';
+
+.assignment-avatar-amber { background: hsl(38 92% 50% / 0.15); color: hsl(38 92% 50%); }
+.media-type-tag {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+}
+
+.media-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.5rem;
+}
+
+.confirm-dialog { max-width: 24rem; }
+.confirm-text { margin: 0.75rem 0 0; font-size: 0.875rem; color: hsl(var(--muted-foreground)); }
