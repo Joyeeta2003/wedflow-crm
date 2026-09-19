@@ -1,0 +1,103 @@
+<div class="branding-header">
+  <div class="branding-header-left">
+    <button type="button" class="btn-icon" (click)="onBack()" aria-label="Back to settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+    </button>
+    <div>
+      <h2 class="branding-title">Email Studio</h2>
+      <p class="branding-subtitle">Choose a format, edit only that message, preview it, then save.</p>
+    </div>
+  </div>
+
+  <span class="badge badge--outline branding-focus-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg>
+    Focused editor
+  </span>
+</div>
+
+<div class="email-layout">
+  <!-- ===== LEFT: format list ===== -->
+  <div class="email-list">
+    <button
+  type="button"
+  class="email-list-item"
+  *ngFor="let f of formats"
+  [class.email-list-item-active]="f.key === selectedKey"
+  (click)="selectFormat(f.key)"
+>
+  <div class="email-list-item-top">
+    <span class="email-list-item-title">{{ f.title }}</span>
+    <svg *ngIf="f.hasImage" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="email-list-item-icon">
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+    </svg>
+  </div>
+  <p class="email-list-item-desc">{{ f.description }}</p>
+</button>
+  </div>
+
+  <!-- ===== RIGHT: editor + preview ===== -->
+  <div class="email-editor">
+    <div>
+      <h3 class="email-editor-title">{{ selectedFormat.title }}</h3>
+      <p class="email-editor-subtitle">{{ selectedFormat.description }}</p>
+    </div>
+
+    <div class="email-field">
+      <label class="email-field-label">Subject</label>
+      <input type="text" class="email-input" [(ngModel)]="selectedFormat.subject" />
+    </div>
+
+    <div class="email-field">
+      <div class="email-field-toolbar">
+        <label class="email-field-label">Message</label>
+        <div class="email-format-buttons">
+          <button type="button" class="btn-icon-sm" aria-label="Bold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"></path></svg>
+          </button>
+          <button type="button" class="btn-icon-sm" aria-label="Italic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="10" y1="4" y2="4"></line><line x1="14" x2="5" y1="20" y2="20"></line><line x1="15" x2="9" y1="4" y2="20"></line></svg>
+          </button>
+        </div>
+      </div>
+      <textarea class="email-textarea" rows="11" [(ngModel)]="selectedFormat.message"></textarea>
+
+      <div class="email-token-row">
+        <button type="button" class="email-token" *ngFor="let t of tokens" (click)="insertToken(t)">{{ t }}</button>
+      </div>
+    </div>
+
+    <div class="email-lower-grid">
+      <div class="email-banner-block">
+        <div class="email-field-label">Header banner</div>
+        <label class="email-banner-upload">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>
+          Upload banner
+          <input type="file" accept="image/png,image/jpeg,image/webp" class="email-banner-input" (change)="onBannerSelected($event)" />
+        </label>
+      </div>
+
+      <div class="email-preview">
+        <img *ngIf="bannerUrl" [src]="bannerUrl" alt="" class="email-preview-banner" />
+        <div class="email-preview-body">
+          <div class="email-preview-company">{{ companyName }}</div>
+          <div class="email-preview-subject">{{ selectedFormat.subject }}</div>
+          <div class="email-preview-message">
+            <p *ngFor="let line of previewLines">{{ line || '&nbsp;' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="email-footer">
+  <div class="email-support-field">
+    <label class="email-field-label">Support reply email</label>
+    <input type="email" class="email-input" placeholder="support@studio.com" [(ngModel)]="supportEmail" />
+  </div>
+
+  <button type="button" class="btn-primary" (click)="onSaveAndBack()" [disabled]="isSaving">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7"></path></svg>
+    {{ isSaving ? 'Saving...' : 'Save & Back' }}
+  </button>
+</div>

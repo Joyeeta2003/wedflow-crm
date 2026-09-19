@@ -1,0 +1,214 @@
+:host {
+  --bg: hsl(var(--background));
+  --card-bg: hsl(var(--card));
+  --border-color: hsl(var(--border));
+  --input-bg: hsl(var(--popover));
+  --input-border: hsl(var(--secondary-border));
+  --text-main: hsl(var(--foreground));
+  --text-muted: hsl(var(--muted-foreground));
+  --brand: hsl(var(--primary));
+  --brand-foreground: hsl(var(--primary-foreground));
+
+  display: block;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin: 0 auto;
+  padding: 1.5rem 0rem 0.5rem;
+  color: var(--text-main);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+
+  @media (max-width: 680px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.page-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.page-subtitle {
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
+// ---------- Studio badge ----------
+.studio-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.studio-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.studio-logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand);
+  color: var(--brand-foreground);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.studio-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.studio-mode {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+// ---------- Grid ----------
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 11rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  padding: 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-main);
+  font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover:not(.settings-card-disabled) {
+    border-color: rgba(var(--brand), 0.45);
+    border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  &:hover:not(.settings-card-disabled) .settings-chevron {
+    transform: translateX(0.25rem);
+    color: var(--brand);
+  }
+}
+
+.settings-card-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.settings-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.settings-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--brand);
+}
+
+.settings-chevron {
+  color: var(--text-muted);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.settings-card-bottom {
+  margin-top: 0.75rem;
+}
+
+.settings-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.settings-card-desc {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 28rem;
+}
+
+.settings-badge {
+  margin-top: 0.75rem;
+}
+
+// ---------- Shared badge (bookings.scss-er pattern onujayi) ----------
+.badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 6px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge--outline {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+// ---------- Footer ----------
+.settings-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.settings-footer-icon {
+  color: rgb(16, 185, 129); // emerald-500
+  flex-shrink: 0;
+}

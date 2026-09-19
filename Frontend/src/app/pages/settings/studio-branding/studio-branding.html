@@ -1,0 +1,48 @@
+<div class="branding-header">
+  <div class="branding-header-left">
+    <button type="button" class="btn-icon" (click)="onBack()" aria-label="Back to settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+    </button>
+    <div>
+      <h2 class="branding-title">Studio Branding</h2>
+      <p class="branding-subtitle">Your logo updates across the portal and outgoing company communication.</p>
+    </div>
+  </div>
+
+  <span class="badge badge--outline branding-focus-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg>
+    Focused editor
+  </span>
+</div>
+
+<div class="branding-body">
+  <div class="branding-preview">
+    <img *ngIf="logoPreviewUrl" [src]="logoPreviewUrl" alt="Studio logo preview" class="branding-preview-img" />
+    <div *ngIf="!logoPreviewUrl" class="branding-preview-empty">No logo</div>
+  </div>
+
+  <div class="branding-controls">
+    <div>
+      <div class="branding-field-label">Company logo</div>
+      <p class="branding-field-desc">Upload a square PNG, JPG or WebP. Transparent backgrounds are supported.</p>
+    </div>
+
+    <label class="branding-upload">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>
+      Choose logo
+      <input type="file" accept="image/png,image/jpeg,image/webp" class="branding-upload-input" (change)="onFileSelected($event)" />
+    </label>
+
+    <button type="button" class="btn-outline" (click)="onRemoveLogo()" [disabled]="!logoPreviewUrl">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      Remove logo
+    </button>
+  </div>
+</div>
+
+<div class="branding-footer">
+  <button type="button" class="btn-primary" (click)="onSaveAndBack()" [disabled]="isSaving">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7"></path></svg>
+    {{ isSaving ? 'Saving...' : 'Save & Back' }}
+  </button>
+</div>

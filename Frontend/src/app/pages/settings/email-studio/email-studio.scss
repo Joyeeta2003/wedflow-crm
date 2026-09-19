@@ -1,0 +1,446 @@
+:host {
+  --bg: hsl(var(--background));
+  --card-bg: hsl(var(--card));
+  --border-color: hsl(var(--border));
+  --input-bg: hsl(var(--popover));
+  --input-border: hsl(var(--secondary-border));
+  --text-main: hsl(var(--foreground));
+  --text-muted: hsl(var(--muted-foreground));
+  --brand: hsl(var(--primary));
+  --brand-foreground: hsl(var(--primary-foreground));
+
+  display: block;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: var(--text-main);
+}
+
+// ---------- Header (reused pattern) ----------
+.branding-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.25rem;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.branding-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: var(--brand);
+  }
+}
+
+.branding-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.branding-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.branding-focus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--brand);
+}
+
+// ---------- Layout ----------
+.email-layout {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 1.25rem;
+  padding: 1rem 0;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ---------- Left: format list ----------
+.email-list {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid var(--border-color);
+  padding-right: 0.75rem;
+
+  // gap-er upor nirvor na kore explicit margin, kono browser/cascade issue thakleo kaj korbe
+  display: block;
+
+  @media (max-width: 900px) {
+    max-height: 20rem;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding-right: 0;
+    padding-bottom: 0.75rem;
+  }
+}
+
+.email-list-item {
+  display: block;
+  position: static;
+  float: none;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 0.75rem;
+  margin: 0 0 0.6rem 0; // ← eita main fix: prottekta item-er niche fixed space
+  cursor: pointer;
+  color: var(--text-main);
+  font-family: inherit;
+  line-height: normal;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+
+.email-list-item-active {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+.email-list-item-top {
+  display: block;
+  margin: 0 0 0.25rem 0;
+}
+
+.email-list-item-title {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.email-list-item-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+  color: var(--brand);
+}
+
+.email-list-item-desc {
+  display: block;
+  margin: 0.25rem 0 0 0;
+  padding: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  overflow: hidden;
+  max-height: 2.3em; // 2 line-er upore cut kore dey, -webkit-line-clamp-er bodole simple max-height fallback
+}
+// ---------- Right: editor ----------
+.email-editor {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.email-editor-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.email-editor-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.email-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.email-field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.email-field-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.email-format-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--brand);
+  }
+}
+
+.email-input {
+  height: 2.25rem;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--input-border);
+  background: transparent;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  outline: none;
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+  &:focus {
+    border-color: var(--brand);
+  }
+}
+
+.email-textarea {
+  width: 100%;
+  min-height: 15rem;
+  border-radius: 6px;
+  border: 1px solid var(--input-border);
+  background: transparent;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+
+  &:focus {
+    border-color: var(--brand);
+  }
+}
+
+.email-token-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.email-token {
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.45);
+    color: var(--brand);
+  }
+}
+
+// ---------- Lower grid: banner upload + preview ----------
+.email-lower-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.email-banner-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.email-banner-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+    color: var(--brand);
+  }
+}
+
+.email-banner-input {
+  display: none;
+}
+
+// ---------- Email preview (fixed light theme, jekhane real email-e dekha jabe) ----------
+.email-preview {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: #fffaf1;
+  color: #2b2115;
+}
+
+.email-preview-banner {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 8rem;
+}
+
+.email-preview-body {
+  padding: 1.25rem;
+}
+
+.email-preview-company {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #a87908;
+}
+
+.email-preview-subject {
+  margin-top: 0.5rem;
+  font-weight: 700;
+}
+
+.email-preview-message {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+
+  p {
+    margin: 0 0 0.75rem;
+  }
+}
+
+// ---------- Footer ----------
+.email-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.25rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.email-support-field {
+  max-width: 24rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+// ---------- Shared badge/button ----------
+.badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 6px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge--outline {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 2.25rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: var(--brand-foreground);
+
+  &:hover {
+    opacity: 0.9;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

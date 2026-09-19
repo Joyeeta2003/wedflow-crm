@@ -19,6 +19,7 @@ import { Storage } from './pages/storage/storage';
 import { Equipment } from './pages/equipment-page/equipment-page';
 import { WorkflowBoard } from './pages/workflow-board/workflow-board';
 import { Production } from './pages/production/production';
+import { Settings } from './pages/settings/settings';
 
 const authGuard: CanActivateFn = () => {
   const auth = inject(Auth);
@@ -70,6 +71,7 @@ export const routes: Routes = [
       { path: 'equipment', component: Equipment },
       { path: 'workflow-board', component: WorkflowBoard },
       { path: 'production', component: Production },
+      { path: 'settings', component: Settings },
     ],
   },
 ];

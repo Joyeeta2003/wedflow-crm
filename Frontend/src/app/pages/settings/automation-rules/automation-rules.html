@@ -1,0 +1,39 @@
+<div class="automation-container">
+<div class="branding-header">
+  <div class="branding-header-left">
+    <button type="button" class="btn-icon" (click)="onBack()" aria-label="Back to settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+    </button>
+    <div>
+      <h2 class="branding-title">Automation Rules</h2>
+      <p class="branding-subtitle">Control when your team should complete operational preparation.</p>
+    </div>
+  </div>
+
+  <span class="badge badge--outline branding-focus-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg>
+    Focused editor
+  </span>
+</div>
+
+<div class="automation-body">
+  <label class="automation-label" for="crew-days">Crew assignment deadline</label>
+  <div class="automation-input-row">
+    <input
+      id="crew-days"
+      type="number"
+      class="automation-input"
+      min="1"
+      [(ngModel)]="daysValue"
+    />
+    <span class="automation-input-suffix">days before each event</span>
+  </div>
+</div>
+
+<div class="branding-footer">
+  <button type="button" class="btn-primary" (click)="onSaveAndBack()" [disabled]="isSaving">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7"></path></svg>
+    {{ isSaving ? 'Saving...' : 'Save & Back' }}
+  </button>
+</div>
+</div>
