@@ -1279,6 +1279,50 @@ app.put('/api/bookings/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// DELETE /api/bookings/:id - Delete booking
+app.delete('/api/bookings/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Get booking details before deletion for logging
+    const bookingCheck = await pool.query(
+      `SELECT booking_number, client_id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [id, req.user.workspace_id]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const bookingNumber = bookingCheck.rows[0].booking_number;
+
+    // Delete booking (cascade will handle related records)
+    const result = await pool.query(
+      `DELETE FROM bookings
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING booking_number`,
+      [id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'booking_deleted',
+      description: `Deleted booking ${bookingNumber}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, message: 'Booking deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    return res.status(500).json({ error: 'Failed to delete booking' });
+  }
+});
+
 // ============================================
 // SERVICE MASTER API
 // ============================================

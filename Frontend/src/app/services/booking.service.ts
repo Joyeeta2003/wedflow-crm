@@ -248,6 +248,10 @@ export class BookingService {
     return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/booking-events/${eventId}`);
   }
 
+  deleteBooking(bookingId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/bookings/${bookingId}`);
+  }
+
   // Crew Assignment API methods
   addCrewAssignment(assignmentData: any): Observable<{ success: boolean; crewAssignment?: any; assignment?: any }> {
     return this.http.post<{ success: boolean; crewAssignment?: any; assignment?: any }>('http://localhost:5001/api/crew-assignments', assignmentData);

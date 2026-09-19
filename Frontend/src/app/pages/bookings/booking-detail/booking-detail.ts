@@ -986,6 +986,28 @@ export class BookingDetail implements OnInit {
     });
   }
 
+  onCancelBooking(): void {
+    if (!this.booking) return;
+    
+    if (confirm(`Are you sure you want to cancel and delete booking ${this.booking.booking_number} for ${this.booking.client_name}? This action cannot be undone.`)) {
+      this.bookingService.deleteBooking(this.booking.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.showToast('Booking Cancelled', 'The booking has been successfully cancelled and deleted.');
+            // Navigate back to bookings list
+            window.location.href = '/bookings';
+          } else {
+            this.showToast('Error', response.message || 'Failed to cancel booking');
+          }
+        },
+        error: (error) => {
+          console.error('Error cancelling booking:', error);
+          this.showToast('Error', 'Failed to cancel booking. Please try again.');
+        }
+      });
+    }
+  }
+
 onSaveBookingDetails(data: BookingDetailsFormData): void {
   if (!this.booking) return;
 
