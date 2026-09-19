@@ -31,6 +31,10 @@ export interface Booking {
   deliveries?: DeliveryItem[];
   media?: MediaItem[];
   reminders?: ReminderLog[]; // ASSUMPTION — new field, not in original interface
+  client_phone?: string | null; // ASSUMPTION
+  client_email?: string | null; // ASSUMPTION
+  client_address?: string | null;
+
 }
 
 export interface BookingEvent {

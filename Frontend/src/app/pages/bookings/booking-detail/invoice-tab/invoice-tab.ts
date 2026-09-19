@@ -1,6 +1,10 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+<<<<<<< HEAD
 import { Booking } from '../../../../services/booking.service';
+=======
+import { Booking, PaymentSchedule, DeliveryItem } from '../../../../services/booking.service';
+>>>>>>> feature/workflow-board
 
 @Component({
   selector: 'app-invoice-tab',
@@ -12,6 +16,7 @@ import { Booking } from '../../../../services/booking.service';
 export class InvoiceTab {
   @Input({ required: true }) booking!: Booking;
 
+<<<<<<< HEAD
   // Studio configuration (can be moved to workspace settings later)
   studioConfig = {
     name: 'Wedding Photography Studio',
@@ -25,12 +30,18 @@ export class InvoiceTab {
   formatDate(date: string | null): string {
     if (!date) return '—';
     return new Date(date).toLocaleDateString('en-GB', {
+=======
+  formatDate(value: string | null): string {
+    if (!value) return '—';
+    return new Date(value).toLocaleDateString('en-GB', {
+>>>>>>> feature/workflow-board
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
   }
 
+<<<<<<< HEAD
   formatAmount(amount: number): string {
     return 'Rs. ' + Number(amount).toLocaleString('en-IN');
   }
@@ -108,12 +119,35 @@ export class InvoiceTab {
 
   get totalPaid(): number {
     return Number(this.booking.amount_paid || 0);
+=======
+  formatEventDate(value: string | null): string {
+    if (!value) return '—';
+    return new Date(value).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long',
+    });
+  }
+
+  formatAmount(value: number): string {
+    return 'Rs. ' + Number(value).toLocaleString('en-IN');
+  }
+
+  get advancesPaid(): PaymentSchedule[] {
+    return (this.booking.payment_schedule ?? []).filter((p) => p.status === 'Approved');
+  }
+
+  get totalPaid(): number {
+    return this.advancesPaid.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+>>>>>>> feature/workflow-board
   }
 
   get balanceDue(): number {
     return Number(this.booking.total_amount || 0) - this.totalPaid;
   }
 
+<<<<<<< HEAD
   get hasOverpayment(): boolean {
     return this.balanceDue < 0;
   }
@@ -132,5 +166,21 @@ export class InvoiceTab {
   get dueDate(): string {
     // Could be calculated from payment schedule or event date
     return this.formatDate(this.booking.event_date);
+=======
+  get packageIncludes(): DeliveryItem[] {
+    return this.booking.deliveries ?? [];
+  }
+
+  trackByPaymentId(index: number, item: PaymentSchedule): string {
+    return item.id;
+  }
+
+  trackByDeliveryId(index: number, item: DeliveryItem): string {
+    return item.id;
+  }
+
+  onPrint(): void {
+    window.print();
+>>>>>>> feature/workflow-board
   }
 }

@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   Booking,
   BookingService,
@@ -202,8 +202,9 @@ export class BookingDetail implements OnInit {
     { key: 'invoice', label: 'Invoice' },
   ];
 
-  constructor(
+    constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private bookingService: BookingService,
     private storageService: StorageService,
     private cdr: ChangeDetectorRef,
@@ -942,14 +943,15 @@ export class BookingDetail implements OnInit {
 
   // state
   isBookingDetailsModalOpen = false;
-
-  onOpenBookingDetailsModal(): void {
+ 
+   onOpenBookingDetailsModal(): void {
     this.isBookingDetailsModalOpen = true;
   }
 
   onCloseBookingDetailsModal(): void {
     this.isBookingDetailsModalOpen = false;
   }
+<<<<<<< HEAD
 
   // --- Reminders tab event handlers ---
   onReminderCreated(): void {
@@ -1008,6 +1010,9 @@ export class BookingDetail implements OnInit {
     }
   }
 
+=======
+  
+>>>>>>> feature/workflow-board
 onSaveBookingDetails(data: BookingDetailsFormData): void {
   if (!this.booking) return;
 
@@ -1028,6 +1033,7 @@ onSaveBookingDetails(data: BookingDetailsFormData): void {
     notes: data.notes,
     remarks: data.remarks,
   });
+
   this.isBookingDetailsModalOpen = false;
   this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
 
@@ -1037,5 +1043,41 @@ onSaveBookingDetails(data: BookingDetailsFormData): void {
   this.toastVisible = true;
 }
 
+  // --- Header actions: Notify Crew, Cancel Booking ---
+  isNotifying = false;
+  showCancelConfirm = false;
+  isCancelling = false;
+
+  onNotifyCrew(): void {
+    if (this.isNotifying) return;
+    this.isNotifying = true;
+
+    // ASSUMPTION: simulated delay — replace with real API call once endpoint confirmed
+    setTimeout(() => {
+      this.isNotifying = false;
+      this.showToast('Crew notified successfully', '');
+      this.cdr.detectChanges();
+    }, 1000);
+  }
+
+  onOpenCancelConfirm(): void {
+    this.showCancelConfirm = true;
+  }
+
+  onKeepBooking(): void {
+    this.showCancelConfirm = false;
+  }
+
+  onConfirmCancelBooking(): void {
+    if (!this.booking) return;
+    this.isCancelling = true;
+
+    // ASSUMPTION: simulated delay — replace with real API call (DELETE booking) once endpoint confirmed
+    setTimeout(() => {
+      this.isCancelling = false;
+      this.showCancelConfirm = false;
+      this.router.navigate(['/bookings']);
+    }, 800);
+  }
   
 }

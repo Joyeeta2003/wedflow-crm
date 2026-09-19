@@ -17,7 +17,7 @@ import { CrewAssign } from './pages/crew-assign/crew-assign';
 import {Marketplace} from './pages/marketplace/marketplace'
 import {Storage} from './pages/storage/storage'
 import {Equipment} from "./pages/equipment-page/equipment-page"
-
+import { WorkflowBoard } from './pages/workflow-board/workflow-board';
 
 const authGuard: CanActivateFn = () => {
   const auth = inject(Auth);
@@ -67,6 +67,7 @@ export const routes: Routes = [
       { path: 'marketplace', component: Marketplace },
       { path: 'storage', component: Storage },
       { path: 'equipment', component: Equipment },
+      { path: 'workflow-board', component: WorkflowBoard },
     ],
   },
 ];

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .invoice-tab {
   padding: 20px;
 }
@@ -155,10 +156,96 @@
 
 .invoice-table table {
   width: 100%;
+=======
+@import '../tab-shared';
+
+.invoice-content {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.invoice-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.invoice-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--primary));
+  margin: 0;
+}
+
+.invoice-subtext {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0.125rem 0;
+}
+
+.invoice-top-right {
+  text-align: right;
+}
+
+.invoice-studio-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.invoice-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 1rem;
+}
+
+.invoice-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.invoice-client-name {
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.invoice-detail-row {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.invoice-detail-label {
+  color: hsl(var(--muted-foreground));
+}
+
+.invoice-detail-value {
+  font-weight: 500;
+}
+
+.invoice-table-wrap {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.invoice-table {
+  width: 100%;
+  font-size: 0.875rem;
+>>>>>>> feature/workflow-board
   border-collapse: collapse;
 }
 
 .invoice-table thead {
+<<<<<<< HEAD
   background: #374151;
 }
 
@@ -522,5 +609,109 @@
 
   @page {
     margin: 20mm;
+=======
+  background: hsl(var(--muted) / 0.5);
+}
+
+.invoice-th-left,
+.invoice-td-desc {
+  text-align: left;
+}
+
+.invoice-th-right,
+.invoice-td-amount {
+  text-align: right;
+}
+
+.invoice-table th,
+.invoice-table td {
+  padding: 0.75rem;
+  font-weight: 500;
+}
+
+.invoice-table tbody tr {
+  border-top: 1px solid hsl(var(--border));
+}
+
+.invoice-totals-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.invoice-totals {
+  width: 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.invoice-totals-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.invoice-muted {
+  color: hsl(var(--muted-foreground));
+}
+
+.invoice-strong {
+  font-weight: 500;
+}
+
+.invoice-advance-row {
+  color: hsl(142 71% 30%);
+}
+
+.invoice-balance-row {
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 0.5rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.invoice-balance-negative {
+  color: hsl(0 72% 51%);
+}
+
+.invoice-includes {
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 1rem;
+}
+
+.invoice-includes-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.invoice-includes-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.invoice-check-icon {
+  color: hsl(var(--primary));
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.invoice-footer {
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+@media print {
+  .invoice-content {
+    border: none;
+>>>>>>> feature/workflow-board
   }
 }
