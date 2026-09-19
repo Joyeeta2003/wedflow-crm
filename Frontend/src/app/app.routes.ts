@@ -14,10 +14,11 @@ import { Auth } from './services/auth';
 import { Bookings } from './pages/bookings/bookings';
 import { BookingDetail } from './pages/bookings/booking-detail/booking-detail';
 import { CrewAssign } from './pages/crew-assign/crew-assign';
-import {Marketplace} from './pages/marketplace/marketplace'
-import {Storage} from './pages/storage/storage'
-import {Equipment} from "./pages/equipment-page/equipment-page"
+import { Marketplace } from './pages/marketplace/marketplace';
+import { Storage } from './pages/storage/storage';
+import { Equipment } from './pages/equipment-page/equipment-page';
 import { WorkflowBoard } from './pages/workflow-board/workflow-board';
+import { Production } from './pages/production/production';
 
 const authGuard: CanActivateFn = () => {
   const auth = inject(Auth);
@@ -68,6 +69,7 @@ export const routes: Routes = [
       { path: 'storage', component: Storage },
       { path: 'equipment', component: Equipment },
       { path: 'workflow-board', component: WorkflowBoard },
+      { path: 'production', component: Production },
     ],
   },
 ];

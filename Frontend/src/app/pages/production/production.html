@@ -1,0 +1,108 @@
+<div class="production-page">
+  <div class="page-header">
+    <div>
+      <h1>Production Tickets</h1>
+      <p class="page-subtitle">Editing, album, print and delivery pipeline with deadlines.</p>
+    </div>
+    <button class="btn-primary" (click)="onNewTicket()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      New Ticket
+    </button>
+  </div>
+
+  <!-- Escalation matrix -->
+  <div class="escalation-card">
+    <button type="button" class="escalation-trigger" (click)="toggleEscalation()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      Escalation matrix
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isEscalationOpen"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="escalation-content" *ngIf="isEscalationOpen">
+      <p class="escalation-note">Overdue tickets automatically move to the highest matching level. Acknowledgement remains visible in the audit trail.</p>
+      <div class="escalation-row" *ngFor="let lvl of escalationLevels">
+        <div class="escalation-level-label">Level {{ lvl.level }}</div>
+        <input type="number" class="form-input" [(ngModel)]="lvl.overdueHours" placeholder="Overdue hours" min="0" />
+        <span class="escalation-role">{{ lvl.role }}</span>
+      </div>
+      <div class="escalation-actions">
+        <button class="btn-primary btn-sm" (click)="onSaveMatrix()">Save matrix</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status pills -->
+  <div class="status-pills">
+    <button
+      type="button" class="status-pill"
+      *ngFor="let s of statusFilters"
+      [class.active]="activeStatus === s.key"
+      (click)="setStatusFilter(s.key)"
+    >
+      {{ s.label }} <span class="pill-count">({{ counts[s.key] }})</span>
+    </button>
+  </div>
+
+  <!-- Filter row -->
+  <div class="filter-row">
+    <div class="search-field">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="search-input" type="text" placeholder="Task, customer or assignee" [(ngModel)]="searchTerm" />
+    </div>
+    <input class="date-input" type="text" placeholder="DD-MM-YYYY" [(ngModel)]="deadlineFrom" maxlength="10" />
+    <input class="date-input" type="text" placeholder="DD-MM-YYYY" [(ngModel)]="deadlineTo" maxlength="10" />
+
+    <div class="custom-select priority-select">
+      <button type="button" class="custom-select-trigger" (click)="togglePriorityDropdown()">
+        <span>{{ selectedPriority ? priorityLabel(selectedPriority) : 'All priorities' }}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isPriorityOpen"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="custom-select-backdrop" *ngIf="isPriorityOpen" (click)="closePriorityDropdown()"></div>
+      <div class="custom-select-menu" *ngIf="isPriorityOpen">
+        <button type="button" class="custom-select-option" [class.selected]="!selectedPriority" (click)="selectPriority('')">All priorities</button>
+        <button type="button" class="custom-select-option" *ngFor="let p of priorities" [class.selected]="selectedPriority === p" (click)="selectPriority(p)">{{ priorityLabel(p) }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket list -->
+  <div class="ticket-list">
+    <div class="ticket-card" *ngFor="let t of filteredTickets" [class.escalated]="t.is_overdue">
+      <div class="ticket-main">
+        <div class="ticket-title-row">
+          <span class="ticket-title">{{ t.title }}</span>
+          <span class="badge" [ngClass]="'status-' + t.status">{{ statusLabel(t.status) }}</span>
+          <span class="badge status-overdue" *ngIf="t.is_overdue">Overdue</span>
+          <span class="badge escalation-badge" *ngIf="t.escalation_level">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+            Escalation L{{ t.escalation_level }} · {{ t.escalation_role }}
+          </span>
+          <span class="badge priority-badge" [ngClass]="'priority-' + t.priority">{{ priorityLabel(t.priority) }}</span>
+        </div>
+        <div class="ticket-meta">
+          <span>{{ t.category }}</span>
+          <span>Booking: {{ t.booking_name }}</span>
+          <span class="ticket-assignee">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 21-3-3m0 0a5.5 5.5 0 1 0-8-8 5.5 5.5 0 0 0 8 8Z"/></svg>
+            {{ t.assignee }}
+          </span>
+        </div>
+        <div class="ticket-deadline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          Deadline: {{ formatDeadline(t.deadline) }}
+        </div>
+        <div class="ticket-material" *ngIf="t.material_note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.29 7 8.71 5 8.71-5"/><path d="M12 22V12"/></svg>
+          {{ t.material_note }}
+        </div>
+      </div>
+      <div class="ticket-actions">
+        <button class="btn-outline btn-sm" *ngIf="t.escalation_level" (click)="onAcknowledge(t)">Acknowledge</button>
+        <button class="icon-btn" type="button" (click)="onEditTicket(t)" aria-label="Edit ticket">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ticket-empty" *ngIf="filteredTickets.length === 0">No tickets match the current filters.</div>
+  </div>
+</div>

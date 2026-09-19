@@ -951,7 +951,6 @@ export class BookingDetail implements OnInit {
   onCloseBookingDetailsModal(): void {
     this.isBookingDetailsModalOpen = false;
   }
-<<<<<<< HEAD
 
   // --- Reminders tab event handlers ---
   onReminderCreated(): void {
@@ -1010,9 +1009,6 @@ export class BookingDetail implements OnInit {
     }
   }
 
-=======
-  
->>>>>>> feature/workflow-board
 onSaveBookingDetails(data: BookingDetailsFormData): void {
   if (!this.booking) return;
 
