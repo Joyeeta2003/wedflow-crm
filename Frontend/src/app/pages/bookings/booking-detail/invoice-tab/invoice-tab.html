@@ -1,0 +1,80 @@
+<div class="section-card">
+  <div class="section-header">
+    <div class="section-title-plain">Invoice</div>
+    <button type="button" class="btn-outline btn-sm" (click)="onPrint()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+      Print
+    </button>
+  </div>
+
+  <div class="invoice-content" id="invoice-content">
+    <div class="invoice-top">
+      <div>
+        <h2 class="invoice-heading">INVOICE</h2>
+        <p class="invoice-subtext">Booking #{{ booking.id }}</p>
+        <p class="invoice-subtext">Date: {{ formatDate(booking.booking_date) }}</p>
+      </div>
+      <div class="invoice-top-right">
+        <div class="invoice-studio-name">Wedding Photography Studio</div>
+        <div class="invoice-subtext">Professional Photography Services</div>
+      </div>
+    </div>
+
+    <div class="invoice-parties">
+      <div>
+        <div class="invoice-section-label">Bill To</div>
+        <div class="invoice-client-name">{{ booking.client_name }}</div>
+        <div class="invoice-subtext" *ngIf="booking.client_phone">{{ booking.client_phone }}</div>
+        <div class="invoice-subtext" *ngIf="booking.client_email">{{ booking.client_email }}</div>
+        <div class="invoice-subtext" *ngIf="booking.client_address">{{ booking.client_address }}</div>
+      </div>
+      <div>
+        <div class="invoice-section-label">Event Details</div>
+        <div class="invoice-detail-row"><span class="invoice-detail-label">Date:</span> <span class="invoice-detail-value">{{ formatEventDate(booking.event_date) }}</span></div>
+        <div class="invoice-detail-row"><span class="invoice-detail-label">Venue:</span> <span class="invoice-detail-value">{{ booking.venue || '—' }}</span></div>
+        <div class="invoice-detail-row"><span class="invoice-detail-label">Package:</span> <span class="invoice-detail-value">{{ booking.package_name }}</span></div>
+      </div>
+    </div>
+
+    <div class="invoice-table-wrap">
+      <table class="invoice-table">
+        <thead>
+          <tr><th class="invoice-th-left">Description</th><th class="invoice-th-right">Amount</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="invoice-td-desc">{{ booking.package_name }}</td>
+            <td class="invoice-td-amount">{{ formatAmount(booking.total_amount) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="invoice-totals-wrap">
+      <div class="invoice-totals">
+        <div class="invoice-totals-row">
+          <span class="invoice-muted">Total Amount</span><span class="invoice-strong">{{ formatAmount(booking.total_amount) }}</span>
+        </div>
+        <div class="invoice-totals-row invoice-advance-row" *ngFor="let p of advancesPaid; trackBy: trackByPaymentId">
+          <span>{{ p.installment_name }}</span><span>- {{ formatAmount(p.amount) }}</span>
+        </div>
+        <div class="invoice-totals-row invoice-balance-row">
+          <span>Balance Due</span>
+          <span [class.invoice-balance-negative]="balanceDue < 0">{{ formatAmount(balanceDue) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-includes" *ngIf="packageIncludes.length > 0">
+      <div class="invoice-section-label">Package Includes</div>
+      <ul class="invoice-includes-list">
+        <li class="invoice-includes-item" *ngFor="let d of packageIncludes; trackBy: trackByDeliveryId">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="invoice-check-icon"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>{{ d.description }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="invoice-footer">Thank you for choosing our photography services! We look forward to capturing your beautiful moments.</div>
+  </div>
+</div>

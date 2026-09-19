@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   Booking,
   BookingService,
@@ -28,6 +28,7 @@ import {
 import { MediaTab } from './media-tab/media-tab';
 import { NewMediaItemData } from './media-tab/media-item-modal/media-item-modal';
 import { RemindersTab } from './reminders-tab/reminders-tab';
+import { InvoiceTab } from './invoice-tab/invoice-tab';
 
 interface WorkflowStageDef {
   number: number;
@@ -150,7 +151,7 @@ type TabKey = 'crew' | 'payments' | 'deliveries' | 'tracker' | 'media' | 'remind
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal, MediaTab, RemindersTab],
+  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal, MediaTab, RemindersTab, InvoiceTab],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -200,8 +201,9 @@ export class BookingDetail implements OnInit {
     { key: 'invoice', label: 'Invoice' },
   ];
 
-  constructor(
+    constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private bookingService: BookingService,
     private cdr: ChangeDetectorRef,
   ) {}
@@ -751,15 +753,15 @@ export class BookingDetail implements OnInit {
 
   // state
   isBookingDetailsModalOpen = false;
-
-  onOpenBookingDetailsModal(): void {
+ 
+   onOpenBookingDetailsModal(): void {
     this.isBookingDetailsModalOpen = true;
   }
 
   onCloseBookingDetailsModal(): void {
     this.isBookingDetailsModalOpen = false;
   }
-
+  
 onSaveBookingDetails(data: BookingDetailsFormData): void {
   if (!this.booking) return;
 
@@ -780,6 +782,7 @@ onSaveBookingDetails(data: BookingDetailsFormData): void {
     notes: data.notes,
     remarks: data.remarks,
   });
+
   this.isBookingDetailsModalOpen = false;
 
   this.toastTitle = 'Booking updated';
@@ -788,5 +791,41 @@ onSaveBookingDetails(data: BookingDetailsFormData): void {
   this.toastVisible = true;
 }
 
+  // --- Header actions: Notify Crew, Cancel Booking ---
+  isNotifying = false;
+  showCancelConfirm = false;
+  isCancelling = false;
+
+  onNotifyCrew(): void {
+    if (this.isNotifying) return;
+    this.isNotifying = true;
+
+    // ASSUMPTION: simulated delay — replace with real API call once endpoint confirmed
+    setTimeout(() => {
+      this.isNotifying = false;
+      this.showToast('Crew notified successfully', '');
+      this.cdr.detectChanges();
+    }, 1000);
+  }
+
+  onOpenCancelConfirm(): void {
+    this.showCancelConfirm = true;
+  }
+
+  onKeepBooking(): void {
+    this.showCancelConfirm = false;
+  }
+
+  onConfirmCancelBooking(): void {
+    if (!this.booking) return;
+    this.isCancelling = true;
+
+    // ASSUMPTION: simulated delay — replace with real API call (DELETE booking) once endpoint confirmed
+    setTimeout(() => {
+      this.isCancelling = false;
+      this.showCancelConfirm = false;
+      this.router.navigate(['/bookings']);
+    }, 800);
+  }
   
 }

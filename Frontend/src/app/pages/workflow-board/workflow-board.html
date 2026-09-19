@@ -1,0 +1,62 @@
+<div class="workflow-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Workflow Board</h1>
+      <p class="page-subtitle">See every booking grouped by its current phase at a glance.</p>
+    </div>
+
+    <div class="header-actions">
+      <span class="active-count-badge">{{ activeBookingCount }} active bookings</span>
+
+      <div class="search-field">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input class="search-input" type="text" placeholder="Search booking..." [(ngModel)]="searchTerm" />
+      </div>
+    </div>
+  </div>
+
+  <div class="stage-grid" *ngIf="!isLoading">
+    <div class="stage-card" *ngFor="let col of filteredColumns; trackBy: trackByStageKey">
+      <div class="stage-card-header">
+        <div>
+          <div class="stage-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="8" height="8" x="3" y="3" rx="2"></rect>
+              <path d="M7 11v4a2 2 0 0 0 2 2h4"></path>
+              <rect width="8" height="8" x="13" y="13" rx="2"></rect>
+            </svg>
+            {{ col.label }}
+          </div>
+          <p class="stage-category">{{ col.category }}</p>
+        </div>
+        <span class="badge" [ngClass]="countBadgeClass(col.bookings.length)">{{ col.bookings.length }}</span>
+      </div>
+
+      <div class="stage-body">
+        <div class="stage-empty" *ngIf="col.bookings.length === 0">
+          No bookings in this phase
+        </div>
+
+        <a *ngFor="let b of col.bookings; trackBy: trackByBookingId" [routerLink]="['/bookings', b.id]" class="stage-booking-card">
+          <div class="stage-booking-top">
+            <div class="stage-booking-min">
+              <div class="booking-name">{{ b.clientName }}</div>
+              <div class="booking-id">{{ b.bookingId }}</div>
+            </div>
+            <span class="badge badge--outline">Open</span>
+          </div>
+          <div class="stage-booking-meta">
+            <span>{{ formatDate(b.eventDate) }}</span>
+            <span class="stage-booking-package">{{ b.packageName }}</span>
+            <span class="stage-booking-venue">{{ b.venue || '—' }}</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="isLoading">Loading workflow board...</div>
+</div>
