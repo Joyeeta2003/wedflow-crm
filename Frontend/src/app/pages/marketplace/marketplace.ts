@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+﻿import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { WorkAssignmentModal, WorkRequest } from './work-assignment-modal/work-assignment-modal';
 
 interface Professional {
   id: string;
@@ -16,19 +17,6 @@ interface Professional {
   availableRate: number;
   email: string;
   phone: string;
-}
-
-interface WorkRequest {
-  id: string;
-  project: string;
-  professionalRole: string;
-  professionalName: string;
-  professionalEmail: string;
-  professionalPhone: string;
-  eventDate: string;
-  venue: string;
-  budget: number;
-  status: 'Accepted' | 'Pending' | 'Declined' | 'Completed'; // UNCONFIRMED — only 'Accepted' seen in screenshot
 }
 
 type ServiceFilter =
@@ -49,7 +37,7 @@ type ServiceFilter =
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, WorkAssignmentModal],
   templateUrl: './marketplace.html',
   styleUrl: './marketplace.scss'
 })
@@ -63,6 +51,9 @@ export class Marketplace {
 
   isServiceMenuOpen = signal(false);
   isTypeMenuOpen = signal(false);
+
+  showAssignmentModal = signal(false);
+  selectedWorkRequest = signal<WorkRequest | null>(null);
 
  serviceOptions: { value: ServiceFilter; label: string }[] = [
   { value: 'all', label: 'All services' },
@@ -121,8 +112,39 @@ export class Marketplace {
       venue: 'Venue',
       budget: 20000,
       status: 'Accepted'
+    },
+    {
+      id: 'wr2',
+      project: 'Corporate event photography',
+      professionalRole: 'Cinematographer',
+      professionalName: 'Rohan Gupta',
+      professionalEmail: 'rohan@example.com',
+      professionalPhone: '9876543210',
+      eventDate: '15/7/2026',
+      venue: 'Taj Bengal',
+      budget: 15000,
+      status: 'Pending'
+    },
+    {
+      id: 'wr3',
+      project: 'Birthday celebration',
+      professionalRole: 'Photo Editor',
+      professionalName: 'Akash Sarkar',
+      professionalEmail: 'akash@example.com',
+      professionalPhone: '8765432109',
+      eventDate: '20/8/2026',
+      venue: 'ITC Sonar',
+      budget: 8000,
+      status: 'Completed'
     }
   ]);
+
+  statusOptions = [
+    { value: 'Pending', label: 'Pending' },
+    { value: 'Accepted', label: 'Accepted' },
+    { value: 'Declined', label: 'Declined' },
+    { value: 'Completed', label: 'Completed' }
+  ];
 
   filteredProfessionals = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -203,7 +225,26 @@ export class Marketplace {
   }
 
   onAssignWork(request: WorkRequest) {
-    // TODO: assign-work flow not confirmed yet
-    console.log('Assign work clicked for', request.id);
+    this.selectedWorkRequest.set(request);
+    this.showAssignmentModal.set(true);
+  }
+
+  onStatusChange(request: WorkRequest, newStatus: string) {
+    this.workRequests.update(requests =>
+      requests.map(r => r.id === request.id ? { ...r, status: newStatus as any } : r)
+    );
+  }
+
+  onAssignmentModalClose() {
+    this.showAssignmentModal = signal(false);
+    this.selectedWorkRequest.set(null);
+  }
+
+  onAssignmentConfirmed(data: any) {
+    // Update the work request status or remove it from the list
+    this.workRequests.update(requests =>
+      requests.filter(r => r.id !== this.selectedWorkRequest()?.id)
+    );
+    this.hiredCount.update(count => count + 1);
   }
 }

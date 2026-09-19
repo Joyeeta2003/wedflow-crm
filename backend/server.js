@@ -155,6 +155,81 @@ async function sendOTPEmail(email, otp) {
   }
 }
 
+async function sendReminderEmail(recipientEmail, subject, messageContent, reminderType, daysBeforeEvent) {
+  console.log(`Attempting to send reminder email to: ${recipientEmail}`);
+  console.log(`Subject: ${subject}`);
+  console.log(`Development mode check: NODE_ENV = ${process.env.NODE_ENV}`);
+  
+  // Only bypass for example.com addresses, not for real emails
+  if (shouldBypassEmailDelivery(recipientEmail)) {
+    console.warn(`Development mode: bypassing reminder email delivery for ${recipientEmail} (example.com domain)`);
+    return { devMode: true };
+  }
+
+  try {
+    console.log(`Sending actual email via Resend.com to ${recipientEmail}...`);
+    const emailSubject = subject || `WedFlow CRM - ${reminderType} Reminder`;
+    const textContent = `WedFlow CRM - Reminder Notification\n\nReminder Type: ${reminderType.replace(/_/g, ' ').toUpperCase()}\nDays Before Event: ${daysBeforeEvent} day(s)\n\n${messageContent || 'This is an automated reminder from WedFlow CRM to keep you informed about your upcoming wedding event.'}\n\n---\nThis is an automated message from WedFlow CRM.\nFor support, please contact our team.`;
+    
+    const { data, error } = await resend.emails.send({
+      from: 'WedFlow CRM <onboarding@resend.dev>',
+      to: [recipientEmail],
+      subject: emailSubject,
+      text: textContent,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>WedFlow CRM Reminder</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #f5b719; margin: 0; font-size: 24px;">WedFlow CRM</h1>
+              <p style="color: #666; margin: 5px 0 0; font-size: 14px;">Professional Wedding Event Management</p>
+            </div>
+            
+            <div style="background-color: #fff9e6; border-left: 4px solid #f5b719; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h2 style="color: #333; margin: 0 0 10px; font-size: 18px;">⏰ Reminder Notification</h2>
+              <p style="margin: 0; color: #666; font-size: 14px;">You have an upcoming event reminder</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+              <p style="margin: 10px 0; color: #333; font-size: 14px;"><strong>Reminder Type:</strong> ${reminderType.replace(/_/g, ' ').toUpperCase()}</p>
+              <p style="margin: 10px 0; color: #333; font-size: 14px;"><strong>Days Before Event:</strong> ${daysBeforeEvent} day(s)</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border: 1px solid #e9ecef;">
+              <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.6;">${messageContent || 'This is an automated reminder from WedFlow CRM to keep you informed about your upcoming wedding event.'}</p>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
+                This is an automated message from WedFlow CRM.<br>
+                For support, please contact our team.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      throw error;
+    }
+
+    console.log(`✅ Email successfully sent to ${recipientEmail}. Resend response:`, data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error sending reminder email:', error);
+    throw error;
+  }
+}
+
 function generateToken(userId, email, role, workspaceId) {
   return jwt.sign(
     { userId, email, role, workspace_id: workspaceId },
@@ -519,6 +594,28 @@ app.get('/api/users', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     return res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// GET /api/staff-members - List staff members (non-client users) for crew assignment
+app.get('/api/staff-members', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, email, first_name, last_name, phone_number, role, staff_name, is_active, is_verified, profile_image, created_at, updated_at
+       FROM users
+       WHERE workspace_id = $1 AND role != 'client' AND is_active = true
+       ORDER BY role, created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({
+      success: true,
+      users: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('Error fetching staff members:', error);
+    return res.status(500).json({ error: 'Failed to fetch staff members' });
   }
 });
 
@@ -1100,7 +1197,7 @@ app.get('/api/bookings/:id', async (req, res) => {
               COALESCE((SELECT SUM(amount) FROM payments
             WHERE booking_id = b.id AND workspace_id = b.workspace_id AND status = 'completed'), 0) AS amount_paid,
               COALESCE((SELECT json_agg(json_build_object(
-            'event_name', e.event_name, 'event_date', e.event_date, 'venue', e.venue)
+            'id', e.id, 'event_name', e.event_name, 'event_date', e.event_date, 'venue', e.venue)
             ORDER BY e.event_date)
             FROM booking_events e WHERE e.booking_id = b.id AND e.workspace_id = b.workspace_id), '[]') AS event_days,
               COALESCE((SELECT json_agg(json_build_object(
@@ -1115,14 +1212,19 @@ app.get('/api/bookings/:id', async (req, res) => {
             ORDER BY pd.day_number)
             FROM package_days pd WHERE pd.package_id = p.id AND pd.workspace_id = p.workspace_id), '[]') AS package_crew_plan,
               COALESCE((SELECT json_agg(json_build_object(
-            'staff_name', s.name, 'assigned_role', ca.assigned_role,
+            'id', ca.id, 'staff_name', u.staff_name, 'assigned_role', ca.assigned_role,
             'event_name', ev.event_name, 'event_date', ev.event_date,
-            'venue', ev.venue, 'status', ca.status)
-            ORDER BY ev.event_date, s.name)
+            'venue', ev.venue, 'status', ca.status, 'start_time', ca.start_time)
+            ORDER BY ev.event_date, u.staff_name)
             FROM crew_assignments ca
-            JOIN staff s ON s.id = ca.staff_id
-            JOIN booking_events ev ON ev.id = ca.booking_event_id
-            WHERE ev.booking_id = b.id AND ev.workspace_id = b.workspace_id), '[]') AS crew_assignments
+            JOIN users u ON u.id = ca.staff_id AND u.workspace_id = ca.workspace_id
+            JOIN booking_events ev ON ev.id = ca.booking_event_id AND ev.workspace_id = ca.workspace_id
+            WHERE ev.booking_id = b.id AND ev.workspace_id = b.workspace_id), '[]') AS crew_assignments,
+              COALESCE((SELECT json_agg(json_build_object(
+            'id', r.id, 'reminder_type', r.reminder_type, 'days_before_event', r.days_before_event,
+            'scheduled_date', r.scheduled_date, 'scheduled_time', r.scheduled_time, 'status', r.status)
+            ORDER BY r.scheduled_date, r.scheduled_time)
+            FROM reminders r WHERE r.booking_id = b.id AND r.workspace_id = b.workspace_id), '[]') AS reminders
        FROM bookings b
        JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
        JOIN packages p ON p.id = b.package_id AND p.workspace_id = b.workspace_id
@@ -1142,6 +1244,38 @@ app.get('/api/bookings/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching booking:', error);
     return res.status(500).json({ error: 'Failed to fetch booking' });
+  }
+});
+
+// PUT /api/bookings/:id - Update booking
+app.put('/api/bookings/:id', requireAdmin, async (req, res) => {
+  const { clientId, packageId, bookingDate, eventDate, totalAmount, venue, eventType, status, currentWorkflowStage, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE bookings
+       SET client_id = COALESCE($1, client_id),
+           package_id = COALESCE($2, package_id),
+           booking_date = COALESCE($3::date, booking_date),
+           total_amount = COALESCE($4, total_amount),
+           venue = COALESCE($5, venue),
+           status = COALESCE($6, status),
+           current_workflow_stage = COALESCE($7, current_workflow_stage),
+           notes = COALESCE($8, notes),
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [clientId, packageId, bookingDate, totalAmount, venue, status, currentWorkflowStage, notes, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    return res.json({ success: true, booking: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating booking:', error);
+    return res.status(500).json({ error: 'Failed to update booking' });
   }
 });
 
@@ -2089,6 +2223,105 @@ app.get('/api/booking-events', async (req, res) => {
   }
 });
 
+// Add booking event
+app.post('/api/booking-events', async (req, res) => {
+  const { booking_id, event_name, event_date, venue, notes } = req.body;
+
+  if (!booking_id || !event_name) {
+    return res.status(400).json({ error: 'Booking ID and event name are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const eventTypeResult = await pool.query(
+      `SELECT id FROM event_type
+       WHERE workspace_id = $1 AND LOWER(name) = LOWER($2)
+       LIMIT 1`,
+      [req.user.workspace_id, event_name.trim()]
+    );
+    let eventTypeId = eventTypeResult.rows[0]?.id;
+    if (!eventTypeId) {
+      const createdEventType = await pool.query(
+        `INSERT INTO event_type (workspace_id, name)
+         VALUES ($1, $2)
+         ON CONFLICT (workspace_id, name) DO UPDATE SET is_active = true
+         RETURNING id`,
+        [req.user.workspace_id, event_name.trim()]
+      );
+      eventTypeId = createdEventType.rows[0]?.id;
+    }
+
+    const result = await pool.query(
+      `INSERT INTO booking_events (workspace_id, booking_id, event_type_id, event_name, event_date, venue, notes)
+       VALUES ($1, $2, $3, $4, $5::date, $6, $7)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, eventTypeId, event_name.trim(), event_date || '2099-12-31', venue?.trim() || null, notes?.trim() || null]
+    );
+
+    return res.status(201).json({ success: true, event: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating booking event:', error);
+    return res.status(500).json({ error: 'Failed to create booking event' });
+  }
+});
+
+// Update booking event
+app.put('/api/booking-events/:id', async (req, res) => {
+  const { event_name, event_date, venue, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE booking_events
+       SET event_name = COALESCE($1, event_name),
+           event_date = $2,
+           venue = $3,
+           notes = $4,
+           updated_at = NOW()
+       WHERE id = $5 AND workspace_id = $6
+       RETURNING *`,
+      [event_name?.trim() || null, event_date || null, venue?.trim() || null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking event not found' });
+    }
+
+    return res.json({ success: true, event: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating booking event:', error);
+    return res.status(500).json({ error: 'Failed to update booking event' });
+  }
+});
+
+// Delete booking event
+app.delete('/api/booking-events/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM booking_events 
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Booking event not found' });
+    }
+
+    return res.json({ success: true, message: 'Booking event deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting booking event:', error);
+    return res.status(500).json({ error: 'Failed to delete booking event' });
+  }
+});
+
 // ============================================
 // EQUIPMENT API
 // ============================================
@@ -2392,6 +2625,56 @@ app.post('/api/deliveries', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error creating delivery:', error);
     return res.status(500).json({ error: 'Failed to create delivery' });
+  }
+});
+
+app.put('/api/deliveries/:id', requireAdmin, async (req, res) => {
+  const { delivery_type, delivery_date, delivery_status, delivery_link, recipient, confirmation, notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE deliveries
+       SET delivery_type = COALESCE($1, delivery_type),
+           delivery_date = $2,
+           delivery_status = $3,
+           delivery_link = $4,
+           recipient = $5,
+           confirmation = $6,
+           notes = $7,
+           updated_at = NOW()
+       WHERE id = $8 AND workspace_id = $9
+       RETURNING *`,
+      [delivery_type?.trim() || null, delivery_date || null, delivery_status || 'pending', delivery_link?.trim() || null, recipient?.trim() || null, Boolean(confirmation), notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Delivery not found' });
+    }
+
+    return res.json({ success: true, delivery: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating delivery:', error);
+    return res.status(500).json({ error: 'Failed to update delivery' });
+  }
+});
+
+app.delete('/api/deliveries/:id', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM deliveries 
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Delivery not found' });
+    }
+
+    return res.json({ success: true, message: 'Delivery deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting delivery:', error);
+    return res.status(500).json({ error: 'Failed to delete delivery' });
   }
 });
 
@@ -2822,11 +3105,11 @@ app.get('/api/dashboard/summary', async (req, res) => {
 app.get('/api/crew-assignments', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ca.*, s.name AS staff_name, s.email AS staff_email, s.phone AS staff_phone,
+      `SELECT ca.*, u.staff_name AS staff_name, u.email AS staff_email, u.phone_number AS staff_phone,
               be.event_name, be.event_date, be.venue,
               b.booking_number, c.name AS client_name
        FROM crew_assignments ca
-       JOIN staff s ON s.id = ca.staff_id AND s.workspace_id = ca.workspace_id
+       JOIN users u ON u.id = ca.staff_id AND u.workspace_id = ca.workspace_id
        JOIN booking_events be ON be.id = ca.booking_event_id AND be.workspace_id = ca.workspace_id
        JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = ca.workspace_id
        JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
@@ -2842,7 +3125,7 @@ app.get('/api/crew-assignments', async (req, res) => {
   }
 });
 
-app.post('/api/crew-assignments', requireAdmin, async (req, res) => {
+app.post('/api/crew-assignments', async (req, res) => {
   const { booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes } = req.body;
 
   if (!booking_event_id || !staff_id || !assigned_role) {
@@ -2859,7 +3142,7 @@ app.post('/api/crew-assignments', requireAdmin, async (req, res) => {
     }
 
     const staffCheck = await pool.query(
-      `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
+      `SELECT id FROM users WHERE id = $1 AND workspace_id = $2 AND role != 'client'`,
       [staff_id, req.user.workspace_id]
     );
     if (staffCheck.rows.length === 0) {
@@ -2894,11 +3177,11 @@ app.post('/api/crew-assignments', requireAdmin, async (req, res) => {
 app.get('/api/crew-assignments/:id', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ca.*, s.name AS staff_name, s.email AS staff_email, s.phone AS staff_phone,
+      `SELECT ca.*, u.staff_name AS staff_name, u.email AS staff_email, u.phone_number AS staff_phone,
               be.event_name, be.event_date, be.venue,
               b.booking_number, c.name AS client_name
        FROM crew_assignments ca
-       JOIN staff s ON s.id = ca.staff_id AND s.workspace_id = ca.workspace_id
+       JOIN users u ON u.id = ca.staff_id AND u.workspace_id = ca.workspace_id
        JOIN booking_events be ON be.id = ca.booking_event_id AND be.workspace_id = ca.workspace_id
        JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = ca.workspace_id
        JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
@@ -2917,7 +3200,7 @@ app.get('/api/crew-assignments/:id', async (req, res) => {
   }
 });
 
-app.put('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
+app.put('/api/crew-assignments/:id', async (req, res) => {
   const { booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes } = req.body;
 
   try {
@@ -2959,7 +3242,7 @@ app.put('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
   }
 });
 
-app.delete('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
+app.delete('/api/crew-assignments/:id', async (req, res) => {
   try {
     const result = await pool.query(
       `DELETE FROM crew_assignments
@@ -2986,6 +3269,230 @@ app.delete('/api/crew-assignments/:id', requireAdmin, async (req, res) => {
     return res.status(500).json({ error: 'Failed to delete crew assignment' });
   }
 });
+
+// ============================================
+// REMINDERS API
+// ============================================
+
+app.get('/api/reminders/:bookingId', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM reminders
+       WHERE booking_id = $1 AND workspace_id = $2
+       ORDER BY scheduled_date ASC, scheduled_time ASC`,
+      [req.params.bookingId, req.user.workspace_id]
+    );
+
+    return res.json({ success: true, reminders: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching reminders:', error);
+    return res.status(500).json({ error: 'Failed to fetch reminders' });
+  }
+});
+
+app.post('/api/reminders', async (req, res) => {
+  const { booking_id, reminder_type, days_before_event, scheduled_date, scheduled_time, recipient_email, subject, message_content } = req.body;
+
+  if (!booking_id || !reminder_type || !days_before_event || !scheduled_date || !recipient_email) {
+    return res.status(400).json({ error: 'Booking ID, reminder type, days before event, scheduled date, and recipient email are required' });
+  }
+
+  try {
+    const bookingCheck = await pool.query(
+      `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+      [booking_id, req.user.workspace_id]
+    );
+    if (bookingCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Booking not found in this workspace' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO reminders (workspace_id, booking_id, reminder_type, days_before_event, scheduled_date, scheduled_time, recipient_email, subject, message_content, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+       RETURNING *`,
+      [req.user.workspace_id, booking_id, reminder_type, days_before_event, scheduled_date, scheduled_time || null, recipient_email, subject || null, message_content || null]
+    );
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'reminder_created',
+      description: `Created reminder for booking ${booking_id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.status(201).json({ success: true, reminder: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating reminder:', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A reminder with these parameters already exists' });
+    }
+    return res.status(500).json({ error: 'Failed to create reminder' });
+  }
+});
+
+app.put('/api/reminders/:id', async (req, res) => {
+  const { reminder_type, days_before_event, scheduled_date, scheduled_time, recipient_email, subject, message_content, status } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE reminders
+       SET reminder_type = COALESCE($1, reminder_type),
+           days_before_event = COALESCE($2, days_before_event),
+           scheduled_date = COALESCE($3, scheduled_date),
+           scheduled_time = $4,
+           recipient_email = COALESCE($5, recipient_email),
+           subject = $6,
+           message_content = $7,
+           status = COALESCE($8, status),
+           updated_at = NOW()
+       WHERE id = $9 AND workspace_id = $10
+       RETURNING *`,
+      [reminder_type || null, days_before_event || null, scheduled_date || null, scheduled_time || null, recipient_email || null, subject || null, message_content || null, status || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reminder not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'reminder_updated',
+      description: `Updated reminder ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, reminder: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating reminder:', error);
+    return res.status(500).json({ error: 'Failed to update reminder' });
+  }
+});
+
+app.delete('/api/reminders/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM reminders
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING id`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reminder not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'reminder_deleted',
+      description: `Deleted reminder ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, message: 'Reminder deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting reminder:', error);
+    return res.status(500).json({ error: 'Failed to delete reminder' });
+  }
+});
+
+// ============================================
+// REMINDER AUTOMATION SYSTEM
+// ============================================
+
+// Check for due reminders and send emails
+async function processDueReminders() {
+  try {
+    console.log('Checking for due reminders...');
+    
+    const now = new Date();
+    const currentIST = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // IST = UTC+5:30
+    const currentDateStr = currentIST.toISOString().split('T')[0];
+    const currentTimeStr = currentIST.toTimeString().split(' ')[0].substring(0, 5);
+    
+    console.log(`Current IST time: ${currentDateStr} ${currentTimeStr}`);
+
+    // Find reminders that are due (scheduled date/time has passed) and are still pending
+    // Convert stored date to string format for comparison
+    const dueReminders = await pool.query(
+      `SELECT r.*, b.booking_number, c.name as client_name,
+       TO_CHAR(r.scheduled_date, 'YYYY-MM-DD') as scheduled_date_str
+       FROM reminders r
+       JOIN bookings b ON b.id = r.booking_id
+       JOIN client c ON c.id = b.client_id
+       WHERE r.status = 'pending'
+       AND TO_CHAR(r.scheduled_date, 'YYYY-MM-DD') <= $1
+       AND (r.scheduled_time IS NULL OR r.scheduled_time <= $2)
+       ORDER BY r.scheduled_date, r.scheduled_time`,
+      [currentDateStr, currentTimeStr]
+    );
+
+    console.log(`Found ${dueReminders.rows.length} due reminders`);
+
+    for (const reminder of dueReminders.rows) {
+      try {
+        console.log(`Processing reminder: ${reminder.reminder_type} for booking ${reminder.booking_number}`);
+        console.log(`Scheduled date: ${reminder.scheduled_date_str}, time: ${reminder.scheduled_time}`);
+        console.log(`Recipient: ${reminder.recipient_email}`);
+        
+        // Send the reminder email
+        await sendReminderEmail(
+          reminder.recipient_email,
+          reminder.subject,
+          reminder.message_content,
+          reminder.reminder_type,
+          reminder.days_before_event
+        );
+
+        // Update reminder status to sent
+        await pool.query(
+          `UPDATE reminders 
+           SET status = 'sent', 
+               sent_date = NOW(), 
+               updated_at = NOW()
+           WHERE id = $1`,
+          [reminder.id]
+        );
+
+        console.log(`✅ Successfully sent reminder ${reminder.id}`);
+
+      } catch (error) {
+        console.error(`❌ Failed to send reminder ${reminder.id}:`, error.message);
+        
+        // Update reminder status to failed
+        await pool.query(
+          `UPDATE reminders 
+           SET status = 'failed', 
+               error_message = $1,
+               updated_at = NOW()
+           WHERE id = $2`,
+          [error.message, reminder.id]
+        );
+      }
+    }
+
+  } catch (error) {
+    console.error('Error processing due reminders:', error);
+  }
+}
+
+// Start the reminder automation system
+function startReminderAutomation() {
+  console.log('Starting reminder automation system...');
+  
+  // Run immediately on startup
+  processDueReminders();
+  
+  // Run every minute (60,000ms)
+  setInterval(processDueReminders, 60 * 1000);
+  
+  console.log('Reminder automation system started - checking every minute');
+}
+
+// Start the automation after server starts
+setTimeout(startReminderAutomation, 5000);
 
 // ============================================
 // STORAGE ENHANCED API

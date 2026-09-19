@@ -52,8 +52,11 @@
 
 <app-user-modal
   [isOpen]="showNewUserModal"
+  [editUser]="editUserData"
+  [isSubmitting]="isCreatingUser"
   (closeModal)="onModalClose()"
   (create)="onUserCreate($event)"
+  (update)="onUserUpdate($event)"
 ></app-user-modal>
 
 <!-- age dewa custom toast div ta REMOVE kor, replace kर eটা diye: -->

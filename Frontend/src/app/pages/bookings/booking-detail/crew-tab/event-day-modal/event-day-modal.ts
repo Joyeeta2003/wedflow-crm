@@ -71,13 +71,11 @@ export class EventDayModal {
 
     this.isSubmitting = true;
 
-    // ASSUMPTION: simulated delay — replace with real API call once endpoint confirmed
-    setTimeout(() => {
-      this.create.emit({ ...this.day });
-      this.isSubmitting = false;
-      this.typeTouched = false;
-      this.day = this.empty();
-      form.resetForm({ eventType: 'Wedding', datePending: false });
-    }, 800);
+    // Emit immediately to parent component which will handle the API call
+    this.create.emit({ ...this.day });
+    this.isSubmitting = false;
+    this.typeTouched = false;
+    this.day = this.empty();
+    form.resetForm({ eventType: 'Wedding', datePending: false });
   }
 }

@@ -2,7 +2,7 @@
 
 <div class="dialog-content" role="dialog" *ngIf="isOpen" tabindex="-1">
   <div class="dialog-header">
-    <h2 class="dialog-title">New Client</h2>
+    <h2 class="dialog-title">{{ modalTitle }}</h2>
   </div>
 
   <form class="dialog-form" (ngSubmit)="onSubmit(clientForm)" #clientForm="ngForm">
@@ -66,7 +66,7 @@
 
     <div class="dialog-actions">
       <button type="button" class="btn-outline" (click)="onCancel()">Cancel</button>
-      <button type="submit" class="btn-primary" [disabled]="clientForm.invalid">Create</button>
+      <button type="submit" class="btn-primary" [disabled]="clientForm.invalid">{{ submitButtonText }}</button>
     </div>
   </form>
 

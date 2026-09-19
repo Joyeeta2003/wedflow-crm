@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UserModal, NewUserData } from './user-modal/user-modal';
+import { UserModal, NewUserData, EditUserData } from './user-modal/user-modal';
 import { Toast } from '../../components/toast/toast';
 import { UserService, User } from '../../services/user.service';
 
@@ -40,6 +40,7 @@ interface RoleGroup {
 })
 export class UserManagement implements OnInit {
   showNewUserModal = false;
+  editUserData: EditUserData | null = null;
   isCreatingUser = false;
   isLoading = false;
 
@@ -117,6 +118,19 @@ export class UserManagement implements OnInit {
     freelancer: 'Freelancer',
   };
 
+  private reverseRoleLabelMap: Record<Role, string> = {
+    'Admin': 'admin',
+    'HR Manager': 'hr',
+    'Photographer': 'photographer',
+    'Cinematographer': 'cinematographer',
+    'Videographer': 'videographer',
+    'Drone Operator': 'drone_operator',
+    'Photo Editor': 'photo_editor',
+    'Video Editor': 'video_editor',
+    'Client': 'client',
+    'Freelancer': 'freelancer',
+  };
+
   get totalUsers(): number {
     return this.users.length;
   }
@@ -140,11 +154,13 @@ export class UserManagement implements OnInit {
   }
 
   onNewUser(): void {
+    this.editUserData = null;
     this.showNewUserModal = true;
   }
 
   onModalClose(): void {
     this.showNewUserModal = false;
+    this.editUserData = null;
   }
 
   onUserCreate(data: NewUserData): void {
@@ -164,6 +180,7 @@ export class UserManagement implements OnInit {
       next: (response) => {
         this.isCreatingUser = false;
         this.showNewUserModal = false;
+        this.editUserData = null;
         this.loadUsers(); // Reload users from database to get fresh data
         this.showToast('success', 'User created', `${data.name} can now log in as ${data.email}`);
       },
@@ -174,6 +191,38 @@ export class UserManagement implements OnInit {
           this.showToast('error', 'Error', 'A user with this email already exists');
         } else {
           this.showToast('error', 'Error', 'Failed to create user');
+        }
+      }
+    });
+  }
+
+  onUserUpdate(data: EditUserData): void {
+    this.isCreatingUser = true;
+
+    const updateRequest = {
+      firstName: data.name.split(' ')[0],
+      lastName: data.name.split(' ').slice(1).join(' ') || null,
+      phoneNumber: data.phone || null,
+      role: data.role,
+      staffName: data.role === 'admin' ? null : data.name,
+      is_active: true
+    };
+
+    this.userService.updateUser(data.id, updateRequest).subscribe({
+      next: (response) => {
+        this.isCreatingUser = false;
+        this.showNewUserModal = false;
+        this.editUserData = null;
+        this.loadUsers(); // Reload users from database to get fresh data
+        this.showToast('success', 'User updated', `${data.name} has been updated`);
+      },
+      error: (error) => {
+        this.isCreatingUser = false;
+        console.error('Error updating user:', error);
+        if (error.status === 409) {
+          this.showToast('error', 'Error', 'A user with this email already exists');
+        } else {
+          this.showToast('error', 'Error', 'Failed to update user');
         }
       }
     });
@@ -199,7 +248,25 @@ export class UserManagement implements OnInit {
   }
 
   onEdit(user: AppUser): void {
-    // TODO: edit form/modal
+    // Fetch full user data including phone and address
+    this.userService.getUserById(user.id).subscribe({
+      next: (response) => {
+        const fullUser = response.user;
+        this.editUserData = {
+          id: fullUser.id,
+          name: `${fullUser.first_name} ${fullUser.last_name || ''}`.trim(),
+          email: fullUser.email,
+          phone: fullUser.phone_number || '',
+          role: (this.reverseRoleLabelMap as any)[fullUser.role] || 'photographer',
+          address: '' // Address not available in User interface
+        };
+        this.showNewUserModal = true;
+      },
+      error: (error) => {
+        console.error('Error fetching user details:', error);
+        this.showToast('error', 'Error', 'Failed to load user details');
+      }
+    });
   }
 
   onDelete(user: AppUser): void {

@@ -254,7 +254,7 @@
   gap: 0.375rem;
   &:disabled {
     opacity: 0.7;
-    cursor: wait;
+    cursor: not-allowed;
   }
 }
 

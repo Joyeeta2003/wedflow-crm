@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Booking } from '../../../../services/booking.service';
+import { BookingService } from '../../../../services/booking.service';
 
 export interface BookingDetailsFormData {
   mainEventDate: string;
@@ -33,6 +34,7 @@ interface SelectOption {
   styleUrl: './booking-details-modal.scss',
 })
 export class BookingDetailsModal implements OnChanges {
+  private bookingService = inject(BookingService);
   @Input({ required: true }) booking!: Booking;
 
   @Output() closeModal = new EventEmitter<void>();
@@ -50,19 +52,9 @@ export class BookingDetailsModal implements OnChanges {
     { value: 'Other', label: 'Other' },
   ];
 
-  // ASSUMPTION: mock package list — replace with real packages service data once confirmed
-  packages: SelectOption[] = [
-    { value: '6a27f8fd544a263c2cffe56a', label: 'ROYAL WEDDING PACKAGE - Rs. 2,20,000' },
-    { value: '6a27fc6a544a263c2cffe6e7', label: 'EXCLUSIVE WEDDING PACKAGE - Rs. 15,00,000' },
-    { value: '6a27fe0e544a263c2cffe6fc', label: 'STANDARD WEDDING PACKAGE - Rs. 1,00,000' },
-    { value: '6a27ff84544a263c2cffe70a', label: 'BASIC PRE-WEDDING PACKAGE - Rs. 20,000' },
-    { value: '6a2800bd544a263c2cffe71f', label: 'PREMIUM PRE-WEDDING PACKAGE - Rs. 35,000' },
-    { value: '6a2805da544a263c2cffe951', label: 'ABC Package - Rs. 50,000' },
-    { value: '6a287cae99cc8d99623fc0c0', label: 'Royal Wedding Package - Rs. 3,50,000' },
-    { value: '6a421267d3b007bb1f4ba0b6', label: 'Ultimate Wedding Package - Rs. 3,50,000' },
-    { value: '6a451f7bcf4d7fe2486b4809', label: 'Om Photography Premium Package - Rs. 76,000' },
-    { value: '6a56852b7a427311e7ce068b', label: 'Demo Testing - Rs. 1,50,000' },
-  ];
+  // Load packages from backend API
+  packages: SelectOption[] = [];
+  isLoadingPackages = false;
 
   statuses: SelectOption[] = [
     { value: 'booking_confirmed', label: 'Booking Confirmed' },
@@ -127,8 +119,7 @@ export class BookingDetailsModal implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['booking'] && this.booking) {
-      // ASSUMPTION: field names on Booking not fully confirmed — adjust once
-      // booking.service.ts's real Booking interface is shared.
+      // Load booking data into form
       this.mainEventDate = (this.booking as any).main_event_date ?? '';
       this.bookingDate = (this.booking as any).booking_date ?? '';
       this.projectDivision = (this.booking as any).project_division ?? '';
@@ -143,7 +134,27 @@ export class BookingDetailsModal implements OnChanges {
       this.totalAmount = (this.booking as any).total_amount ?? null;
       this.notes = (this.booking as any).notes ?? '';
       this.remarks = (this.booking as any).remarks ?? '';
+      
+      // Load packages from API
+      this.loadPackages();
     }
+  }
+
+  loadPackages() {
+    this.isLoadingPackages = true;
+    this.bookingService.getPackages().subscribe({
+      next: (response) => {
+        this.packages = response.packages.map(pkg => ({
+          value: pkg.id,
+          label: `${pkg.name} - Rs. ${pkg.price}`
+        }));
+        this.isLoadingPackages = false;
+      },
+      error: (error) => {
+        console.error('Error loading packages:', error);
+        this.isLoadingPackages = false;
+      }
+    });
   }
 
   get eventTypeLabel(): string {
@@ -253,25 +264,42 @@ export class BookingDetailsModal implements OnChanges {
 
     this.isSubmitting = true;
 
-    // ASSUMPTION: simulated delay — replace with real API call once endpoint confirmed
-    setTimeout(() => {
-      this.save.emit({
-        mainEventDate: this.mainEventDate,
-        bookingDate: this.bookingDate,
-        projectDivision: this.projectDivision,
-        eventType: this.eventType,
-        clientManager: this.clientManager,
-        selectionUploadProcess: this.selectionUploadProcess,
-        reviewNotes: this.reviewNotes,
-        packageId: this.packageId,
-        venue: this.venue,
-        mapLink: this.mapLink,
-        status: this.status,
-        totalAmount: this.totalAmount as number,
-        notes: this.notes,
-        remarks: this.remarks,
-      });
-      this.isSubmitting = false;
-    }, 800);
+    // Use real API call to update booking
+    this.bookingService.updateBooking(this.booking.id, {
+      clientId: this.booking.client_id,
+      packageId: this.packageId,
+      bookingDate: this.bookingDate,
+      eventDate: this.mainEventDate,
+      totalAmount: this.totalAmount,
+      venue: this.venue,
+      eventType: this.eventType,
+      status: this.status,
+      currentWorkflowStage: this.status,
+      notes: this.notes
+    }).subscribe({
+      next: (response) => {
+        this.save.emit({
+          mainEventDate: this.mainEventDate,
+          bookingDate: this.bookingDate,
+          projectDivision: this.projectDivision,
+          eventType: this.eventType,
+          clientManager: this.clientManager,
+          selectionUploadProcess: this.selectionUploadProcess,
+          reviewNotes: this.reviewNotes,
+          packageId: this.packageId,
+          venue: this.venue,
+          mapLink: this.mapLink,
+          status: this.status,
+          totalAmount: this.totalAmount as number,
+          notes: this.notes,
+          remarks: this.remarks,
+        });
+        this.isSubmitting = false;
+      },
+      error: (error) => {
+        console.error('Error updating booking:', error);
+        this.isSubmitting = false;
+      }
+    });
   }
 }

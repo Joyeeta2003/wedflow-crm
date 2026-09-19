@@ -12,6 +12,7 @@ import {
   MediaItem,
     ReminderLog,
 } from '../../../services/booking.service';
+import { StorageService } from '../../../services/storage.service';
 
 import { CrewTab } from './crew-tab/crew-tab';
 import { PaymentsTab } from './payments-tab/payments-tab';
@@ -28,6 +29,7 @@ import {
 import { MediaTab } from './media-tab/media-tab';
 import { NewMediaItemData } from './media-tab/media-item-modal/media-item-modal';
 import { RemindersTab } from './reminders-tab/reminders-tab';
+import { InvoiceTab } from './invoice-tab/invoice-tab';
 
 interface WorkflowStageDef {
   number: number;
@@ -150,7 +152,7 @@ type TabKey = 'crew' | 'payments' | 'deliveries' | 'tracker' | 'media' | 'remind
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal, MediaTab, RemindersTab],
+  imports: [CommonModule, RouterLink, CrewTab, PaymentsTab, DeliveriesTab, Toast, StudioTrackerTab, BookingDetailsModal, MediaTab, RemindersTab, InvoiceTab],
   templateUrl: './booking-detail.html',
   styleUrl: './booking-detail.scss',
 })
@@ -203,6 +205,7 @@ export class BookingDetail implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private bookingService: BookingService,
+    private storageService: StorageService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -232,7 +235,7 @@ export class BookingDetail implements OnInit {
         day_number: 1,
         event_type: 'Mehendi',
         roles: [
-          { role: 'Photographer', quantity: 2 },
+          { role: 'Photographer', quantity: 3 },
           { role: 'Cinematographer', quantity: 2 },
         ],
       },
@@ -515,26 +518,10 @@ export class BookingDetail implements OnInit {
         notes: null,
       },
     ],
-        reminders: [
-      { id: 'r1', reminder_type: 'client reminder', days_before_event: 1, scheduled_date: '2026-06-12', status: 'sent' },
-      { id: 'r2', reminder_type: 'client reminder', days_before_event: 3, scheduled_date: '2026-06-10', status: 'sent' },
-      { id: 'r3', reminder_type: 'crew details customer', days_before_event: 3, scheduled_date: '2026-06-10', status: 'sent' },
-      { id: 'r4', reminder_type: 'crew details customer', days_before_event: 3, scheduled_date: '2026-06-12', status: 'skipped' },
-      { id: 'r5', reminder_type: 'crew details customer', days_before_event: 3, scheduled_date: '2026-06-11', status: 'skipped' },
-      { id: 'r6', reminder_type: 'client reminder', days_before_event: 7, scheduled_date: '2026-06-06', status: 'sent' },
-      { id: 'r7', reminder_type: 'client reminder', days_before_event: 15, scheduled_date: '2026-05-29', status: 'sent' },
-      { id: 'r8', reminder_type: 'client reminder', days_before_event: 30, scheduled_date: '2026-05-14', status: 'sent' },
-      { id: 'r9', reminder_type: 'client reminder', days_before_event: 60, scheduled_date: '2026-04-14', status: 'sent' },
-    ],
+        reminders: [],
   };
 
   ngOnInit(): void {
-    // TEMPORARY — bypasses real API for UI testing. Restore the block below once confirmed.
-    this.booking = this.mockBooking;
-    this.loading = false;
-    return;
-
-    /* ORIGINAL — uncomment when ready to test against real backend
     const bookingId = this.route.snapshot.paramMap.get('id');
     if (!bookingId) {
       this.error = 'Booking not found';
@@ -544,7 +531,8 @@ export class BookingDetail implements OnInit {
 
     this.bookingService.getBookingById(bookingId).subscribe({
       next: (response) => {
-        this.booking = response.booking;
+        // Map backend response to frontend format
+        this.booking = this.bookingService.mapBackendToBooking(response.booking);
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -555,7 +543,6 @@ export class BookingDetail implements OnInit {
         this.cdr.detectChanges();
       },
     });
-    */
   }
 
   formatDate(value: string | null): string {
@@ -626,43 +613,101 @@ export class BookingDetail implements OnInit {
   // --- Crew tab event handlers ---
   onCrewAddDay(data: NewEventDayData): void {
     if (!this.booking) return;
-    const newDay: BookingEvent = {
-      id: 'e' + Date.now(), // ASSUMPTION — real id backend theke ashবে
+    
+    // Use real API call instead of local update
+    this.bookingService.addBookingEvent(this.booking.id, {
       event_name: data.eventType,
-      event_date: data.datePending ? null : data.date || null,
-      venue: data.venue || null,
-      notes: data.notes || null,
-      date_pending: data.datePending,
-    };
-    this.booking.event_days = [...(this.booking.event_days ?? []), newDay];
-    this.showToast('Event day added', 'The event day has been added successfully.');
+      event_date: data.datePending ? null : data.date,
+      venue: data.venue,
+      notes: data.notes
+    }).subscribe({
+      next: (response) => {
+        // Add the new event to local booking data
+        const newDay: BookingEvent = {
+          id: response.event.id,
+          event_name: response.event.event_name,
+          event_date: response.event.event_date,
+          venue: response.event.venue,
+          notes: response.event.notes,
+          date_pending: data.datePending
+        };
+        if (this.booking) {
+          this.booking.event_days = [...(this.booking.event_days ?? []), newDay];
+          this.cdr.detectChanges();
+        }
+        this.showToast('Event day added', 'The event day has been added successfully.');
+      },
+      error: (error) => {
+        console.error('Error adding event day:', error);
+        this.showToast('Error', 'Failed to add event day');
+      }
+    });
   }
 
   onCrewRemoveDay(e: BookingEvent): void {
     if (!this.booking?.event_days) return;
-    this.booking.event_days = this.booking.event_days.filter((x) => x.id !== e.id);
-    this.showToast('Deleted', 'The event day has been removed.');
+    
+    // Use real API call to delete event
+    this.bookingService.deleteBookingEvent(e.id).subscribe({
+      next: (response) => {
+        if (this.booking && this.booking.event_days) {
+          this.booking.event_days = this.booking.event_days.filter((x) => x.id !== e.id);
+          this.cdr.detectChanges();
+        }
+        this.showToast('Deleted', 'The event day has been removed.');
+      },
+      error: (error) => {
+        console.error('Error deleting event day:', error);
+        this.showToast('Error', 'Failed to delete event day');
+      }
+    });
   }
 
   onCrewAssignMember(data: NewAssignmentData): void {
+    console.log('BookingDetail: onCrewAssignMember called with data:', data);
     if (!this.booking) return;
-    const newAssignment: CrewAssignment = {
-      id: 'a' + Date.now(), // ASSUMPTION — real id backend theke ashবে
-      staff_name: data.staffName,
+    
+    console.log('BookingDetail: Calling addCrewAssignment API');
+    // Use real API call to create crew assignment
+    this.bookingService.addCrewAssignment({
+      booking_event_id: data.eventDayId,
+      staff_id: data.staffId,
       assigned_role: data.role,
-      event_name: data.eventName,
-      event_date: data.eventDate ?? '',
-      event_time: data.reportTime || undefined,
-      venue: data.reportLocation || data.venue,
+      assignment_date: data.eventDate || new Date().toISOString().split('T')[0],
+      start_time: data.reportTime,
+      end_time: null,
       status: 'assigned',
-      is_full_day: data.shift === 'full_day',
-      is_notified: false,
-      handover_status: 'pending',
-      files_status: 'pending',
-      submitted_at: null,
-    };
-    this.booking.crew_assignments = [...(this.booking.crew_assignments ?? []), newAssignment];
-    this.showToast('Crew assigned', `${data.staffName} has been assigned as ${data.role}.`);
+      notes: data.reportLocation
+    }).subscribe({
+      next: (response) => {
+        console.log('BookingDetail: API response:', response);
+        // Add the new assignment to local booking data
+        const newAssignment: CrewAssignment = {
+          id: response.crewAssignment?.id ?? response.assignment?.id ?? `${data.eventDayId}-${data.staffId}`,
+          staff_name: data.staffName,
+          assigned_role: data.role,
+          event_name: data.eventName,
+          event_date: data.eventDate ?? '',
+          event_time: data.reportTime,
+          venue: data.reportLocation || data.venue,
+          status: 'assigned',
+          is_full_day: data.shift === 'full_day',
+          is_notified: false,
+          handover_status: 'pending',
+          files_status: 'pending',
+          submitted_at: null,
+        };
+        if (this.booking) {
+          this.booking.crew_assignments = [...(this.booking.crew_assignments ?? []), newAssignment];
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Crew assigned', `${data.staffName} has been assigned as ${data.role}.`);
+      },
+      error: (error) => {
+        console.error('BookingDetail: Error assigning crew:', error);
+        this.showToast('Error', 'Failed to assign crew member');
+      }
+    });
   }
 
   onCrewVerifyFiles(a: CrewAssignment): void {
@@ -671,82 +716,228 @@ export class BookingDetail implements OnInit {
 
   onCrewRemoveAssignment(a: CrewAssignment): void {
     if (!this.booking?.crew_assignments) return;
-    this.booking.crew_assignments = this.booking.crew_assignments.filter((x) => x.id !== a.id);
-    this.showToast('Deleted', 'The crew assignment has been removed.');
+    
+    // Use real API call to delete crew assignment
+    this.bookingService.deleteCrewAssignment(a.id).subscribe({
+      next: (response) => {
+        if (this.booking && this.booking.crew_assignments) {
+          this.booking.crew_assignments = this.booking.crew_assignments.filter((x) => x.id !== a.id);
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Deleted', 'The crew assignment has been removed.');
+      },
+      error: (error) => {
+        console.error('Error removing crew assignment:', error);
+        this.showToast('Error', 'Failed to remove crew assignment');
+      }
+    });
   }
 
   // --- Payments tab event handlers ---
   onPaymentCreate(data: any): void {
     if (!this.booking) return;
-    const newItem: PaymentSchedule = {
-      id: 'p' + Date.now(), // ASSUMPTION — real id backend theke ashবে
-      installment_name: data.label,
+    
+    // Use real API call to create payment
+    this.bookingService.addPayment({
+      invoice_id: null, // Could be linked to invoice later
+      booking_id: this.booking.id,
       amount: Number(data.amount) || 0,
-      due_date: data.dueDate || null,
-      paid_date: null,
-      status: 'Pending', // ASSUMPTION — naya add kora installment default status
-      notes: data.notes || null,
-    };
-    this.booking.payment_schedule = [...(this.booking.payment_schedule ?? []), newItem];
-    this.showToast('Payment added', 'The payment installment has been added successfully.');
+      payment_date: data.dueDate || new Date().toISOString().split('T')[0],
+      payment_method: 'cash', // Default, could be enhanced
+      transaction_reference: null,
+      status: 'completed',
+      notes: data.notes || null
+    }).subscribe({
+      next: (response) => {
+        // Add the new payment to local booking data
+        const newItem: PaymentSchedule = {
+          id: response.payment.id,
+          installment_name: data.label,
+          amount: Number(data.amount) || 0,
+          due_date: data.dueDate || null,
+          paid_date: response.payment.payment_date,
+          status: 'Approved',
+          notes: data.notes || null,
+        };
+        if (this.booking) {
+          this.booking.payment_schedule = [...(this.booking.payment_schedule ?? []), newItem];
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Payment added', 'The payment installment has been added successfully.');
+      },
+      error: (error) => {
+        console.error('Error adding payment:', error);
+        this.showToast('Error', 'Failed to add payment');
+      }
+    });
   }
 
   onPaymentDelete(p: PaymentSchedule): void {
     if (!this.booking?.payment_schedule) return;
-    this.booking.payment_schedule = this.booking.payment_schedule.filter((x) => x.id !== p.id);
-    this.showToast('Deleted', 'The payment installment has been removed.');
+    
+    // Use real API call to delete payment
+    this.bookingService.deletePayment(p.id).subscribe({
+      next: (response) => {
+        if (this.booking && this.booking.payment_schedule) {
+          this.booking.payment_schedule = this.booking.payment_schedule.filter((x) => x.id !== p.id);
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Deleted', 'The payment installment has been removed.');
+      },
+      error: (error) => {
+        console.error('Error deleting payment:', error);
+        this.showToast('Error', 'Failed to delete payment');
+      }
+    });
   }
 
   // --- Deliveries tab event handlers ---
   onDeliveryCreate(data: NewDeliveryData): void {
     if (!this.booking) return;
-    const newItem: DeliveryItem = {
-      id: 'd' + Date.now(),
-      type: data.type,
-      description: data.description,
-      due_date: data.dueDate || null,
-      status: 'Pending',
-      delivered_date: null,
-      notes: data.notes || null,
-    };
-    this.booking.deliveries = [...(this.booking.deliveries ?? []), newItem];
-    this.showToast('Delivery added', 'The delivery item has been added successfully.');
-  }
-
-    // --- Media tab event handlers ---
-  onMediaCreate(data: NewMediaItemData): void {
-    if (!this.booking) return;
-    const newItem: MediaItem = {
-      id: 'm' + Date.now(), // ASSUMPTION — real id backend theke ashবে
-      media_type: data.mediaType,
-      label: data.label,
-      capacity: data.capacity || null,
-      photographer: data.photographer || null,
-      notes: data.notes || null,
-    };
-    this.booking.media = [...(this.booking.media ?? []), newItem];
-    this.showToast('Media added', 'The storage item has been added successfully.');
-  }
-
-  onMediaDelete(m: MediaItem): void {
-    if (!this.booking?.media) return;
-    this.booking.media = this.booking.media.filter((x) => x.id !== m.id);
-    this.showToast('Deleted', 'The storage item has been removed.');
+    
+    // Use real API call to create delivery
+    this.bookingService.addDelivery({
+      booking_id: this.booking.id,
+      delivery_type: data.type,
+      delivery_date: data.dueDate,
+      delivery_status: 'pending',
+      delivery_link: null,
+      recipient: null,
+      confirmation: false,
+      notes: data.notes
+    }).subscribe({
+      next: (response) => {
+        // Add the new delivery to local booking data
+        const newItem: DeliveryItem = {
+          id: response.delivery.id,
+          type: data.type,
+          description: data.description,
+          due_date: data.dueDate || null,
+          status: 'Pending',
+          delivered_date: null,
+          notes: data.notes || null,
+        };
+        if (this.booking) {
+          this.booking.deliveries = [...(this.booking.deliveries ?? []), newItem];
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Delivery added', 'The delivery item has been added successfully.');
+      },
+      error: (error) => {
+        console.error('Error adding delivery:', error);
+        this.showToast('Error', 'Failed to add delivery');
+      }
+    });
   }
 
   onDeliveryStart(d: DeliveryItem): void {
-    d.status = 'In Progress';
+    // Use real API call to update delivery status
+    this.bookingService.updateDelivery(d.id, {
+      delivery_status: 'in_progress'
+    }).subscribe({
+      next: (response) => {
+        d.status = 'In Progress';
+        this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+      },
+      error: (error) => {
+        console.error('Error updating delivery:', error);
+        this.showToast('Error', 'Failed to update delivery status');
+      }
+    });
   }
 
   onDeliveryMarkReady(d: DeliveryItem): void {
-    d.status = 'Delivered';
-    d.delivered_date = new Date().toISOString();
+    // Use real API call to mark delivery as delivered
+    this.bookingService.updateDelivery(d.id, {
+      delivery_status: 'delivered',
+      delivery_date: new Date().toISOString().split('T')[0]
+    }).subscribe({
+      next: (response) => {
+        d.status = 'Delivered';
+        d.delivered_date = new Date().toISOString();
+        this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+      },
+      error: (error) => {
+        console.error('Error updating delivery:', error);
+        this.showToast('Error', 'Failed to mark delivery as ready');
+      }
+    });
   }
 
   onDeliveryDelete(d: DeliveryItem): void {
     if (!this.booking?.deliveries) return;
-    this.booking.deliveries = this.booking.deliveries.filter((x) => x.id !== d.id);
-    this.showToast('Deleted', 'The delivery item has been removed.');
+    
+    // Use real API call to delete delivery
+    this.bookingService.deleteDelivery(d.id).subscribe({
+      next: (response) => {
+        if (this.booking && this.booking.deliveries) {
+          this.booking.deliveries = this.booking.deliveries.filter((x) => x.id !== d.id);
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Deleted', 'The delivery item has been removed.');
+      },
+      error: (error) => {
+        console.error('Error deleting delivery:', error);
+        this.showToast('Error', 'Failed to delete delivery');
+      }
+    });
+  }
+
+  // --- Media tab event handlers ---
+  onMediaCreate(data: NewMediaItemData): void {
+    if (!this.booking) return;
+    
+    // Use storage service to create media item
+    this.storageService.uploadFile({
+      bookingId: this.booking.id,
+      fileName: data.label,
+      fileType: data.mediaType,
+      category: 'general',
+      storagePath: data.mediaType.toLowerCase(),
+      fileSize: 0, // Placeholder for now
+      status: 'active',
+      notes: data.notes
+    }, null as any).subscribe({
+      next: (response) => {
+        // Add the new media item to local booking data
+        const newItem: MediaItem = {
+          id: response.file?.id || 'm' + Date.now(),
+          media_type: data.mediaType,
+          label: data.label,
+          capacity: data.capacity || null,
+          photographer: data.photographer || null,
+          notes: data.notes || null,
+        };
+        if (this.booking) {
+          this.booking.media = [...(this.booking.media ?? []), newItem];
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Media added', 'The storage item has been added successfully.');
+      },
+      error: (error) => {
+        console.error('Error adding media:', error);
+        this.showToast('Error', 'Failed to add media item');
+      }
+    });
+  }
+
+  onMediaDelete(m: MediaItem): void {
+    if (!this.booking?.media) return;
+    
+    // Use storage service to delete media item
+    this.storageService.deleteFile(m.id).subscribe({
+      next: (response) => {
+        if (this.booking && this.booking.media) {
+          this.booking.media = this.booking.media.filter((x) => x.id !== m.id);
+          this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
+        }
+        this.showToast('Deleted', 'The storage item has been removed.');
+      },
+      error: (error) => {
+        console.error('Error deleting media:', error);
+        this.showToast('Error', 'Failed to delete media item');
+      }
+    });
   }
 
   // state
@@ -758,6 +949,41 @@ export class BookingDetail implements OnInit {
 
   onCloseBookingDetailsModal(): void {
     this.isBookingDetailsModalOpen = false;
+  }
+
+  // --- Reminders tab event handlers ---
+  onReminderCreated(): void {
+    if (!this.booking) return;
+    
+    // Reload booking to get updated reminders
+    this.bookingService.getBookingById(this.booking.id).subscribe({
+      next: (response) => {
+        this.booking = this.bookingService.mapBackendToBooking(response.booking);
+        this.cdr.detectChanges();
+        this.showToast('Reminder created', 'The reminder has been created successfully.');
+      },
+      error: (error) => {
+        console.error('Error reloading booking:', error);
+        this.showToast('Error', 'Failed to reload booking data');
+      }
+    });
+  }
+
+  onReminderDeleted(): void {
+    if (!this.booking) return;
+    
+    // Reload booking to get updated reminders
+    this.bookingService.getBookingById(this.booking.id).subscribe({
+      next: (response) => {
+        this.booking = this.bookingService.mapBackendToBooking(response.booking);
+        this.cdr.detectChanges();
+        this.showToast('Deleted', 'The reminder has been removed.');
+      },
+      error: (error) => {
+        console.error('Error reloading booking:', error);
+        this.showToast('Error', 'Failed to reload booking data');
+      }
+    });
   }
 
 onSaveBookingDetails(data: BookingDetailsFormData): void {
@@ -781,6 +1007,7 @@ onSaveBookingDetails(data: BookingDetailsFormData): void {
     remarks: data.remarks,
   });
   this.isBookingDetailsModalOpen = false;
+  this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
 
   this.toastTitle = 'Booking updated';
   this.toastMsg = '';

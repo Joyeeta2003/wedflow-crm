@@ -1,4 +1,4 @@
-<main class="marketplace-page">
+﻿<main class="marketplace-page">
   <div class="marketplace-inner">
 
     <!-- header: flex flex-col gap-4 border-b pb-6 lg:flex-row lg:items-end lg:justify-between -->
@@ -230,7 +230,7 @@
         </div>
       </div>
 
-      <!-- WORK REQUESTS PANEL — UNCONFIRMED, no DevTools capture for this table yet -->
+      <!-- WORK REQUESTS PANEL â€” UNCONFIRMED, no DevTools capture for this table yet -->
       <div *ngIf="activeTab() === 'requests'" class="tab-panel">
         <div class="table-shell">
           <table class="data-table">
@@ -241,7 +241,7 @@
                 <th>Event</th>
                 <th>Budget</th>
                 <th>Status</th>
-                <th>Booking work</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -264,25 +264,28 @@
                 </td>
                 <td>{{ req.budget }}</td>
                 <td>
-  <div class="status-pill" [class.status-pill--accepted]="req.status === 'Accepted'">
-    <span>{{ req.status }}</span>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-chevron" aria-hidden="true">
-      <path d="m6 9 6 6 6-6"></path>
-    </svg>
-  </div>
-</td>
-<td>
-  <button type="button" class="table-action-btn" (click)="onAssignWork(req)">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-      <path d="M16 2v4"></path>
-      <path d="M8 2v4"></path>
-      <path d="M3 10h18"></path>
-      <path d="m9 16 2 2 4-4"></path>
-    </svg>
-    Assign work
-  </button>
-</td>
+                  <div class="status-dropdown">
+                    <select class="status-select" [(ngModel)]="req.status" (ngModelChange)="onStatusChange(req, $event)">
+                      <option *ngFor="let opt of statusOptions" [value]="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </select>
+                  </div>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <button type="button" class="table-action-btn" (click)="onAssignWork(req)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                        <path d="M16 2v4"></path>
+                        <path d="M8 2v4"></path>
+                        <path d="M3 10h18"></path>
+                        <path d="m9 16 2 2 4-4"></path>
+                      </svg>
+                      Assign work
+                    </button>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -291,4 +294,11 @@
       </div>
     </div>
   </div>
+
+  <app-work-assignment-modal
+    [isOpen]="showAssignmentModal()"
+    [workRequest]="selectedWorkRequest()"
+    (closeModal)="onAssignmentModalClose()"
+    (assignmentConfirmed)="onAssignmentConfirmed($event)"
+  ></app-work-assignment-modal>
 </main>

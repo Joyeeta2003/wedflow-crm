@@ -11,12 +11,18 @@
     </div>
 
     <form #assignForm="ngForm" (ngSubmit)="onSubmit(assignForm)" class="dialog-form">
+      <!-- Hidden inputs for form validation -->
+      <input type="hidden" name="eventDayId" [(ngModel)]="selectedEventDayId" required>
+      <input type="hidden" name="shift" [(ngModel)]="shift" required>
+      <input type="hidden" name="role" [(ngModel)]="role" required>
+      <input type="hidden" name="staffId" [(ngModel)]="staffId" required>
+      <input type="hidden" name="reportTime" [(ngModel)]="reportTime" required>
 
       <!-- Event Day -->
       <div class="form-group">
-        <label>Event Day *</label>
+        <label for="eventDay">Event Day *</label>
         <div class="custom-select">
-          <button type="button" class="custom-select-trigger" (click)="toggleEventDropdown()">
+          <button type="button" id="eventDay" name="eventDay" class="custom-select-trigger" (click)="toggleEventDropdown()">
             <span>{{ selectedEventDay ? (selectedEventDay.event_name + ' - ' + (selectedEventDay.event_date ?? 'Date TBD')) : 'Select event day' }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isEventOpen"><path d="m6 9 6 6 6-6"/></svg>
           </button>
@@ -34,15 +40,15 @@
 
       <!-- Date (read-only, auto-filled from selected event day) -->
       <div class="form-group">
-        <label>Date (auto-filled from event day)</label>
-        <input type="text" class="form-input" [value]="selectedEventDay?.event_date ?? 'Date TBD'" disabled />
+        <label for="eventDate">Date (auto-filled from event day)</label>
+        <input id="eventDate" name="eventDate" type="text" class="form-input" [value]="selectedEventDay?.event_date ?? 'Date TBD'" disabled />
       </div>
 
       <!-- Shift -->
       <div class="form-group">
-        <label>Shift *</label>
+        <label for="shift">Shift *</label>
         <div class="custom-select">
-          <button type="button" class="custom-select-trigger" (click)="toggleShiftDropdown()">
+          <button type="button" id="shift" name="shift" class="custom-select-trigger" (click)="toggleShiftDropdown()">
             <span>{{ shiftLabel }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isShiftOpen"><path d="m6 9 6 6 6-6"/></svg>
           </button>
@@ -59,49 +65,58 @@
       </div>
 
       <!-- Required Role -->
-<div class="form-group">
-  <label>Required Role *</label>
-  <div class="custom-select">
-    <button
-      type="button"
-      class="custom-select-trigger"
-      [class.input-error]="roleInvalid"
-      (click)="toggleRoleDropdown()"
-    >
-      <span [class.placeholder]="!role">{{ role || 'Select role' }}</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isRoleOpen"><path d="m6 9 6 6 6-6"/></svg>
-    </button>
-    <div class="custom-select-backdrop" *ngIf="isRoleOpen" (click)="closeAllDropdowns()"></div>
-    <div class="custom-select-menu" *ngIf="isRoleOpen">
-      <button
-        type="button" class="custom-select-option"
-        *ngFor="let r of roles"
-        [class.selected]="r === role"
-        (click)="selectRole(r)"
-      >{{ r }}</button>
-    </div>
-  </div>
-  <p class="field-error" *ngIf="roleInvalid">Select a required role</p>
-</div>
-
-      <!-- Staff Member -->
       <div class="form-group">
-        <label>Staff Member * <span class="count-hint">({{ availableStaff.length }} available)</span></label>
+        <label for="role">Required Role *</label>
         <div class="custom-select">
           <button
             type="button"
+            id="role"
+            name="role"
+            class="custom-select-trigger"
+            [class.input-error]="roleInvalid"
+            (click)="toggleRoleDropdown()"
+          >
+            <span [class.placeholder]="!role">{{ role || 'Select role' }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isRoleOpen"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="custom-select-backdrop" *ngIf="isRoleOpen" (click)="closeAllDropdowns()"></div>
+          <div class="custom-select-menu" *ngIf="isRoleOpen">
+            <button
+              type="button" class="custom-select-option"
+              *ngFor="let r of roles"
+              [class.selected]="r === role"
+              (click)="selectRole(r)"
+            >{{ r }}</button>
+          </div>
+        </div>
+        <p class="field-error" *ngIf="roleInvalid">Select a required role</p>
+      </div>
+
+      <!-- Staff Member -->
+      <div class="form-group">
+        <label for="staff">Staff Member * <span class="count-hint">({{ availableStaff.length }} available)</span></label>
+        <div class="custom-select">
+          <button
+            type="button"
+            id="staff"
+            name="staff"
             class="custom-select-trigger"
             [class.input-error]="staffInvalid"
             (click)="toggleStaffDropdown()"
+            [disabled]="isLoadingStaff"
           >
             <span [class.placeholder]="!selectedStaff">
               <span class="staff-dot" *ngIf="selectedStaff" [class.dot-available]="true"></span>
-              {{ selectedStaff ? (selectedStaff.name + ' (' + selectedStaff.role + ')') : 'Select staff member' }}
+              {{ isLoadingStaff ? 'Loading staff...' : (selectedStaff ? (selectedStaff.name + ' (' + selectedStaff.role + ')') : 'Select staff member') }}
             </span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isStaffOpen"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="custom-select-backdrop" *ngIf="isStaffOpen" (click)="closeAllDropdowns()"></div>
           <div class="custom-select-menu staff-menu" *ngIf="isStaffOpen">
+            <div class="staff-empty" *ngIf="isLoadingStaff">Loading staff members...</div>
+            <div class="staff-empty" *ngIf="!isLoadingStaff && !availableStaff.length && !unavailableStaff.length">
+              No staff found for this role
+            </div>
             <div class="staff-group-label available" *ngIf="availableStaff.length">✓ Available</div>
             <button
               type="button" class="custom-select-option staff-option"
@@ -121,20 +136,19 @@
               <span class="staff-dot dot-unavailable"></span>
               {{ s.name }} <span class="staff-role">({{ s.role }})</span>
             </div>
-
-            <div class="staff-empty" *ngIf="!availableStaff.length && !unavailableStaff.length">
-              No staff found for this role
-            </div>
           </div>
         </div>
         <p class="field-error" *ngIf="staffInvalid">Select a staff member</p>
+        <p class="field-error" *ngIf="!isLoadingStaff && !allStaff.length">
+          No staff members available. Please add staff members to the system first.
+        </p>
       </div>
 
       <!-- Report Time / Location -->
       <div class="form-row">
         <div class="form-group">
-          <label for="reportTime">Report Time</label>
-          <input id="reportTime" name="reportTime" type="text" class="form-input" placeholder="e.g. 09:00 AM" [(ngModel)]="reportTime" />
+          <label for="reportTime">Report Time *</label>
+          <input id="reportTime" name="reportTime" type="text" class="form-input" placeholder="e.g. 09:00 AM" [(ngModel)]="reportTime" required />
         </div>
         <div class="form-group">
           <label for="reportLocation">Report Location</label>
@@ -144,7 +158,7 @@
 
       <div class="dialog-actions">
         <button type="button" class="btn-outline" (click)="onCancel()" [disabled]="isSubmitting">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <button type="submit" class="btn-primary" [disabled]="!isFormValid || isSubmitting">
           <svg *ngIf="isSubmitting" class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
           {{ isSubmitting ? 'Assigning...' : 'Assign' }}
         </button>

@@ -74,6 +74,19 @@ export class CrewTab {
     return pending;
   }
 
+  get filledCrewSlots(): number {
+    return this.totalCrewSlots - this.pendingCrewSlots;
+  }
+
+  get isComplete(): boolean {
+    return this.pendingCrewSlots === 0 && this.totalCrewSlots > 0;
+  }
+
+  get completionPercentage(): number {
+    if (!this.totalCrewSlots) return 0;
+    return Math.round((this.filledCrewSlots / this.totalCrewSlots) * 100);
+  }
+
   // --- Event Day modal ---
   onOpenAddDay(): void {
     this.showAddDayModal = true;
@@ -120,7 +133,11 @@ export class CrewTab {
   }
 
   onSubmitAssign(data: NewAssignmentData): void {
-    this.showAssignModal = false;
+    console.log('CrewTab: onSubmitAssign called with data:', data);
+    console.log('CrewTab: Emitting assignCrewMember event');
     this.assignCrewMember.emit(data);
+    console.log('CrewTab: Event emitted');
+    // Close the modal after emitting the event
+    this.showAssignModal = false;
   }
 }

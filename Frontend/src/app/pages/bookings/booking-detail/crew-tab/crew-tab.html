@@ -34,9 +34,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
           Package Crew Plan
         </div>
-        <p class="section-subtitle">Role-wise assignment from {{ booking.package_name }}: {{ totalCrewSlots - pendingCrewSlots }}/{{ totalCrewSlots }} slots filled</p>
+        <p class="section-subtitle">Role-wise assignment from {{ booking.package_name }}: {{ filledCrewSlots }}/{{ totalCrewSlots }} slots filled</p>
       </div>
-      <span class="badge badge-neutral" *ngIf="pendingCrewSlots > 0">{{ pendingCrewSlots }} pending</span>
+      <span class="badge" [ngClass]="isComplete ? 'badge-success' : 'badge-neutral'" *ngIf="totalCrewSlots > 0">
+        {{ isComplete ? 'Complete' : (pendingCrewSlots + ' pending') }}
+      </span>
     </div>
 
     <div class="day-group" *ngFor="let day of booking.package_crew_plan">
@@ -46,6 +48,13 @@
           <div class="day-group-sub">Day {{ day.day_number }} - {{ day.event_type }} - {{ formatDate(eventForDay(day)?.event_date ?? null) }}</div>
         </div>
         <div class="day-group-venue" *ngIf="eventForDay(day)?.venue as venue">{{ venue }}</div>
+      </div>
+
+      <div class="day-roles-summary" *ngIf="day.roles.length > 0">
+        <ng-container *ngFor="let role of day.roles; let last = last">
+          <span>{{ role.role }}: {{ assignedCount(day, role.role) }}/{{ role.quantity }} assigned</span>
+          <span *ngIf="!last">•</span>
+        </ng-container>
       </div>
 
       <div class="role-grid">

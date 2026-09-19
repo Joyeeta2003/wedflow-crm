@@ -20,6 +20,10 @@ export interface NewUserData {
   address: string;
 }
 
+export interface EditUserData extends NewUserData {
+  id: string;
+}
+
 @Component({
   selector: 'app-user-modal',
   standalone: true,
@@ -29,9 +33,11 @@ export interface NewUserData {
 })
 export class UserModal {
   @Input() isOpen = false;
-   @Input() isSubmitting = false;
+  @Input() isSubmitting = false;
+  @Input() editUser: EditUserData | null = null;
   @Output() closeModal = new EventEmitter<void>();
   @Output() create = new EventEmitter<NewUserData>();
+  @Output() update = new EventEmitter<EditUserData>();
 
   roles: { value: UserRoleValue; label: string }[] = [
     { value: 'admin', label: 'Admin' },
@@ -52,6 +58,32 @@ export class UserModal {
     address: '',
   };
 
+  get isEditMode(): boolean {
+    return this.editUser !== null;
+  }
+
+  get modalTitle(): string {
+    return this.isEditMode ? 'Edit User' : 'Create New User';
+  }
+
+  get submitButtonText(): string {
+    return this.isEditMode ? 'Update User' : 'Create User';
+  }
+
+  ngOnChanges() {
+    if (this.editUser) {
+      this.newUser = {
+        name: this.editUser.name,
+        email: this.editUser.email,
+        phone: this.editUser.phone,
+        role: this.editUser.role,
+        address: this.editUser.address
+      };
+    } else {
+      this.resetForm();
+    }
+  }
+
   onCancel() {
     this.resetForm();
     this.closeModal.emit();
@@ -59,7 +91,12 @@ export class UserModal {
 
   onSubmit(form: NgForm) {
     if (form.invalid) return;
-    this.create.emit({ ...this.newUser });
+
+    if (this.isEditMode && this.editUser) {
+      this.update.emit({ ...this.newUser, id: this.editUser.id });
+    } else {
+      this.create.emit({ ...this.newUser });
+    }
   }
 
   resetForm() {

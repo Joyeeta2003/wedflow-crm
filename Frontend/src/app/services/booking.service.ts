@@ -53,10 +53,11 @@ export interface MediaItem {
 
 export interface ReminderLog {
   id: string;
-  reminder_type: string; // 'client reminder' | 'crew details customer' etc.
+  reminder_type: string; // 'client_reminder' | 'crew_details_customer' | 'payment_reminder' | 'event_reminder'
   days_before_event: number;
   scheduled_date: string;
-  status: 'sent' | 'skipped'; // ASSUMPTION — only these two seen
+  scheduled_time: string | null;
+  status: 'pending' | 'sent' | 'skipped' | 'failed';
 }
 
 export interface PaymentSchedule {
@@ -148,5 +149,141 @@ export class BookingService {
 
   createBooking(booking: CreateBookingRequest): Observable<BookingResponse> {
     return this.http.post<BookingResponse>(this.apiUrl, booking);
+  }
+
+  updateBooking(bookingId: string, bookingData: any): Observable<BookingResponse> {
+    return this.http.put<BookingResponse>(`${this.apiUrl}/${bookingId}`, bookingData);
+  }
+
+  // Map backend booking response to frontend format
+  mapBackendToBooking(backendBooking: any): any {
+    return {
+      id: backendBooking.id,
+      booking_number: backendBooking.booking_number,
+      booking_date: backendBooking.booking_date,
+      event_date: backendBooking.event_date || null,
+      client_id: backendBooking.client_id,
+      client_name: backendBooking.client_name,
+      package_id: backendBooking.package_id,
+      package_name: backendBooking.package_name,
+      total_amount: backendBooking.total_amount,
+      status: backendBooking.status,
+      current_workflow_stage: backendBooking.current_workflow_stage,
+      venue: backendBooking.venue,
+      notes: backendBooking.notes,
+      amount_paid: backendBooking.amount_paid,
+      event_days: backendBooking.event_days || [],
+      payment_schedule: backendBooking.payment_schedule || [],
+      package_crew_plan: this.mapPackageCrewPlan(backendBooking.package_crew_plan || []),
+      crew_assignments: this.mapCrewAssignments(backendBooking.crew_assignments || []),
+      deliveries: [],
+      media: [],
+      reminders: this.mapReminders(backendBooking.reminders || [])
+    };
+  }
+
+  private mapPackageCrewPlan(backendPlan: any[]): any[] {
+    return backendPlan.map(day => ({
+      day_number: day.day_number,
+      event_type: day.event_type,
+      roles: day.roles?.map((role: any) => ({
+        role: role.role,
+        quantity: role.quantity
+      })) || []
+    }));
+  }
+
+  private mapCrewAssignments(backendAssignments: any[]): any[] {
+    return backendAssignments.map((assignment: any) => ({
+      id: assignment.id,
+      staff_name: assignment.staff_name,
+      assigned_role: assignment.assigned_role,
+      event_name: assignment.event_name,
+      event_date: assignment.event_date,
+      event_time: assignment.start_time,
+      venue: assignment.venue,
+      status: assignment.status,
+      is_full_day: true, // Default assumption
+      is_notified: false, // Default assumption
+      handover_status: 'pending',
+      files_status: 'pending',
+      submitted_at: null
+    }));
+  }
+
+  private mapReminders(backendReminders: any[]): any[] {
+    return backendReminders.map((reminder: any) => ({
+      id: reminder.id,
+      reminder_type: reminder.reminder_type,
+      days_before_event: reminder.days_before_event,
+      scheduled_date: reminder.scheduled_date,
+      scheduled_time: reminder.scheduled_time || null,
+      status: reminder.status
+    }));
+  }
+
+  // Get staff from User Management API (staff members)
+  getStaff(): Observable<{ success: boolean; users: any[]; count: number }> {
+    return this.http.get<{ success: boolean; users: any[]; count: number }>('http://localhost:5001/api/staff-members');
+  }
+
+  // Get packages from backend
+  getPackages(): Observable<{ success: boolean; packages: any[]; count: number }> {
+    return this.http.get<{ success: boolean; packages: any[]; count: number }>('http://localhost:5001/api/packages');
+  }
+
+  // Event Days API methods
+  addBookingEvent(bookingId: string, eventData: any): Observable<{ success: boolean; event: any }> {
+    return this.http.post<{ success: boolean; event: any }>('http://localhost:5001/api/booking-events', {
+      booking_id: bookingId,
+      ...eventData
+    });
+  }
+
+  updateBookingEvent(eventId: string, eventData: any): Observable<{ success: boolean; event: any }> {
+    return this.http.put<{ success: boolean; event: any }>(`http://localhost:5001/api/booking-events/${eventId}`, eventData);
+  }
+
+  deleteBookingEvent(eventId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/booking-events/${eventId}`);
+  }
+
+  // Crew Assignment API methods
+  addCrewAssignment(assignmentData: any): Observable<{ success: boolean; crewAssignment?: any; assignment?: any }> {
+    return this.http.post<{ success: boolean; crewAssignment?: any; assignment?: any }>('http://localhost:5001/api/crew-assignments', assignmentData);
+  }
+
+  updateCrewAssignment(assignmentId: string, assignmentData: any): Observable<{ success: boolean; assignment: any }> {
+    return this.http.put<{ success: boolean; assignment: any }>(`http://localhost:5001/api/crew-assignments/${assignmentId}`, assignmentData);
+  }
+
+  deleteCrewAssignment(assignmentId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/crew-assignments/${assignmentId}`);
+  }
+
+  // Payment API methods
+  addPayment(paymentData: any): Observable<{ success: boolean; payment: any }> {
+    return this.http.post<{ success: boolean; payment: any }>('http://localhost:5001/api/payments', paymentData);
+  }
+
+  updatePayment(paymentId: string, paymentData: any): Observable<{ success: boolean; payment: any }> {
+    return this.http.put<{ success: boolean; payment: any }>(`http://localhost:5001/api/payments/${paymentId}`, paymentData);
+  }
+
+  deletePayment(paymentId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/payments/${paymentId}`);
+  }
+
+  // Delivery API methods
+  addDelivery(deliveryData: any): Observable<{ success: boolean; delivery: any }> {
+    return this.http.post<{ success: boolean; delivery: any }>('http://localhost:5001/api/deliveries', deliveryData);
+  }
+
+  updateDelivery(deliveryId: string, deliveryData: any): Observable<{ success: boolean; delivery: any }> {
+    return this.http.put<{ success: boolean; delivery: any }>(`http://localhost:5001/api/deliveries/${deliveryId}`, deliveryData);
+  }
+
+  deleteDelivery(deliveryId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/deliveries/${deliveryId}`);
   }
 }

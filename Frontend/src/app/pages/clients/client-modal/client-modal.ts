@@ -10,6 +10,10 @@ export interface NewClientData {
   notes: string;
 }
 
+export interface EditClientData extends NewClientData {
+  id: string;
+}
+
 @Component({
   selector: 'app-client-modal',
   standalone: true,
@@ -19,8 +23,10 @@ export interface NewClientData {
 })
 export class ClientModal {
   @Input() isOpen = false;
+  @Input() editClient: EditClientData | null = null;
   @Output() closeModal = new EventEmitter<void>();
   @Output() create = new EventEmitter<NewClientData>();
+  @Output() update = new EventEmitter<EditClientData>();
 
   newClient: NewClientData = {
     name: '',
@@ -30,6 +36,32 @@ export class ClientModal {
     notes: ''
   };
 
+  get isEditMode(): boolean {
+    return this.editClient !== null;
+  }
+
+  get modalTitle(): string {
+    return this.isEditMode ? 'Edit Client' : 'New Client';
+  }
+
+  get submitButtonText(): string {
+    return this.isEditMode ? 'Update' : 'Create';
+  }
+
+  ngOnChanges() {
+    if (this.editClient) {
+      this.newClient = {
+        name: this.editClient.name,
+        phone: this.editClient.phone,
+        email: this.editClient.email,
+        address: this.editClient.address,
+        notes: this.editClient.notes
+      };
+    } else {
+      this.resetForm();
+    }
+  }
+
   onCancel() {
     this.resetForm();
     this.closeModal.emit();
@@ -38,7 +70,11 @@ export class ClientModal {
   onSubmit(form: NgForm) {
     if (form.invalid) return;
 
-    this.create.emit({ ...this.newClient });
+    if (this.isEditMode && this.editClient) {
+      this.update.emit({ ...this.newClient, id: this.editClient.id });
+    } else {
+      this.create.emit({ ...this.newClient });
+    }
     this.resetForm();
   }
 

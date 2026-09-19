@@ -674,6 +674,51 @@
     border-color: rgba(52, 211, 153, 0.35);
     background: rgba(52, 211, 153, 0.1);
   }
+
+  &--pending {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  &--completed {
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  &--declined {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.1);
+  }
+}
+
+.status-dropdown {
+  position: relative;
+}
+
+.status-select {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: white;
+  font-size: 13px;
+  color: var(--fg);
+  cursor: pointer;
+  min-width: 100px;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .status-chevron {
@@ -696,6 +741,13 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #9ca3af;
+    border-color: #9ca3af;
+  }
 
   svg {
     height: 16px;

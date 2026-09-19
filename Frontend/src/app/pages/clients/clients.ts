@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ClientModal, NewClientData } from './client-modal/client-modal';
+import { ClientModal, NewClientData, EditClientData } from './client-modal/client-modal';
 import { ClientService, Client } from '../../services/client.service';
 import { Auth } from '../../services/auth';
 
@@ -25,6 +25,7 @@ interface DisplayClient {
 })
 export class Clients implements OnInit, OnDestroy {
   showNewClientModal = false;
+  editClientData: EditClientData | null = null;
   clients: DisplayClient[] = [];
   loading = false;
   error: string | null = null;
@@ -136,11 +137,20 @@ export class Clients implements OnInit, OnDestroy {
   }
 
   onNewClient(): void {
+    this.editClientData = null;
     this.showNewClientModal = true;
   }
 
   onEdit(client: DisplayClient): void {
-    // TODO: edit form/modal
+    this.editClientData = {
+      id: client.id,
+      name: client.name,
+      phone: client.phone,
+      email: client.email,
+      address: client.address,
+      notes: ''
+    };
+    this.showNewClientModal = true;
   }
 
   onDelete(client: DisplayClient): void {
@@ -160,6 +170,7 @@ export class Clients implements OnInit, OnDestroy {
 
   onModalClose(): void {
     this.showNewClientModal = false;
+    this.editClientData = null;
     this.loadClients();
   }
 
@@ -192,6 +203,7 @@ export class Clients implements OnInit, OnDestroy {
       next: (response) => {
         this.clients = [...this.clients, this.mapToDisplayClient(response.client)];
         this.showNewClientModal = false;
+        this.editClientData = null;
         this.cdr.detectChanges();
         this.loadClients();
       },
@@ -207,6 +219,58 @@ export class Clients implements OnInit, OnDestroy {
           alert(err.error?.error || 'A client with this phone number or email already exists');
         } else {
           alert('Failed to create client');
+        }
+      },
+    });
+  }
+
+  onClientUpdate(data: EditClientData): void {
+    // Check for duplicate phone number (excluding current client)
+    if (data.phone && data.phone.trim()) {
+      const existingPhone = this.clients.find(c => c.phone === data.phone.trim() && c.id !== data.id);
+      if (existingPhone) {
+        alert('A client with this phone number already exists');
+        return;
+      }
+    }
+
+    // Check for duplicate email (excluding current client)
+    if (data.email && data.email.trim()) {
+      const existingEmail = this.clients.find(c => c.email === data.email.trim() && c.id !== data.id);
+      if (existingEmail) {
+        alert('A client with this email already exists');
+        return;
+      }
+    }
+
+    this.clientService.updateClient(data.id, {
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      status: 'active'
+    }).subscribe({
+      next: (response) => {
+        this.clients = this.clients.map(c => 
+          c.id === data.id ? this.mapToDisplayClient(response.client) : c
+        );
+        this.showNewClientModal = false;
+        this.editClientData = null;
+        this.cdr.detectChanges();
+        this.loadClients();
+      },
+      error: (err) => {
+        console.error('Error updating client:', err);
+        if (err.status === 401 || err.status === 403) {
+          this.auth.clearSession();
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        if (err.status === 409) {
+          alert(err.error?.error || 'A client with this phone number or email already exists');
+        } else {
+          alert('Failed to update client');
         }
       },
     });

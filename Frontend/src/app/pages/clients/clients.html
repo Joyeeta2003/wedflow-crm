@@ -141,6 +141,8 @@
 
    <app-client-modal
      [isOpen]="showNewClientModal"
+     [editClient]="editClientData"
      (closeModal)="onModalClose()"
      (create)="onClientCreate($event)"
+     (update)="onClientUpdate($event)"
    ></app-client-modal>
