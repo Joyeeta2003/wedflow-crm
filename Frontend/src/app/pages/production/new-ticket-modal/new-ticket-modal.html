@@ -1,1 +1,79 @@
-<p>new-ticket-modal works!</p>
+<div class="dialog-overlay">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h2>New Production Ticket</h2>
+      <button type="button" class="dialog-close" (click)="onCancel()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form #ticketForm="ngForm" (ngSubmit)="onSubmit(ticketForm)" class="dialog-form">
+      <div class="form-group">
+        <label>Booking</label>
+        <div class="custom-select">
+          <button type="button" class="custom-select-trigger" (click)="toggleBookingDropdown()">
+            <span [class.placeholder]="!bookingId">{{ bookingLabel }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isBookingOpen"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="custom-select-backdrop" *ngIf="isBookingOpen" (click)="closeAllDropdowns()"></div>
+          <div class="custom-select-menu" *ngIf="isBookingOpen">
+            <button type="button" class="custom-select-option" *ngFor="let b of bookings" [class.selected]="b.value === bookingId" (click)="selectBooking(b.value)">{{ b.label }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <div class="custom-select">
+            <button type="button" class="custom-select-trigger" (click)="toggleTypeDropdown()">
+              <span>{{ typeLabel }}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isTypeOpen"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="custom-select-backdrop" *ngIf="isTypeOpen" (click)="closeAllDropdowns()"></div>
+            <div class="custom-select-menu" *ngIf="isTypeOpen">
+              <button type="button" class="custom-select-option" *ngFor="let t of types" [class.selected]="t.value === type" (click)="selectType(t.value)">{{ t.label }}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Assign To</label>
+          <div class="custom-select">
+            <button type="button" class="custom-select-trigger" (click)="toggleAssigneeDropdown()">
+              <span [class.placeholder]="!assigneeId">{{ assigneeLabel }}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isAssigneeOpen"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="custom-select-backdrop" *ngIf="isAssigneeOpen" (click)="closeAllDropdowns()"></div>
+            <div class="custom-select-menu" *ngIf="isAssigneeOpen">
+              <button type="button" class="custom-select-option" *ngFor="let s of staff" [class.selected]="s.value === assigneeId" (click)="selectAssignee(s.value)">{{ s.label }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text" class="form-input" placeholder="Wedding photo edit batch 1" [(ngModel)]="title" />
+      </div>
+
+      <div class="form-group">
+        <label for="deadline">Deadline</label>
+        <input id="deadline" name="deadline" type="datetime-local" class="form-input" [(ngModel)]="deadline" />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Details</label>
+        <textarea id="description" name="description" class="form-textarea" rows="3" placeholder="Files received, album size, print vendor notes..." [(ngModel)]="description"></textarea>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn-outline" (click)="onCancel()" [disabled]="isSubmitting">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          <svg *ngIf="isSubmitting" class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          {{ isSubmitting ? 'Creating...' : 'Create Ticket' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

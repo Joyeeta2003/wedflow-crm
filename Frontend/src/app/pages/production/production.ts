@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NewTicketModal, NewTicketData } from './new-ticket-modal/new-ticket-modal';
+import { Toast } from '../../components/toast/toast';
 
 interface ProductionTicket {
   id: string;
@@ -26,7 +28,7 @@ interface EscalationLevel {
 @Component({
   selector: 'app-production',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NewTicketModal,Toast],
   templateUrl: './production.html',
   styleUrl: './production.scss',
 })
@@ -183,8 +185,8 @@ export class Production {
   }
 
   onNewTicket(): void {
-    // TODO: New Ticket modal — needs screenshot of the original site's form
-  }
+  this.onOpenNewTicket();
+}
 
   onAcknowledge(t: ProductionTicket): void {
     // TODO: real API call once endpoint confirmed
@@ -194,5 +196,73 @@ export class Production {
 
   onEditTicket(t: ProductionTicket): void {
     // TODO: Edit ticket modal — needs screenshot
+  }
+
+    showNewTicketModal = false;
+
+  toastVisible = false;
+  toastTitle = '';
+  toastMsg = '';
+  toastVariant: 'success' | 'error' = 'success';
+  private toastTimeout: any;
+
+  private showToast(title: string, message: string, variant: 'success' | 'error' = 'success'): void {
+    this.toastTitle = title;
+    this.toastMsg = message;
+    this.toastVariant = variant;
+    this.toastVisible = true;
+    clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      this.toastVisible = false;
+    }, 2500);
+  }
+
+  onToastClosed(): void {
+    this.toastVisible = false;
+    clearTimeout(this.toastTimeout);
+  }
+
+  onOpenNewTicket(): void {
+    this.showNewTicketModal = true;
+  }
+
+  onCloseNewTicket(): void {
+    this.showNewTicketModal = false;
+  }
+
+  onCreateTicket(data: NewTicketData): void {
+    this.showNewTicketModal = false;
+
+    // ASSUMPTION: booking/staff labels resolved from the mock dropdown lists in the modal;
+    // real names should come from backend once the API is wired up
+    const bookingLabel = data.bookingId ? 'New Booking' : 'Unassigned Booking'; // ASSUMPTION — booking name not passed back, only id
+    const newTicket: ProductionTicket = {
+      id: 't' + Date.now(),
+      title: data.title || 'Untitled Ticket',
+      status: 'pending',
+      priority: 'normal',
+      category: this.typeLabelFor(data.type),
+      booking_name: bookingLabel,
+      assignee: data.assigneeId && data.assigneeId !== '__none__' ? 'Assigned' : 'Unassigned', // ASSUMPTION
+      deadline: data.deadline || new Date().toISOString(),
+      is_overdue: false,
+      escalation_level: null,
+      escalation_role: null,
+      material_note: null,
+    };
+    this.tickets = [newTicket, ...this.tickets];
+    this.showToast('Ticket created', 'The production ticket has been created successfully.');
+  }
+
+  private typeLabelFor(type: string): string {
+    const map: Record<string, string> = {
+      photo_editing: 'Photo Editing',
+      video_editing: 'Video Editing',
+      album_design: 'Album Design',
+      soft_copy_delivery: 'Soft Copy Delivery',
+      hard_copy_delivery: 'Hard Copy / Album',
+      other: 'Other',
+    };
+    return map[type] ?? type;
   }
 }

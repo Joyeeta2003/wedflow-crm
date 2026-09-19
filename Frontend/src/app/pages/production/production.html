@@ -105,4 +105,17 @@
 
     <div class="ticket-empty" *ngIf="filteredTickets.length === 0">No tickets match the current filters.</div>
   </div>
+  <app-new-ticket-modal
+    *ngIf="showNewTicketModal"
+    (closeModal)="onCloseNewTicket()"
+    (create)="onCreateTicket($event)"
+  ></app-new-ticket-modal>
+
+  <app-toast
+    [visible]="toastVisible"
+    [title]="toastTitle"
+    [message]="toastMsg"
+    [variant]="toastVariant"
+    (closed)="onToastClosed()"
+  ></app-toast>
 </div>
