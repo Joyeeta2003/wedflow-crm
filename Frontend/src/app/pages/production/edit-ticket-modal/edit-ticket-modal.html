@@ -1,0 +1,109 @@
+<div class="dialog-overlay">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h2>Update Task</h2>
+      <button type="button" class="dialog-close" (click)="onCancel()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form #ticketForm="ngForm" (ngSubmit)="onSubmit(ticketForm)" class="dialog-form">
+      <div class="form-group">
+        <label>Assign To</label>
+        <div class="custom-select">
+          <button type="button" class="custom-select-trigger" (click)="toggleAssigneeDropdown()">
+            <span [class.placeholder]="!assigneeId">{{ assigneeLabel }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isAssigneeOpen"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="custom-select-backdrop" *ngIf="isAssigneeOpen" (click)="closeAllDropdowns()"></div>
+          <div class="custom-select-menu" *ngIf="isAssigneeOpen">
+            <button type="button" class="custom-select-option" *ngFor="let s of staffOptions" [class.selected]="s.value === assigneeId" (click)="selectAssignee(s.value)">{{ s.label }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <div class="custom-select">
+          <button type="button" class="custom-select-trigger" (click)="toggleStatusDropdown()">
+            <span>{{ statusLabel }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isStatusOpen"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="custom-select-backdrop" *ngIf="isStatusOpen" (click)="closeAllDropdowns()"></div>
+          <div class="custom-select-menu" *ngIf="isStatusOpen">
+            <button type="button" class="custom-select-option" *ngFor="let s of statuses" [class.selected]="s.value === status" (click)="selectStatus(s.value)">{{ s.label }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="deadline">Deadline</label>
+        <input id="deadline" name="deadline" type="datetime-local" class="form-input" [(ngModel)]="deadline" />
+        <small class="form-hint">Select date and time for the deadline</small>
+      </div>
+
+      <div class="form-group">
+        <label for="hrNotes">HR Notes (visible to assignee)</label>
+        <textarea id="hrNotes" name="hrNotes" class="form-textarea" rows="3" placeholder="Add notes for the assignee..." [(ngModel)]="hrNotes"></textarea>
+      </div>
+
+      <div class="form-section">
+        <label>Private storage files</label>
+        <p class="section-description">Attach raw source files for the editor or the edited output for review.</p>
+        
+        <div class="file-upload-section">
+          <label class="file-upload-label">
+            <span>Select source file</span>
+            <input type="file" (change)="onSourceFileSelected($event)" multiple accept="image/*,video/*,.pdf,.doc,.docx" />
+          </label>
+          <button type="button" class="btn-secondary btn-sm">Attach source</button>
+        </div>
+
+        <div class="file-list" *ngIf="sourceFiles.length > 0">
+          <div class="file-item" *ngFor="let file of sourceFiles; let i = index">
+            <span class="file-name">{{ file.name }}</span>
+            <button type="button" class="file-remove" (click)="removeSourceFile(i)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="file-upload-section">
+          <label class="file-upload-label">
+            <span>Select edited/final output</span>
+            <input type="file" (change)="onOutputFileSelected($event)" multiple accept="image/*,video/*,.pdf,.doc,.docx" />
+          </label>
+          <button type="button" class="btn-secondary btn-sm">Attach output</button>
+        </div>
+
+        <div class="file-list" *ngIf="outputFiles.length > 0">
+          <div class="file-item" *ngFor="let file of outputFiles; let i = index">
+            <span class="file-name">{{ file.name }}</span>
+            <button type="button" class="file-remove" (click)="removeOutputFile(i)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="materialReceived" />
+          <span>Mark Material Received</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="delivered" />
+          <span>Mark Delivered</span>
+        </label>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn-outline" (click)="onCancel()">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>

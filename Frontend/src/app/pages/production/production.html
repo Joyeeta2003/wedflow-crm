@@ -19,11 +19,38 @@
     </button>
     <div class="escalation-content" *ngIf="isEscalationOpen">
       <p class="escalation-note">Overdue tickets automatically move to the highest matching level. Acknowledgement remains visible in the audit trail.</p>
-      <div class="escalation-row" *ngFor="let lvl of escalationLevels">
-        <div class="escalation-level-label">Level {{ lvl.level }}</div>
-        <input type="number" class="form-input" [(ngModel)]="lvl.overdueHours" placeholder="Overdue hours" min="0" />
-        <span class="escalation-role">{{ lvl.role }}</span>
+      
+      <div class="escalation-table">
+        <div class="escalation-table-header">
+          <div class="escalation-table-cell">Level</div>
+          <div class="escalation-table-cell">Overdue Hours</div>
+          <div class="escalation-table-cell">Role</div>
+          <div class="escalation-table-cell">Priority</div>
+        </div>
+        <div class="escalation-table-row" *ngFor="let lvl of escalationLevels">
+          <div class="escalation-table-cell level-badge">Level {{ lvl.level }}</div>
+          <div class="escalation-table-cell">
+            <input type="number" class="escalation-input" [(ngModel)]="lvl.overdue_hours" placeholder="Hours" min="0" />
+          </div>
+          <div class="escalation-table-cell">
+            <select class="escalation-select" [(ngModel)]="lvl.role">
+              <option value="HR">HR</option>
+              <option value="Admin">Admin</option>
+              <option value="Superadmin">Superadmin</option>
+              <option value="Manager">Manager</option>
+            </select>
+          </div>
+          <div class="escalation-table-cell">
+            <select class="escalation-select" [(ngModel)]="lvl.priority">
+              <option value="Normal">Normal</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
       </div>
+      
       <div class="escalation-actions">
         <button class="btn-primary btn-sm" (click)="onSaveMatrix()">Save matrix</button>
       </div>
@@ -42,8 +69,20 @@
     </button>
   </div>
 
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="isLoading">
+    Loading production tickets...
+  </div>
+
+  <!-- Error state -->
+  <div class="error-state" *ngIf="error">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p>{{ error }}</p>
+    <button class="retry-btn" (click)="loadTickets()">Retry</button>
+  </div>
+
   <!-- Filter row -->
-  <div class="filter-row">
+  <div class="filter-row" *ngIf="!isLoading && !error">
     <div class="search-field">
       <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input class="search-input" type="text" placeholder="Task, customer or assignee" [(ngModel)]="searchTerm" />
@@ -65,7 +104,11 @@
   </div>
 
   <!-- Ticket list -->
-  <div class="ticket-list">
+  <div class="ticket-list" *ngIf="!isLoading && !error">
+    <div class="ticket-empty" *ngIf="filteredTickets.length === 0">
+      No production tickets found. Create your first ticket to get started.
+    </div>
+    
     <div class="ticket-card" *ngFor="let t of filteredTickets" [class.escalated]="t.is_overdue">
       <div class="ticket-main">
         <div class="ticket-title-row">
@@ -79,11 +122,11 @@
           <span class="badge priority-badge" [ngClass]="'priority-' + t.priority">{{ priorityLabel(t.priority) }}</span>
         </div>
         <div class="ticket-meta">
-          <span>{{ t.category }}</span>
-          <span>Booking: {{ t.booking_name }}</span>
+          <span>{{ typeLabelFor(t.category) }}</span>
+          <span>Booking: {{ t.client_name || 'Unassigned' }}</span>
           <span class="ticket-assignee">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 21-3-3m0 0a5.5 5.5 0 1 0-8-8 5.5 5.5 0 0 0 8 8Z"/></svg>
-            {{ t.assignee }}
+            {{ t.assignee_name || 'Unassigned' }}
           </span>
         </div>
         <div class="ticket-deadline">
@@ -107,9 +150,19 @@
   </div>
   <app-new-ticket-modal
     *ngIf="showNewTicketModal"
+    [bookings]="bookings"
+    [staff]="staff"
     (closeModal)="onCloseNewTicket()"
     (create)="onCreateTicket($event)"
   ></app-new-ticket-modal>
+
+  <app-edit-ticket-modal
+    *ngIf="showEditTicketModal"
+    [ticket]="selectedTicketForEdit"
+    [staff]="staff"
+    (closeModal)="onCloseEditTicket()"
+    (update)="onUpdateTicket($event)"
+  ></app-edit-ticket-modal>
 
   <app-toast
     [visible]="toastVisible"

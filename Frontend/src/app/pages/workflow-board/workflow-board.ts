@@ -1,8 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { BookingService, Booking as ApiBooking } from '../../services/booking.service';
+import { CdkDragDrop, moveItemInArray, transferArrayItem, CdkDropList } from '@angular/cdk/drag-drop';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Auth } from '../../services/auth';
 
 interface StageBooking {
   id: string;
@@ -11,6 +15,7 @@ interface StageBooking {
   eventDate: string | null;
   packageName: string;
   venue: string | null;
+  currentStage: string;
 }
 
 type StageCategory =
@@ -56,154 +61,169 @@ const STAGE_DEFS: { key: string; label: string; category: StageCategory }[] = [
   { key: 'Delivered', label: 'Delivered', category: 'Delivery' },
   { key: 'Completed', label: 'Completed', category: 'Complete' },
   { key: 'Archived', label: 'Archived', category: 'Archive' },
-    { key: 'Lead Received', label: 'Lead Received', category: 'Lead' },
+  { key: 'Lead Received', label: 'Lead Received', category: 'Lead' },
   { key: 'Follow-up Pending', label: 'Follow-up Pending', category: 'Lead' },
   { key: 'Quotation Sent', label: 'Quotation Sent', category: 'Sales' },
   { key: 'Negotiation', label: 'Negotiation', category: 'Sales' },
 ];
 
+// Mapping between database workflow stages and frontend workflow stages
+const DB_TO_FRONTEND_STAGE_MAP: Record<string, string> = {
+  'booking': 'Booking Confirmed',
+  'planning': 'Planning Stage',
+  'production': 'Event Completed',
+  'post_production': 'Editing In Progress',
+  'qc': 'QC Review',
+  'client_review': 'Client Review',
+  'revision': 'Revision Requested',
+  'album': 'Album Designing',
+  'delivery': 'Ready For Delivery',
+  'completed': 'Completed',
+};
+
+// Mapping from frontend stages back to database stages
+const FRONTEND_TO_DB_STAGE_MAP: Record<string, string> = {
+  'Booking Confirmed': 'booking',
+  'Advance Received': 'booking',
+  'Contract Signed': 'booking',
+  'Planning Stage': 'planning',
+  'Crew Assigned': 'planning',
+  'Pre-Wedding Scheduled': 'production',
+  'Event Completed': 'production',
+  'Data Received': 'post_production',
+  'Editing Assigned': 'post_production',
+  'Editing In Progress': 'post_production',
+  'QC Review': 'qc',
+  'Client Review': 'client_review',
+  'Revision Requested': 'revision',
+  'Payment Pending': 'delivery',
+  'Full Payment Received': 'delivery',
+  'Album Designing': 'album',
+  'Album Printing': 'album',
+  'Ready For Delivery': 'delivery',
+  'Delivered': 'delivery',
+  'Completed': 'completed',
+  'Archived': 'completed',
+  'Lead Received': 'booking',
+  'Follow-up Pending': 'booking',
+  'Quotation Sent': 'booking',
+  'Negotiation': 'booking',
+};
+
 @Component({
   selector: 'app-workflow-board',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, DragDropModule],
   templateUrl: './workflow-board.html',
   styleUrl: './workflow-board.scss',
 })
-export class WorkflowBoard implements OnInit {
+export class WorkflowBoard implements OnInit, AfterViewInit {
   isLoading = false;
   searchTerm = '';
   columns: WorkflowStageColumn[] = [];
+  error: string | null = null;
+  loadingTimeout: any = null;
 
-  constructor(private bookingService: BookingService) {}
-
-  // TEMPORARY DUMMY DATA — for UI testing only. Remove once backend confirmed working.
-  private mockBookings: StageBooking[] = [
-    {
-      id: 'mock-1',
-      bookingId: 'DRVSTU-BKG-000009',
-      clientName: 'Arnab',
-      eventDate: '2026-06-13',
-      packageName: 'Royal Wedding Package',
-      venue: 'ITC',
-    },
-    {
-      id: 'mock-2',
-      bookingId: 'DRVSTU-BKG-000010',
-      clientName: 'Swagatam & Swagata',
-      eventDate: '2026-06-30',
-      packageName: 'ROYAL WEDDING PACKAGE',
-      venue: 'Kolkata',
-    },
-    {
-      id: 'mock-3',
-      bookingId: 'DRVSTU-BKG-000012',
-      clientName: 'Subha',
-      eventDate: '2026-07-08',
-      packageName: 'ROYAL WEDDING PACKAGE',
-      venue: 'ITC',
-    },
-    {
-      id: 'mock-4',
-      bookingId: 'DRVSTU-BKG-000015',
-      clientName: 'Subha',
-      eventDate: '2027-12-12',
-      packageName: 'ROYAL WEDDING PACKAGE',
-      venue: 'Venue',
-    },
-    {
-      id: 'mock-5',
-      bookingId: 'DRVSTU-BKG-000018',
-      clientName: 'Swagatam & Swagata',
-      eventDate: '2026-07-21',
-      packageName: 'STANDARD WEDDING PACKAGE',
-      venue: 'kolkata',
-    },
-    {
-      id: 'mock-6',
-      bookingId: 'DRVSTU-BKG-000017',
-      clientName: 'Soham Biswas',
-      eventDate: '2026-07-24',
-      packageName: 'Demo Testing',
-      venue: 'ITC',
-    },
-    {
-      id: 'mock-7',
-      bookingId: 'DRVSTU-BKG-000019',
-      clientName: 'Jason',
-      eventDate: '2026-07-31',
-      packageName: 'Om Photography Premium Package',
-      venue: 'Kolkata',
-    },
-    {
-      id: 'mock-8',
-      bookingId: 'DRVSTU-BKG-000013',
-      clientName: 'Aniket',
-      eventDate: '2026-08-01',
-      packageName: 'Om Photography Premium Package',
-      venue: 'kolkata',
-    },
-    {
-      id: 'mock-9',
-      bookingId: 'DRVSTU-BKG-000014',
-      clientName: 'Soumik & Shrya',
-      eventDate: '2026-11-24',
-      packageName: 'Ultimate Wedding Package',
-      venue: 'PC Chandra Garden',
-    },
-  ];
-
-  // মক ডেটার প্রতিটা booking কোন স্টেজে পড়বে (Image অনুযায়ী মেলানো)
-  private mockStageMap: Record<string, string> = {
-    'mock-1': 'Crew Assigned',
-    'mock-2': 'Booking Confirmed',
-    'mock-3': 'Booking Confirmed',
-    'mock-4': 'Advance Received',
-    'mock-5': 'Booking Confirmed',
-    'mock-6': 'Booking Confirmed',
-    'mock-7': 'Booking Confirmed',
-    'mock-8': 'Booking Confirmed',
-    'mock-9': 'Booking Confirmed',
-  };
+  constructor(private bookingService: BookingService, private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    // TEMPORARY — bypasses real API for UI testing. Restore loadBoard() once backend confirmed.
-    this.buildColumnsFromMock();
-    return;
-
-    /* ORIGINAL — uncomment when ready to test against real backend
+    console.log('Workflow Board: ngOnInit called');
     this.loadBoard();
-    */
   }
 
-  private buildColumnsFromMock(): void {
-    this.columns = STAGE_DEFS.map((def) => ({
-      ...def,
-      bookings: this.mockBookings.filter((b) => this.mockStageMap[b.id] === def.key),
-    }));
+  ngAfterViewInit(): void {
+    console.log('Workflow Board: ngAfterViewInit called');
+    // Force change detection to ensure UI updates
+    this.cdr.detectChanges();
   }
 
-  private loadBoard(): void {
+  loadBoard(): void {
     this.isLoading = true;
+    this.error = null;
 
-    this.bookingService.getBookings().subscribe({
-      next: (response) => {
-        const bookings = response?.bookings ?? [];
-        this.columns = STAGE_DEFS.map((def) => ({
-          ...def,
-          bookings: bookings
-            .filter((b) => b.current_workflow_stage === def.key)
-            .map((b) => this.mapBooking(b)),
-        }));
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading workflow board:', error);
-        this.isLoading = false;
-      },
-    });
+    console.log('Workflow Board: Starting loadBoard...');
+
+    // Small delay to ensure Angular change detection is ready
+    setTimeout(() => {
+      // Set timeout to prevent infinite loading
+      this.loadingTimeout = setTimeout(() => {
+        if (this.isLoading) {
+          console.error('Workflow Board: Loading timeout reached');
+          this.error = 'Loading timeout. Please check your connection and try again.';
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }
+      }, 30000); // 30 second timeout
+
+      this.bookingService.getBookings().subscribe({
+        next: (response) => {
+          console.log('Workflow Board: Bookings loaded:', response);
+          const bookings = response?.bookings ?? [];
+          console.log('Workflow Board: Number of bookings:', bookings.length);
+          
+          // Clear timeout on success
+          if (this.loadingTimeout) {
+            clearTimeout(this.loadingTimeout);
+          }
+          
+          if (bookings.length === 0) {
+            console.log('Workflow Board: No bookings found');
+            this.columns = STAGE_DEFS.map((def) => ({
+              ...def,
+              bookings: [],
+            }));
+            this.isLoading = false;
+            this.cdr.detectChanges();
+            return;
+          }
+          
+          // Map backend bookings to frontend format
+          const mappedBookings = bookings.map((b) => {
+            console.log('Processing booking:', b);
+            const mapped = this.bookingService.mapBackendToBooking(b);
+            console.log('Mapped booking:', mapped);
+            
+            // Map database workflow stage to frontend stage
+            const dbStage = mapped.current_workflow_stage || 'booking';
+            const frontendStage = DB_TO_FRONTEND_STAGE_MAP[dbStage] || 'Booking Confirmed';
+            console.log(`Booking ${b.booking_number}: DB stage="${dbStage}" -> Frontend stage="${frontendStage}"`);
+            
+            return this.mapBooking(mapped, frontendStage);
+          });
+          
+          console.log('Workflow Board: Mapped bookings:', mappedBookings);
+          
+          this.columns = STAGE_DEFS.map((def) => ({
+            ...def,
+            bookings: mappedBookings.filter((b) => {
+              // Match current_workflow_stage with stage key
+              const bookingStage = b.currentStage || '';
+              return bookingStage === def.key;
+            }),
+          }));
+          
+          console.log('Workflow Board: Columns built:', this.columns);
+          console.log('Workflow Board: Total bookings across all columns:', this.columns.reduce((sum, col) => sum + col.bookings.length, 0));
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading workflow board:', error);
+          console.error('Error details:', error.status, error.error);
+          
+          if (this.loadingTimeout) {
+            clearTimeout(this.loadingTimeout);
+          }
+          
+          this.error = `Failed to load bookings: ${error.message || error.status || 'Unknown error'}`;
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
+    }, 100);
   }
 
-  private mapBooking(b: ApiBooking): StageBooking {
+  private mapBooking(b: ApiBooking, frontendStage?: string): StageBooking {
     return {
       id: b.id,
       bookingId: b.booking_number,
@@ -211,6 +231,7 @@ export class WorkflowBoard implements OnInit {
       eventDate: b.event_date || b.booking_date,
       packageName: b.package_name,
       venue: b.venue,
+      currentStage: frontendStage || 'Booking Confirmed',
     };
   }
 
@@ -251,5 +272,68 @@ export class WorkflowBoard implements OnInit {
 
   trackByBookingId(index: number, item: StageBooking): string {
     return item.id;
+  }
+
+  drop(event: CdkDragDrop<StageBooking[]>) {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex,
+      );
+      
+      // Update the booking's workflow stage in the database
+      const movedBooking = event.container.data[event.currentIndex];
+      const containerElement = event.container.element.nativeElement;
+      const stageCard = containerElement.closest('.stage-card');
+      const newStage = stageCard?.getAttribute('data-stage');
+      
+      if (newStage && movedBooking) {
+        this.updateBookingStage(movedBooking.id, newStage);
+      }
+    }
+  }
+
+  updateBookingStage(bookingId: string, newStage: string): void {
+    const dbStage = FRONTEND_TO_DB_STAGE_MAP[newStage];
+    if (!dbStage) {
+      console.error('Invalid stage:', newStage);
+      return;
+    }
+
+    this.bookingService.updateBooking(bookingId, {
+      current_workflow_stage: dbStage
+    }).subscribe({
+      next: (response) => {
+        console.log('Booking stage updated successfully:', response);
+      },
+      error: (error) => {
+        console.error('Error updating booking stage:', error);
+        // Revert the UI change on error
+        this.loadBoard();
+      }
+    });
+  }
+
+  public testConnection(): void {
+    console.log('Testing API connections...');
+    this.isLoading = true;
+    this.error = null;
+
+    this.http.get('http://localhost:5001/api/bookings').subscribe({
+      next: (response) => {
+        console.log('Bookings API test successful:', response);
+        this.error = 'Bookings API working. Check console for details.';
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Bookings API test failed:', err);
+        this.error = `Bookings API failed: ${err.status} - ${err.statusText || err.message}`;
+        this.isLoading = false;
+      }
+    });
   }
 }

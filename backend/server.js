@@ -4,10 +4,44 @@ const { Pool } = require('pg');
 const { Resend } = require('resend');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+// File upload configuration
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|mp4|mov|avi/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
 const OTP_TTL_MINUTES = 10;
 const OTP_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const OTP_RATE_LIMIT_MAX_REQUESTS = 3;
@@ -230,12 +264,185 @@ async function sendReminderEmail(recipientEmail, subject, messageContent, remind
   }
 }
 
+async function sendCrewAssignmentEmail(staffEmail, staffName, clientName, eventName, eventDate, venue, role) {
+  console.log(`Attempting to send crew assignment email to: ${staffEmail}`);
+  console.log(`Staff: ${staffName}, Role: ${role}, Event: ${eventName}`);
+  
+  // Only bypass for example.com addresses, not for real emails
+  if (shouldBypassEmailDelivery(staffEmail)) {
+    console.warn(`Development mode: bypassing crew assignment email delivery for ${staffEmail} (example.com domain)`);
+    return { devMode: true };
+  }
+
+  try {
+    console.log(`Sending crew assignment email via Resend.com to ${staffEmail}...`);
+    const emailSubject = `New Crew Assignment - ${eventName} - ${clientName}`;
+    
+    const { data, error } = await resend.emails.send({
+      from: 'WedFlow CRM <onboarding@resend.dev>',
+      to: [staffEmail],
+      subject: emailSubject,
+      text: `Crew Assignment Notification\n\nDear ${staffName},\n\nYou have been assigned to a new event:\n\nClient: ${clientName}\nEvent: ${eventName}\nDate: ${eventDate}\nVenue: ${venue}\nRole: ${role}\n\nPlease confirm your availability and check your schedule for any conflicts.\n\n---\nThis is an automated message from WedFlow CRM.\nFor support, please contact our team.`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Crew Assignment - WedFlow CRM</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #f5b719; margin: 0; font-size: 24px;">WedFlow CRM</h1>
+              <p style="color: #666; margin: 5px 0 0; font-size: 14px;">Professional Wedding Event Management</p>
+            </div>
+            
+            <div style="background-color: #fff9e6; border-left: 4px solid #f5b719; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h2 style="color: #333; margin: 0 0 10px; font-size: 18px;">📋 New Crew Assignment</h2>
+              <p style="margin: 0; color: #666; font-size: 14px;">You have been assigned to a new event</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+              <p style="color: #333; font-size: 16px; margin: 0 0 10px;">Dear <strong>${staffName}</strong>,</p>
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">You have been assigned to the following event:</p>
+            </div>
+            
+            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 6px; margin: 20px 0;">
+              <div style="margin-bottom: 15px;">
+                <span style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Client</span>
+                <div style="color: #333; font-size: 16px; font-weight: 600; margin-top: 5px;">${clientName}</div>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <span style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Event</span>
+                <div style="color: #333; font-size: 16px; font-weight: 600; margin-top: 5px;">${eventName}</div>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <span style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Date</span>
+                <div style="color: #333; font-size: 16px; font-weight: 600; margin-top: 5px;">${eventDate}</div>
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <span style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Venue</span>
+                <div style="color: #333; font-size: 16px; font-weight: 600; margin-top: 5px;">${venue}</div>
+              </div>
+              
+              <div>
+                <span style="color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Your Role</span>
+                <div style="color: #f5b719; font-size: 18px; font-weight: 700; margin-top: 5px;">${role}</div>
+              </div>
+            </div>
+            
+            <div style="margin: 30px 0; text-align: center;">
+              <p style="color: #666; font-size: 14px; line-height: 1.6;">Please confirm your availability and check your schedule for any conflicts.</p>
+            </div>
+            
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 30px;">
+              <p style="color: #999; font-size: 12px; margin: 0;">This is an automated message from WedFlow CRM.</p>
+              <p style="color: #999; font-size: 12px; margin: 5px 0 0;">For support, please contact our team.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    if (error) {
+      console.error('Resend API error:', error);
+      throw error;
+    }
+
+    console.log('Crew assignment email sent successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error sending crew assignment email:', error);
+    throw error;
+  }
+}
+
 function generateToken(userId, email, role, workspaceId) {
   return jwt.sign(
     { userId, email, role, workspace_id: workspaceId },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
+}
+
+async function sendReminderEmail(recipientEmail, subject, messageContent, reminderType, daysBeforeEvent) {
+  console.log(`Attempting to send reminder email to: ${recipientEmail}`);
+  console.log(`Subject: ${subject}`);
+  console.log(`Development mode check: NODE_ENV = ${process.env.NODE_ENV}`);
+  
+  // Only bypass for example.com addresses, not for real emails
+  if (shouldBypassEmailDelivery(recipientEmail)) {
+    console.warn(`Development mode: bypassing reminder email delivery for ${recipientEmail} (example.com domain)`);
+    return { devMode: true };
+  }
+
+  try {
+    console.log(`Sending actual email via Resend.com to ${recipientEmail}...`);
+    const emailSubject = subject || `WedFlow CRM - ${reminderType} Reminder`;
+    const textContent = `WedFlow CRM - Reminder Notification\n\nReminder Type: ${reminderType.replace(/_/g, ' ').toUpperCase()}\nDays Before Event: ${daysBeforeEvent} day(s)\n\n${messageContent || 'This is an automated reminder from WedFlow CRM to keep you informed about your upcoming wedding event.'}\n\n---\nThis is an automated message from WedFlow CRM.\nFor support, please contact our team.`;
+    
+    const { data, error } = await resend.emails.send({
+      from: 'WedFlow CRM <onboarding@resend.dev>',
+      to: [recipientEmail],
+      subject: emailSubject,
+      text: textContent,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>WedFlow CRM Reminder</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #f5b719; margin: 0; font-size: 24px;">WedFlow CRM</h1>
+              <p style="color: #666; margin: 5px 0 0; font-size: 14px;">Professional Wedding Event Management</p>
+            </div>
+            
+            <div style="background-color: #fff9e6; border-left: 4px solid #f5b719; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h2 style="color: #333; margin: 0 0 10px; font-size: 18px;">⏰ Reminder Notification</h2>
+              <p style="margin: 0; color: #666; font-size: 14px;">You have an upcoming event reminder</p>
+            </div>
+            
+            <div style="margin: 20px 0;">
+              <p style="margin: 10px 0; color: #333; font-size: 14px;"><strong>Reminder Type:</strong> ${reminderType.replace(/_/g, ' ').toUpperCase()}</p>
+              <p style="margin: 10px 0; color: #333; font-size: 14px;"><strong>Days Before Event:</strong> ${daysBeforeEvent} day(s)</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border: 1px solid #e9ecef;">
+              <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.6;">${messageContent || 'This is an automated reminder from WedFlow CRM to keep you informed about your upcoming wedding event.'}</p>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">
+                This is an automated message from WedFlow CRM.<br>
+                For support, please contact our team.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      throw error;
+    }
+
+    console.log(`✅ Email successfully sent to ${recipientEmail}. Resend response:`, data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error sending reminder email:', error);
+    throw error;
+  }
 }
 
 function extractBearerToken(req) {
@@ -355,6 +562,11 @@ async function verifyTurnstileToken(token) {
     return result.success;
   } catch (error) {
     console.error('Error verifying Turnstile token:', error);
+    // In development mode, allow the request to proceed even if Turnstile fails
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Development mode: allowing request despite Turnstile verification failure');
+      return true;
+    }
     return false;
   }
 }
@@ -603,10 +815,15 @@ app.get('/api/staff-members', async (req, res) => {
     const result = await pool.query(
       `SELECT id, email, first_name, last_name, phone_number, role, staff_name, is_active, is_verified, profile_image, created_at, updated_at
        FROM users
-       WHERE workspace_id = $1 AND role != 'client' AND is_active = true
+       WHERE workspace_id = $1 AND role != 'client' AND role != 'admin'
        ORDER BY role, created_at DESC`,
       [req.user.workspace_id]
     );
+
+    console.log('Staff members fetched:', result.rows.length, 'users');
+    result.rows.forEach(user => {
+      console.log(`- ${user.staff_name || user.first_name} (${user.role}) - Active: ${user.is_active}`);
+    });
 
     return res.json({
       success: true,
@@ -3186,12 +3403,14 @@ app.post('/api/crew-assignments', async (req, res) => {
     }
 
     const staffCheck = await pool.query(
-      `SELECT id FROM users WHERE id = $1 AND workspace_id = $2 AND role != 'client'`,
+      `SELECT id, email, staff_name FROM users WHERE id = $1 AND workspace_id = $2 AND role != 'client'`,
       [staff_id, req.user.workspace_id]
     );
     if (staffCheck.rows.length === 0) {
       return res.status(400).json({ error: 'Staff member not found in this workspace' });
     }
+
+    const staffMember = staffCheck.rows[0];
 
     const result = await pool.query(
       `INSERT INTO crew_assignments (workspace_id, booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes)
@@ -3199,6 +3418,35 @@ app.post('/api/crew-assignments', async (req, res) => {
        RETURNING *`,
       [req.user.workspace_id, booking_event_id, staff_id, String(assigned_role).trim(), assignment_date || new Date().toISOString().slice(0, 10), start_time || null, end_time || null, status || 'assigned', notes?.trim() || null]
     );
+
+    // Fetch event details for email notification
+    const eventDetails = await pool.query(
+      `SELECT be.event_name, be.event_date, be.venue, b.booking_number, c.name AS client_name
+       FROM booking_events be
+       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = be.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE be.id = $1 AND be.workspace_id = $2`,
+      [booking_event_id, req.user.workspace_id]
+    );
+
+    if (eventDetails.rows.length > 0 && staffMember.email) {
+      const event = eventDetails.rows[0];
+      try {
+        await sendCrewAssignmentEmail(
+          staffMember.email,
+          staffMember.staff_name || 'Team Member',
+          event.client_name,
+          event.event_name,
+          event.event_date,
+          event.venue,
+          assigned_role
+        );
+        console.log('Crew assignment email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send crew assignment email:', emailError);
+        // Don't fail the assignment if email fails
+      }
+    }
 
     await logUserActivity({
       userId: req.user.id,
@@ -3311,6 +3559,368 @@ app.delete('/api/crew-assignments/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting crew assignment:', error);
     return res.status(500).json({ error: 'Failed to delete crew assignment' });
+  }
+});
+
+// ============================================
+// PRODUCTION TICKETS API
+// ============================================
+
+app.get('/api/production-tickets', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pt.*, 
+              u.staff_name AS assignee_name, u.email AS assignee_email,
+              b.booking_number, c.name AS client_name,
+              COALESCE(es.level, 1) as escalation_level,
+              COALESCE(es.role, 'HR') as escalation_role
+       FROM production_tickets pt
+       LEFT JOIN users u ON u.id = pt.assignee_id AND u.workspace_id = pt.workspace_id
+       LEFT JOIN bookings b ON b.id = pt.booking_id AND b.workspace_id = pt.workspace_id
+       LEFT JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       LEFT JOIN escalation_matrix es ON es.workspace_id = pt.workspace_id AND es.level = COALESCE(pt.escalation_level, 1)
+       WHERE pt.workspace_id = $1
+       ORDER BY pt.deadline ASC, pt.created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    // Calculate overdue status and escalation for each ticket
+    const tickets = [];
+    for (const ticket of result.rows) {
+      const deadline = new Date(ticket.deadline);
+      const now = new Date();
+      const isOverdue = deadline < now;
+      
+      // Calculate escalation level based on overdue hours
+      let escalationLevel = ticket.escalation_level;
+      let escalationRole = ticket.escalation_role;
+      
+      if (isOverdue && !escalationLevel) {
+        const overdueHours = Math.floor((now - deadline) / (1000 * 60 * 60));
+        
+        // Get escalation matrix for this workspace
+        const escalationMatrix = await pool.query(
+          `SELECT level, overdue_hours, role FROM escalation_matrix 
+           WHERE workspace_id = $1 
+           ORDER BY overdue_hours ASC`,
+          [req.user.workspace_id]
+        );
+        
+        // Find appropriate escalation level
+        for (const level of escalationMatrix.rows) {
+          if (overdueHours >= level.overdue_hours) {
+            escalationLevel = level.level;
+            escalationRole = level.role;
+          }
+        }
+        
+        // Update ticket with calculated escalation
+        if (escalationLevel) {
+          await pool.query(
+            `UPDATE production_tickets 
+             SET is_overdue = true, escalation_level = $1, escalation_role = $2, updated_at = NOW()
+             WHERE id = $3 AND workspace_id = $4`,
+            [escalationLevel, escalationRole, ticket.id, req.user.workspace_id]
+          );
+        }
+      }
+
+      tickets.push({
+        ...ticket,
+        is_overdue: isOverdue || ticket.is_overdue,
+        escalation_level: escalationLevel,
+        escalation_role: escalationRole
+      });
+    }
+
+    return res.json({ success: true, tickets, count: tickets.length });
+  } catch (error) {
+    console.error('Error fetching production tickets:', error);
+    return res.status(500).json({ error: 'Failed to fetch production tickets' });
+  }
+});
+
+app.get('/api/production-tickets/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pt.*, 
+              u.staff_name AS assignee_name, u.email AS assignee_email,
+              b.booking_number, c.name AS client_name
+       FROM production_tickets pt
+       LEFT JOIN users u ON u.id = pt.assignee_id AND u.workspace_id = pt.workspace_id
+       LEFT JOIN bookings b ON b.id = pt.booking_id AND b.workspace_id = pt.workspace_id
+       LEFT JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE pt.id = $1 AND pt.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Production ticket not found' });
+    }
+
+    return res.json({ success: true, ticket: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching production ticket:', error);
+    return res.status(500).json({ error: 'Failed to fetch production ticket' });
+  }
+});
+
+app.post('/api/production-tickets', async (req, res) => {
+  const { booking_id, title, description, category, priority, assignee_id, deadline, material_note } = req.body;
+
+  if (!title || !category || !deadline) {
+    return res.status(400).json({ error: 'Title, category, and deadline are required' });
+  }
+
+  try {
+    // Validate booking exists in workspace
+    if (booking_id) {
+      const bookingCheck = await pool.query(
+        `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
+        [booking_id, req.user.workspace_id]
+      );
+      if (bookingCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Booking not found in this workspace' });
+      }
+    }
+
+    // Validate assignee exists in workspace
+    if (assignee_id) {
+      const assigneeCheck = await pool.query(
+        `SELECT id FROM users WHERE id = $1 AND workspace_id = $2`,
+        [assignee_id, req.user.workspace_id]
+      );
+      if (assigneeCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Assignee not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO production_tickets (workspace_id, booking_id, title, description, category, priority, assignee_id, deadline, material_note)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [req.user.workspace_id, booking_id || null, title, description || null, category, priority || 'normal', assignee_id || null, deadline, material_note || null]
+    );
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'production_ticket_created',
+      description: `Created production ticket: ${title}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.status(201).json({ success: true, ticket: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating production ticket:', error);
+    return res.status(500).json({ error: 'Failed to create production ticket' });
+  }
+});
+
+app.put('/api/production-tickets/:id', async (req, res) => {
+  const { booking_id, title, description, category, status, priority, assignee_id, deadline, material_note, completion_notes } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE production_tickets
+       SET booking_id = COALESCE($1, booking_id),
+           title = COALESCE($2, title),
+           description = COALESCE($3, description),
+           category = COALESCE($4, category),
+           status = COALESCE($5, status),
+           priority = COALESCE($6, priority),
+           assignee_id = COALESCE($7, assignee_id),
+           deadline = COALESCE($8, deadline),
+           material_note = COALESCE($9, material_note),
+           completion_notes = COALESCE($10, completion_notes),
+           updated_at = NOW()
+       WHERE id = $11 AND workspace_id = $12
+       RETURNING *`,
+      [booking_id || null, title || null, description || null, category || null, status || null, priority || null, assignee_id || null, deadline || null, material_note || null, completion_notes || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Production ticket not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'production_ticket_updated',
+      description: `Updated production ticket ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, ticket: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating production ticket:', error);
+    return res.status(500).json({ error: 'Failed to update production ticket' });
+  }
+});
+
+app.delete('/api/production-tickets/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM production_tickets
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING id`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Production ticket not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'production_ticket_deleted',
+      description: `Deleted production ticket ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, message: 'Production ticket deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting production ticket:', error);
+    return res.status(500).json({ error: 'Failed to delete production ticket' });
+  }
+});
+
+// Acknowledge escalation (clear escalation level)
+app.post('/api/production-tickets/:id/acknowledge', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE production_tickets
+       SET escalation_level = NULL, escalation_role = NULL, updated_at = NOW()
+       WHERE id = $1 AND workspace_id = $2
+       RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Production ticket not found' });
+    }
+
+    await logUserActivity({
+      userId: req.user.id,
+      action: 'production_ticket_escalation_acknowledged',
+      description: `Acknowledged escalation for ticket ${req.params.id}`,
+      req,
+      workspaceId: req.user.workspace_id,
+    });
+
+    return res.json({ success: true, ticket: result.rows[0] });
+  } catch (error) {
+    console.error('Error acknowledging escalation:', error);
+    return res.status(500).json({ error: 'Failed to acknowledge escalation' });
+  }
+});
+
+// File upload endpoints for production tickets
+app.post('/api/production-tickets/:id/source-files', upload.array('sourceFiles', 5), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ticket exists in workspace
+    const ticketCheck = await pool.query(
+      'SELECT id FROM production_tickets WHERE id = $1 AND workspace_id = $2',
+      [id, req.user.workspace_id]
+    );
+    
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Production ticket not found' });
+    }
+
+    const uploadedFiles = req.files.map(file => ({
+      filename: file.filename,
+      originalname: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+      uploadDate: new Date()
+    }));
+
+    return res.json({
+      success: true,
+      files: uploadedFiles,
+      message: 'Source files uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Error uploading source files:', error);
+    return res.status(500).json({ error: 'Failed to upload source files' });
+  }
+});
+
+app.post('/api/production-tickets/:id/output-files', upload.array('outputFiles', 5), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validate ticket exists in workspace
+    const ticketCheck = await pool.query(
+      'SELECT id FROM production_tickets WHERE id = $1 AND workspace_id = $2',
+      [id, req.user.workspace_id]
+    );
+    
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Production ticket not found' });
+    }
+
+    const uploadedFiles = req.files.map(file => ({
+      filename: file.filename,
+      originalname: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+      uploadDate: new Date()
+    }));
+
+    return res.json({
+      success: true,
+      files: uploadedFiles,
+      message: 'Output files uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Error uploading output files:', error);
+    return res.status(500).json({ error: 'Failed to upload output files' });
+  }
+});
+
+// Escalation Matrix endpoints
+app.get('/api/escalation-matrix', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM escalation_matrix
+       WHERE workspace_id = $1
+       ORDER BY level ASC`,
+      [req.user.workspace_id]
+    );
+
+    return res.json({ success: true, escalationMatrix: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching escalation matrix:', error);
+    return res.status(500).json({ error: 'Failed to fetch escalation matrix' });
+  }
+});
+
+app.post('/api/escalation-matrix', async (req, res) => {
+  const { level, overdue_hours, role, priority } = req.body;
+
+  if (!level || !overdue_hours || !role) {
+    return res.status(400).json({ error: 'Level, overdue hours, and role are required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO escalation_matrix (workspace_id, level, overdue_hours, role, priority)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (workspace_id, level) 
+       DO UPDATE SET overdue_hours = $3, role = $4, priority = $5, updated_at = NOW()
+       RETURNING *`,
+      [req.user.workspace_id, level, overdue_hours, role, priority || 'Normal']
+    );
+
+    return res.status(201).json({ success: true, escalationMatrix: result.rows[0] });
+  } catch (error) {
+    console.error('Error saving escalation matrix:', error);
+    return res.status(500).json({ error: 'Failed to save escalation matrix' });
   }
 });
 

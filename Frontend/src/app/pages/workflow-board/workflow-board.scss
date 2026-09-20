@@ -266,3 +266,41 @@
   color: var(--text-muted);
   padding: 1.5rem 0.75rem;
 }
+
+.error-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+  
+  svg {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    font-size: 0.875rem;
+    max-width: 400px;
+    margin: 0 auto 1rem;
+  }
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.retry-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: var(--brand-foreground);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(243, 180, 22, 0.9);
+  }
+}

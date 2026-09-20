@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Location } from '@angular/common';
+import { Auth } from '../../services/auth';
 
 declare global {
   interface Window {
@@ -43,7 +44,28 @@ export class Login implements AfterViewInit, OnDestroy {
 
   private readonly siteKey = '0x4AAAAAAEcn1Jmd8qWFCt59';
 
-  constructor(private router: Router, private location: Location) {}
+  constructor(private router: Router, private location: Location, private auth: Auth) {
+    // Check if localStorage is available
+    this.useSessionStorage = !this.isLocalStorageAvailable();
+  }
+
+  private useSessionStorage = false;
+
+  private isLocalStorageAvailable(): boolean {
+    try {
+      const testKey = '__localStorage_test__';
+      localStorage.setItem(testKey, 'test');
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (error) {
+      console.error('localStorage is not available:', error);
+      return false;
+    }
+  }
+
+  private getStorage(): Storage {
+    return this.useSessionStorage ? sessionStorage : localStorage;
+  }
 
   ngAfterViewInit(): void {
     this.loadTurnstile();
@@ -82,6 +104,8 @@ export class Login implements AfterViewInit, OnDestroy {
   private renderTurnstile(): void {
     const container = document.querySelector<HTMLElement>('.turnstile-box');
     if (!container || !window.turnstile) {
+      console.log('Turnstile container or window.turnstile not available, retrying...');
+      setTimeout(() => this.renderTurnstile(), 500);
       return;
     }
 
@@ -93,13 +117,16 @@ export class Login implements AfterViewInit, OnDestroy {
       }
     }
 
+    console.log('Rendering Turnstile widget');
     this.turnstileWidgetId = window.turnstile.render(container, {
       sitekey: this.siteKey,
       callback: (token: string) => {
+        console.log('Turnstile token received');
         this.turnstileToken.set(token);
       },
       'expired-callback': () => {
         this.turnstileToken.set('');
+        console.log('Turnstile token expired');
       },
       'error-callback': () => {
         this.turnstileToken.set('');
@@ -160,7 +187,7 @@ export class Login implements AfterViewInit, OnDestroy {
         console.log(`Development mode: your OTP is ${data.devOtp}`);
       }
 
-      localStorage.setItem('otp_email', this.email());
+      this.getStorage().setItem('otp_email', this.email());
 
       // ইমেইল ধাপ থেকে OTP ধাপে সুইচ করুন
       this.step.set('otp');
@@ -198,11 +225,12 @@ export class Login implements AfterViewInit, OnDestroy {
         throw new Error(data.error || 'Invalid OTP');
       }
 
-      // TODO: real token/session storage backend confirm hole update korte hobe
-      if (data?.token) {
-        localStorage.setItem('auth_token', data.token);
+      // Store the token and user data using the Auth service
+      if (data?.token && data?.user) {
+        this.auth.setSession(data.token, data.user);
       }
 
+      this.getStorage().removeItem('otp_email');
       this.router.navigate(['/dashboard']);
     } catch (error) {
       console.error('Error verifying OTP:', error);

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 
@@ -9,6 +9,8 @@ export interface NewTicketData {
   title: string;
   deadline: string;
   description: string;
+  priority: string;
+  materialNote: string;
 }
 
 interface SelectOption {
@@ -26,17 +28,61 @@ interface SelectOption {
 export class NewTicketModal {
   @Output() closeModal = new EventEmitter<void>();
   @Output() create = new EventEmitter<NewTicketData>();
+  
+  @Input() bookings: any[] = [];
+  @Input() staff: any[] = [];
 
-  // ASSUMPTION: mock booking list — replace with real bookings service data once confirmed
-  bookings: SelectOption[] = [
-    { value: '6a2802f6544a263c2cffe7f3', label: 'Swagatam & Swagata - ROYAL WEDDING PACKAGE' },
-    { value: '6a5b20497a427311e7ce16c2', label: 'Swagatam & Swagata - STANDARD WEDDING PACKAGE' },
-    { value: '6a5685947a427311e7ce06b3', label: 'Soham Biswas - Demo Testing' },
-    { value: '6a67b817817c34c4ed708671', label: 'Jason - Om Photography Premium Package' },
-    { value: '6a451fc8cf4d7fe2486b481e', label: 'Aniket - Om Photography Premium Package' },
-    { value: '6a4212d6d3b007bb1f4ba0d9', label: 'Soumik & Shrya - Ultimate Wedding Package' },
-    { value: '6a3d5d8399cc8d99623fd6e7', label: 'Subha - ROYAL WEDDING PACKAGE' },
-  ];
+  ngOnChanges(): void {
+    console.log('NewTicketModal ngOnChanges - staff:', this.staff);
+    console.log('NewTicketModal ngOnChanges - bookings:', this.bookings);
+    console.log('NewTicketModal ngOnChanges - staff length:', this.staff.length);
+    console.log('NewTicketModal ngOnChanges - bookings length:', this.bookings.length);
+  }
+
+  // Map bookings to select options
+  get bookingOptions(): SelectOption[] {
+    console.log('Building booking options from bookings array:', this.bookings);
+    if (!this.bookings || this.bookings.length === 0) {
+      console.log('No bookings available');
+      return [{ value: '__none__', label: 'No bookings available' }];
+    }
+    return this.bookings.map(b => ({
+      value: b.id,
+      label: `${b.client_name} - ${b.package_name}`
+    }));
+  }
+
+  // Map staff to select options
+  get staffOptions(): SelectOption[] {
+    console.log('Building staff options from staff array:', this.staff);
+    console.log('Staff array length:', this.staff?.length);
+    const options = [{ value: '__none__', label: 'Unassigned' }];
+    if (this.staff && this.staff.length > 0) {
+      // Create a map to track unique staff by ID to avoid duplicates
+      const uniqueStaff = new Map();
+      this.staff.forEach(s => {
+        if (!uniqueStaff.has(s.id)) {
+          uniqueStaff.set(s.id, s);
+        }
+      });
+
+      console.log('Unique staff count:', uniqueStaff.size);
+      uniqueStaff.forEach(s => {
+        const name = s.staff_name || s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim();
+        const role = s.role || 'staff';
+        console.log('Processing staff member:', s, 'Label:', `${name} (${role})`);
+        options.push({
+          value: s.id,
+          label: `${name} (${role})`
+        });
+      });
+    } else {
+      console.log('No staff available');
+    }
+    console.log('Final staff options:', options);
+    console.log('Final staff options length:', options.length);
+    return options;
+  }
 
   types: SelectOption[] = [
     { value: 'photo_editing', label: 'Photo Editing' },
@@ -47,21 +93,11 @@ export class NewTicketModal {
     { value: 'other', label: 'Other' },
   ];
 
-  // ASSUMPTION: mock staff list — replace with real staff service data once confirmed
-  staff: SelectOption[] = [
-    { value: '__none__', label: 'Unassigned' },
-    { value: '6a5685de7a427311e7ce0739', label: 'Abhirup (video editor)' },
-    { value: '6a27ece8544a263c2cffe486', label: 'Akash Sarkar (photographer)' },
-    { value: '6a94202ed3376a07f970bcd7', label: 'Joy (drone operator)' },
-    { value: '6a1df2aeaddaa11f075b3ba7', label: 'Kathakali Mondal (cinematographer)' },
-    { value: '6a27f0be544a263c2cffe4b4', label: 'Putul Sarkar (photo editor)' },
-    { value: '6a45204dcf4d7fe2486b48c7', label: 'Rajib (photo editor)' },
-    { value: '6a287ed299cc8d99623fc245', label: 'Rohan Gupta (photographer)' },
-    { value: '6a27f0ed544a263c2cffe4cb', label: 'Srabani Dey (video editor)' },
-    { value: '6a27f089544a263c2cffe49d', label: 'Sujan Das (videographer)' },
-    { value: '6a43649beff108acd0166116', label: 'fjdfjhjd (cinematographer)' },
-    { value: '6a437638eff108acd01664e5', label: 'srijon chakrabortty (videographer)' },
-    { value: '6a5b230f7a427311e7ce1af6', label: 'ytewtywty (photographer)' },
+  priorities: SelectOption[] = [
+    { value: 'low', label: 'Low' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'high', label: 'High' },
+    { value: 'critical', label: 'Critical' },
   ];
 
   bookingId = '';
@@ -70,15 +106,18 @@ export class NewTicketModal {
   title = '';
   deadline = '';
   description = '';
+  priority = 'normal';
+  materialNote = '';
 
   isSubmitting = false;
 
   isBookingOpen = false;
   isTypeOpen = false;
+  isPriorityOpen = false;
   isAssigneeOpen = false;
 
   get bookingLabel(): string {
-    return this.bookings.find((b) => b.value === this.bookingId)?.label ?? 'Select booking';
+    return this.bookingOptions.find((b) => b.value === this.bookingId)?.label ?? 'Select booking';
   }
 
   get typeLabel(): string {
@@ -86,7 +125,11 @@ export class NewTicketModal {
   }
 
   get assigneeLabel(): string {
-    return this.staff.find((s) => s.value === this.assigneeId)?.label ?? 'Select editor/staff';
+    return this.staffOptions.find((s) => s.value === this.assigneeId)?.label ?? 'Select editor/staff';
+  }
+
+  get priorityLabel(): string {
+    return this.priorities.find((p) => p.value === this.priority)?.label ?? 'Normal';
   }
 
   toggleBookingDropdown(): void {
@@ -98,7 +141,20 @@ export class NewTicketModal {
   toggleTypeDropdown(): void {
     this.isTypeOpen = !this.isTypeOpen;
     this.isBookingOpen = false;
+    this.isPriorityOpen = false;
     this.isAssigneeOpen = false;
+  }
+
+  togglePriorityDropdown(): void {
+    this.isPriorityOpen = !this.isPriorityOpen;
+    this.isBookingOpen = false;
+    this.isTypeOpen = false;
+    this.isAssigneeOpen = false;
+  }
+
+  selectPriority(value: string): void {
+    this.priority = value;
+    this.isPriorityOpen = false;
   }
 
   toggleAssigneeDropdown(): void {
@@ -110,6 +166,7 @@ export class NewTicketModal {
   closeAllDropdowns(): void {
     this.isBookingOpen = false;
     this.isTypeOpen = false;
+    this.isPriorityOpen = false;
     this.isAssigneeOpen = false;
   }
 
@@ -134,19 +191,52 @@ export class NewTicketModal {
   }
 
   onSubmit(form: NgForm): void {
-    this.isSubmitting = true;
+    console.log('Create button clicked!');
+    console.log('Form data:', {
+      title: this.title,
+      deadline: this.deadline,
+      type: this.type,
+      priority: this.priority,
+      assigneeId: this.assigneeId,
+      bookingId: this.bookingId
+    });
 
-    // ASSUMPTION: simulated delay — replace with real API call once endpoint confirmed
-    setTimeout(() => {
-      this.create.emit({
-        bookingId: this.bookingId,
-        type: this.type,
-        assigneeId: this.assigneeId,
-        title: this.title,
-        deadline: this.deadline,
-        description: this.description,
-      });
-      this.isSubmitting = false;
-    }, 800);
+    // Simplified validation - just check if title exists
+    if (!this.title || this.title.trim() === '') {
+      console.log('Validation failed: missing title');
+      alert('Please fill in Title');
+      return;
+    }
+
+    // If deadline is empty, set a default one
+    if (!this.deadline || this.deadline.trim() === '') {
+      console.log('Deadline missing, setting default');
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 7); // 7 days from now
+      this.deadline = defaultDate.toISOString().slice(0, 16);
+    }
+
+    console.log('Validation passed, emitting create event with deadline:', this.deadline);
+    this.create.emit({
+      bookingId: this.bookingId,
+      type: this.type,
+      assigneeId: this.assigneeId,
+      title: this.title,
+      deadline: this.deadline,
+      description: this.description,
+      priority: this.priority,
+      materialNote: this.materialNote,
+    });
+  }
+
+  resetForm(): void {
+    this.bookingId = '';
+    this.type = 'photo_editing';
+    this.assigneeId = '';
+    this.title = '';
+    this.deadline = '';
+    this.description = '';
+    this.priority = 'normal';
+    this.materialNote = '';
   }
 }

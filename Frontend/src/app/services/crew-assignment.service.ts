@@ -65,18 +65,23 @@ export interface Staff {
   role: string;
   availability: string;
   status: string;
+  staff_name?: string;
+  first_name?: string;
+  last_name?: string;
+  is_active?: boolean;
 }
 
 export interface StaffListResponse {
   success: boolean;
   staff: Staff[];
   count: number;
+  users?: Staff[]; // Alternative response format
 }
 
 @Injectable({ providedIn: 'root' })
 export class CrewAssignmentService {
   private readonly apiUrl = 'http://localhost:5001/api/crew-assignments';
-  private readonly staffApiUrl = 'http://localhost:5001/api/staff';
+  private readonly staffApiUrl = 'http://localhost:5001/api/staff-members';
 
   constructor(private http: HttpClient) {}
 

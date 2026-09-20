@@ -18,8 +18,8 @@
     </div>
   </div>
 
-  <div class="stage-grid" *ngIf="!isLoading">
-    <div class="stage-card" *ngFor="let col of filteredColumns; trackBy: trackByStageKey">
+  <div class="stage-grid" *ngIf="!isLoading && !error" cdkDropListGroup>
+    <div class="stage-card" *ngFor="let col of filteredColumns; trackBy: trackByStageKey" [attr.data-stage]="col.key">
       <div class="stage-card-header">
         <div>
           <div class="stage-title">
@@ -35,12 +35,12 @@
         <span class="badge" [ngClass]="countBadgeClass(col.bookings.length)">{{ col.bookings.length }}</span>
       </div>
 
-      <div class="stage-body">
+      <div class="stage-body" cdkDropList [cdkDropListData]="col.bookings" (cdkDropListDropped)="drop($event)">
         <div class="stage-empty" *ngIf="col.bookings.length === 0">
           No bookings in this phase
         </div>
 
-        <a *ngFor="let b of col.bookings; trackBy: trackByBookingId" [routerLink]="['/bookings', b.id]" class="stage-booking-card">
+        <a *ngFor="let b of col.bookings; trackBy: trackByBookingId" [routerLink]="['/bookings', b.id]" class="stage-booking-card" cdkDrag>
           <div class="stage-booking-top">
             <div class="stage-booking-min">
               <div class="booking-name">{{ b.clientName }}</div>
@@ -59,4 +59,13 @@
   </div>
 
   <div class="empty-state" *ngIf="isLoading">Loading workflow board...</div>
+
+  <div class="error-state" *ngIf="error">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p>{{ error }}</p>
+    <div class="error-actions">
+      <button class="retry-btn" (click)="loadBoard()">Retry</button>
+      <button class="retry-btn" (click)="testConnection()">Test Connection</button>
+    </div>
+  </div>
 </div>

@@ -21,9 +21,23 @@ export class VerifyOtp {
   errorMessage = signal('');
 
   constructor(private router: Router, private location: Location, private auth: Auth) {
-    const storedEmail = localStorage.getItem('otp_email');
+    const storedEmail = this.getStorage().getItem('otp_email');
+    console.log('Stored email found:', storedEmail);
     if (!storedEmail) {
+      console.log('No stored email, redirecting to login');
       this.router.navigate(['/login']);
+    }
+  }
+
+  private getStorage(): Storage {
+    // Use the same storage logic as auth service
+    try {
+      localStorage.setItem('__test__', 'test');
+      localStorage.removeItem('__test__');
+      return localStorage;
+    } catch (error) {
+      console.warn('localStorage not available, using sessionStorage');
+      return sessionStorage;
     }
   }
 
@@ -32,7 +46,8 @@ export class VerifyOtp {
   }
 
   async onVerifyOtp(): Promise<void> {
-    const email = localStorage.getItem('otp_email');
+    const email = this.getStorage().getItem('otp_email');
+    console.log('Retrieved email for OTP verification:', email);
 
     if (!email) {
       this.errorMessage.set('Email not found. Please start over.');
@@ -49,6 +64,7 @@ export class VerifyOtp {
     this.errorMessage.set('');
 
     try {
+      console.log('Sending OTP verification request for email:', email, 'OTP:', this.otp());
       const response = await fetch('http://localhost:5001/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,13 +78,14 @@ export class VerifyOtp {
       });
 
       const data = await response.json();
+      console.log('OTP verification response:', data);
 
       if (!response.ok) {
         throw new Error(data?.error || 'Invalid OTP');
       }
 
       this.auth.setSession(data.token, data.user);
-      localStorage.removeItem('otp_email');
+      this.getStorage().removeItem('otp_email');
       this.router.navigate(['/dashboard']);
     } catch (error) {
       console.error('Error verifying OTP:', error);
@@ -79,7 +96,7 @@ export class VerifyOtp {
   }
 
   async onResendOtp(): Promise<void> {
-    const email = localStorage.getItem('otp_email');
+    const email = this.getStorage().getItem('otp_email');
 
     if (!email) {
       this.errorMessage.set('Email not found. Please start over.');
