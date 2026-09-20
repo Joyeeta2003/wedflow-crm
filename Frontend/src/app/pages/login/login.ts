@@ -15,6 +15,8 @@ declare global {
   }
 }
 
+type LoginStep = 'email' | 'otp';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -23,8 +25,19 @@ declare global {
   styleUrl: './login.scss'
 })
 export class Login implements AfterViewInit, OnDestroy {
+  step = signal<LoginStep>('email');
+
   email = signal('');
   isSubmitting = signal(false);
+
+  otp = signal('');
+  isVerifying = signal(false);
+
+  toastVisible = signal(false);
+  toastTitle = signal('');
+  toastMessage = signal('');
+  private toastTimeout: any;
+
   turnstileWidgetId: string | null = null;
   turnstileToken = signal('');
 
@@ -40,6 +53,7 @@ export class Login implements AfterViewInit, OnDestroy {
     if (this.turnstileWidgetId && window.turnstile) {
       window.turnstile.remove(this.turnstileWidgetId);
     }
+    clearTimeout(this.toastTimeout);
   }
 
   private loadTurnstile(): void {
@@ -102,6 +116,16 @@ export class Login implements AfterViewInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
+  private showToast(title: string, message: string): void {
+    this.toastTitle.set(title);
+    this.toastMessage.set(message);
+    this.toastVisible.set(true);
+    clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      this.toastVisible.set(false);
+    }, 4000);
+  }
+
   async onSendOtp(): Promise<void> {
     if (!this.email()) {
       return;
@@ -133,16 +157,76 @@ export class Login implements AfterViewInit, OnDestroy {
       }
 
       if (data?.devOtp) {
-        alert(`Development mode: your OTP is ${data.devOtp}`);
+        console.log(`Development mode: your OTP is ${data.devOtp}`);
       }
 
       localStorage.setItem('otp_email', this.email());
-      this.router.navigate(['/verify-otp']);
+
+      // ইমেইল ধাপ থেকে OTP ধাপে সুইচ করুন
+      this.step.set('otp');
+      this.showToast('OTP sent', 'Check your email for the code.');
     } catch (error) {
       console.error('Error sending OTP:', error);
       alert(error instanceof Error ? error.message : 'Failed to send OTP');
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  async onVerifyOtp(): Promise<void> {
+    if (!this.otp() || this.otp().length !== 6) {
+      return;
+    }
+
+    this.isVerifying.set(true);
+
+    try {
+      const response = await fetch('http://localhost:5001/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: this.email(),
+          otp: this.otp(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid OTP');
+      }
+
+      // TODO: real token/session storage backend confirm hole update korte hobe
+      if (data?.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+
+      this.router.navigate(['/dashboard']);
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      alert(error instanceof Error ? error.message : 'Invalid OTP. Please try again.');
+    } finally {
+      this.isVerifying.set(false);
+    }
+  }
+
+  onUseAnotherEmail(): void {
+    this.step.set('email');
+    this.otp.set('');
+    this.turnstileToken.set('');
+    // turnstile widget notun kore render korte hobe email step-e fere gele
+    setTimeout(() => this.renderTurnstile(), 0);
+  }
+
+  maskedEmail(): string {
+    const value = this.email();
+    const atIndex = value.indexOf('@');
+    if (atIndex <= 1) return value;
+
+    const visible = value.slice(0, Math.min(3, atIndex));
+    const domain = value.slice(atIndex);
+    return `${visible}${'*'.repeat(Math.max(atIndex - visible.length, 0))}${domain}`;
   }
 }
