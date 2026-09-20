@@ -23,7 +23,7 @@ interface SettingsCard {
 })
 export class Settings {
   studioName = 'DRV Studios';
-  studioLogoUrl: string | null = 'assets/drv-logo.png';
+  studioLogoUrl: string | null = '/assests/images/drv.jpg';
   crewAssignmentDays = 10;
 
   activeView: 'branding' | 'automation' | 'email' | null = null;
