@@ -7,23 +7,32 @@
         <p class="page-subtitle">Open one workspace, finish it, then move to the next.</p>
       </div>
 
-      <div class="studio-badge">
-        <img *ngIf="studioLogoUrl" [src]="studioLogoUrl" alt="" class="studio-logo" />
-        <div *ngIf="!studioLogoUrl" class="studio-logo studio-logo-fallback">
-          {{ studioName.charAt(0) }}
+      <div class="studio-badge" *ngIf="!isLoading()">
+        <img *ngIf="studioLogoUrl()" [src]="studioLogoUrl()" alt="" class="studio-logo" />
+        <div *ngIf="!studioLogoUrl()" class="studio-logo studio-logo-fallback">
+          {{ studioName().charAt(0) }}
         </div>
         <div>
-          <div class="studio-name">{{ studioName }}</div>
-          <div class="studio-mode">Email notifications</div>
+          <div class="studio-name">{{ studioName() }}</div>
+          <div class="studio-mode">{{ getNotificationModeText() }}</div>
         </div>
       </div>
     </div>
 
-    <div class="settings-grid">
+    <div *ngIf="isLoading()" class="loading-state">
+      <p>Loading workspace settings...</p>
+    </div>
+
+    <div *ngIf="error()" class="error-state">
+      <p>{{ error() }}</p>
+      <button (click)="loadWorkspaceSettings()" class="retry-button">Retry</button>
+    </div>
+
+    <div class="settings-grid" *ngIf="!isLoading() && !error()">
       <button
         type="button"
         class="settings-card"
-        *ngFor="let card of cards"
+        *ngFor="let card of cards()"
         [class.settings-card-disabled]="card.disabled"
         [disabled]="card.disabled"
         (click)="onCardClick(card)"
@@ -32,7 +41,7 @@
           <div class="settings-icon">
             <svg *ngIf="card.icon === 'branding'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 12h4"></path><path d="M10 8h4"></path><path d="M14 21v-3a2 2 0 0 0-4 0v3"></path>
-              <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"></path>
+              <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-7h-2"></path>
               <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"></path>
             </svg>
             <svg *ngIf="card.icon === 'automation'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -60,7 +69,7 @@
       </button>
     </div>
 
-    <div class="settings-footer">
+    <div class="settings-footer" *ngIf="!isLoading() && !error()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-footer-icon">
         <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
         <path d="m9 12 2 2 4-4"></path>
@@ -71,14 +80,14 @@
 
   <app-studio-branding
     *ngIf="activeView === 'branding'"
-    [logoUrl]="studioLogoUrl"
+    [logoUrl]="studioLogoUrl()"
     (back)="onBackToGrid()"
     (save)="onBrandingSaved($event)"
   ></app-studio-branding>
 
   <app-automation-rules
   *ngIf="activeView === 'automation'"
-  [crewAssignmentDays]="crewAssignmentDays"
+  [crewAssignmentDays]="crewAssignmentDays()"
   (back)="onBackToGrid()"
   (save)="onAutomationSaved($event)"
 ></app-automation-rules>

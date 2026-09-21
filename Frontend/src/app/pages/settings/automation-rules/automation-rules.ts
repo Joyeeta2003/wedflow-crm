@@ -17,6 +17,7 @@ export class AutomationRules {
 
   daysValue = 10;
   isSaving = false;
+  errorMessage = '';
 
   ngOnInit(): void {
     this.daysValue = this.crewAssignmentDays;
@@ -27,12 +28,19 @@ export class AutomationRules {
   }
 
   onSaveAndBack(): void {
-    this.isSaving = true;
+    if (this.daysValue < 1 || this.daysValue > 365) {
+      this.errorMessage = 'Days must be between 1 and 365';
+      return;
+    }
 
-    // TODO: real API call once automation-rules endpoint confirmed — mock success for now
-    setTimeout(() => {
-      this.isSaving = false;
-      this.save.emit(this.daysValue);
-    }, 500);
+    this.isSaving = true;
+    this.errorMessage = '';
+
+    // Emit the value and let parent handle the API call and navigation
+    this.save.emit(this.daysValue);
+  }
+
+  onDaysChange(): void {
+    this.errorMessage = '';
   }
 }

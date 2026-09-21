@@ -24,9 +24,14 @@
       type="number"
       class="automation-input"
       min="1"
+      max="365"
       [(ngModel)]="daysValue"
+      (input)="onDaysChange()"
     />
     <span class="automation-input-suffix">days before each event</span>
+  </div>
+  <div *ngIf="errorMessage" class="automation-error">
+    {{ errorMessage }}
   </div>
 </div>
 

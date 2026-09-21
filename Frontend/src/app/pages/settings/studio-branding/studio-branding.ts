@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Auth } from '../../../services/auth';
 
 @Component({
   selector: 'app-studio-branding',
@@ -16,6 +17,9 @@ export class StudioBranding {
 
   logoPreviewUrl: string | null = null;
   isSaving = false;
+  errorMessage = '';
+
+  private auth = inject(Auth);
 
   ngOnInit(): void {
     this.logoPreviewUrl = this.logoUrl;
@@ -25,6 +29,20 @@ export class StudioBranding {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+
+    // Validate file type
+    if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/)) {
+      this.errorMessage = 'Please select a valid image file (JPEG, PNG, GIF, or WebP)';
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      this.errorMessage = 'File size must be less than 2MB';
+      return;
+    }
+
+    this.errorMessage = '';
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -37,19 +55,26 @@ export class StudioBranding {
 
   onRemoveLogo(): void {
     this.logoPreviewUrl = null;
+    this.errorMessage = '';
   }
 
   onBack(): void {
     this.back.emit();
   }
 
-  onSaveAndBack(): void {
+  async onSaveAndBack(): Promise<void> {
     this.isSaving = true;
+    this.errorMessage = '';
 
-    // TODO: real API call once logo-upload endpoint confirmed — mock success for now
-    setTimeout(() => {
-      this.isSaving = false;
+    try {
+      // For now, we'll just emit the URL as a data URL
+      // In a real implementation, you would upload the file to a server
+      // and get back a URL to store in the database
       this.save.emit(this.logoPreviewUrl);
-    }, 500);
+    } catch (error) {
+      console.error('Error saving logo:', error);
+      this.errorMessage = 'Failed to save logo. Please try again.';
+      this.isSaving = false;
+    }
   }
 }
