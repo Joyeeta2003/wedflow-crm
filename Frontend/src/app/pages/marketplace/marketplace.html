@@ -52,8 +52,20 @@
       <!-- BROWSE PANEL -->
       <div *ngIf="activeTab() === 'browse'" class="tab-panel">
 
+        <!-- Loading State -->
+        <div *ngIf="isLoading()" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading professionals...</p>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="error()" class="error-state">
+          <p>{{ error() }}</p>
+          <button type="button" class="retry-btn" (click)="loadMarketplaceData()">Retry</button>
+        </div>
+
         <!-- filter row: grid gap-3 border-y bg-muted/20 py-4 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] -->
-        <section class="filter-bar">
+        <section *ngIf="!isLoading() && !error()" class="filter-bar">
           <div class="field-with-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="field-icon"
@@ -137,7 +149,7 @@
         </section>
 
         <!-- cards grid: grid gap-4 md:grid-cols-2 xl:grid-cols-3 -->
-        <div class="professionals-grid">
+        <div *ngIf="!isLoading() && !error()" class="professionals-grid">
           <article *ngFor="let p of filteredProfessionals()" class="professional-card">
             <div class="card-top">
               <div class="avatar-badge">{{ p.initials }}</div>
@@ -230,9 +242,22 @@
         </div>
       </div>
 
-      <!-- WORK REQUESTS PANEL â€” UNCONFIRMED, no DevTools capture for this table yet -->
+      <!-- WORK REQUESTS PANEL -->
       <div *ngIf="activeTab() === 'requests'" class="tab-panel">
-        <div class="table-shell">
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading()" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading work requests...</p>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="error()" class="error-state">
+          <p>{{ error() }}</p>
+          <button type="button" class="retry-btn" (click)="loadMarketplaceData()">Retry</button>
+        </div>
+
+        <div *ngIf="!isLoading() && !error()" class="table-shell">
           <table class="data-table">
             <thead>
               <tr>

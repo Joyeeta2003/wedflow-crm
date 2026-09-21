@@ -746,6 +746,102 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 app.use('/api', requireAuth);
 app.use('/api', requireWorkspaceAccess);
 
+// GET /api/workspace/settings - Get workspace settings
+app.get('/api/workspace/settings', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, company_name, notification_mode, logo_url, crew_assignment_days, 
+              whatsapp_enabled, email_formats_count, timezone, currency, status
+       FROM workspace 
+       WHERE id = $1 LIMIT 1`,
+      [req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    const workspace = result.rows[0];
+    return res.json({
+      id: workspace.id,
+      companyName: workspace.company_name,
+      notificationMode: workspace.notification_mode,
+      logoUrl: workspace.logo_url,
+      crewAssignmentDays: workspace.crew_assignment_days,
+      whatsappEnabled: workspace.whatsapp_enabled,
+      emailFormatsCount: workspace.email_formats_count,
+      timezone: workspace.timezone,
+      currency: workspace.currency,
+      status: workspace.status
+    });
+  } catch (error) {
+    console.error('Error fetching workspace settings:', error);
+    return res.status(500).json({ error: 'Failed to fetch workspace settings' });
+  }
+});
+
+// PUT /api/workspace/settings - Update workspace settings
+app.put('/api/workspace/settings', async (req, res) => {
+  try {
+    const { logoUrl, crewAssignmentDays, notificationMode } = req.body;
+    
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (logoUrl !== undefined) {
+      updates.push(`logo_url = $${paramCount++}`);
+      values.push(logoUrl);
+    }
+
+    if (crewAssignmentDays !== undefined) {
+      updates.push(`crew_assignment_days = $${paramCount++}`);
+      values.push(crewAssignmentDays);
+    }
+
+    if (notificationMode !== undefined) {
+      updates.push(`notification_mode = $${paramCount++}`);
+      values.push(notificationMode);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    values.push(req.user.workspace_id);
+
+    const result = await pool.query(
+      `UPDATE workspace 
+       SET ${updates.join(', ')}, updated_at = NOW()
+       WHERE id = $${paramCount}
+       RETURNING id, company_name, notification_mode, logo_url, crew_assignment_days, 
+                 whatsapp_enabled, email_formats_count, timezone, currency, status`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    const workspace = result.rows[0];
+    return res.json({
+      id: workspace.id,
+      companyName: workspace.company_name,
+      notificationMode: workspace.notification_mode,
+      logoUrl: workspace.logo_url,
+      crewAssignmentDays: workspace.crew_assignment_days,
+      whatsappEnabled: workspace.whatsapp_enabled,
+      emailFormatsCount: workspace.email_formats_count,
+      timezone: workspace.timezone,
+      currency: workspace.currency,
+      status: workspace.status
+    });
+  } catch (error) {
+    console.error('Error updating workspace settings:', error);
+    return res.status(500).json({ error: 'Failed to update workspace settings' });
+  }
+});
+
 app.post('/api/users', requireAdmin, async (req, res) => {
   const { email: rawEmail, firstName, lastName, phoneNumber, role, staffName, address } = req.body;
 
@@ -1651,7 +1747,7 @@ app.get('/api/staff', async (req, res) => {
   }
 });
 
-app.post('/api/staff', requireAdmin, async (req, res) => {
+app.post('/api/staff', async (req, res) => {
   const { name, email, phone, role, availability, joining_date, status, notes } = req.body;
 
   if (!name || !String(name).trim()) {
@@ -1734,7 +1830,24 @@ app.get('/api/freelancers', async (req, res) => {
       [req.user.workspace_id]
     );
 
-    return res.json({ success: true, freelancers: result.rows, count: result.rows.length });
+    // Transform database records to match frontend Professional interface
+    const professionals = result.rows.map(f => ({
+      id: f.id,
+      initials: f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+      name: f.name,
+      verified: f.verified,
+      type: f.profile_type === 'individual' ? 'Individual' : 'Team',
+      experienceYears: f.experience_years || 0,
+      city: f.city || '',
+      state: f.state || '',
+      skills: f.skills || [f.specialization],
+      summary: f.summary || f.notes || '',
+      availableRate: f.rate || 0,
+      email: f.email || '',
+      phone: f.phone || ''
+    }));
+
+    return res.json({ success: true, professionals, count: professionals.length });
   } catch (error) {
     console.error('Error fetching freelancers:', error);
     return res.status(500).json({ error: 'Failed to fetch freelancers' });
@@ -1742,7 +1855,7 @@ app.get('/api/freelancers', async (req, res) => {
 });
 
 app.post('/api/freelancers', requireAdmin, async (req, res) => {
-  const { name, email, phone, specialization, availability, status, rate, notes } = req.body;
+  const { name, email, phone, specialization, availability, status, rate, notes, skills, experience_years, city, state, verified, profile_type, summary, portfolio_url } = req.body;
 
   if (!name || !String(name).trim()) {
     return res.status(400).json({ error: 'Freelancer name is required' });
@@ -1750,10 +1863,10 @@ app.post('/api/freelancers', requireAdmin, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO freelancers (workspace_id, name, email, phone, specialization, availability, status, rate, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO freelancers (workspace_id, name, email, phone, specialization, availability, status, rate, notes, skills, experience_years, city, state, verified, profile_type, summary, portfolio_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING *`,
-      [req.user.workspace_id, String(name).trim(), email?.trim() || null, phone?.trim() || null, specialization || 'general', availability || 'available', status || 'active', rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null]
+      [req.user.workspace_id, String(name).trim(), email?.trim() || null, phone?.trim() || null, specialization || 'general', availability || 'available', status || 'active', rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null, skills || null, experience_years !== undefined && experience_years !== null ? Number(experience_years) : null, city?.trim() || null, state?.trim() || null, verified !== undefined ? verified : false, profile_type || 'individual', summary?.trim() || null, portfolio_url?.trim() || null]
     );
 
     return res.status(201).json({ success: true, freelancer: result.rows[0] });
@@ -1782,7 +1895,7 @@ app.get('/api/freelancers/:id', async (req, res) => {
 });
 
 app.put('/api/freelancers/:id', requireAdmin, async (req, res) => {
-  const { name, email, phone, specialization, availability, status, rate, notes } = req.body;
+  const { name, email, phone, specialization, availability, status, rate, notes, skills, experience_years, city, state, verified, profile_type, summary, portfolio_url } = req.body;
 
   try {
     const result = await pool.query(
@@ -1795,10 +1908,18 @@ app.put('/api/freelancers/:id', requireAdmin, async (req, res) => {
            status = COALESCE($6, status),
            rate = $7,
            notes = $8,
+           skills = $9,
+           experience_years = $10,
+           city = $11,
+           state = $12,
+           verified = COALESCE($13, verified),
+           profile_type = COALESCE($14, profile_type),
+           summary = $15,
+           portfolio_url = $16,
            updated_at = NOW()
-       WHERE id = $9 AND workspace_id = $10
+       WHERE id = $17 AND workspace_id = $18
        RETURNING *`,
-      [name?.trim() || null, email?.trim() || null, phone?.trim() || null, specialization || null, availability || null, status || null, rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null, req.params.id, req.user.workspace_id]
+      [name?.trim() || null, email?.trim() || null, phone?.trim() || null, specialization || null, availability || null, status || null, rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null, skills || null, experience_years !== undefined && experience_years !== null ? Number(experience_years) : null, city?.trim() || null, state?.trim() || null, verified !== undefined ? verified : null, profile_type || null, summary?.trim() || null, portfolio_url?.trim() || null, req.params.id, req.user.workspace_id]
     );
 
     if (result.rows.length === 0) {
@@ -1809,6 +1930,164 @@ app.put('/api/freelancers/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error updating freelancer:', error);
     return res.status(500).json({ error: 'Failed to update freelancer' });
+  }
+});
+
+// ============================================
+// MARKETPLACE WORK REQUESTS API
+// ============================================
+app.get('/api/marketplace-work-requests', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM marketplace_work_requests
+       WHERE workspace_id = $1
+       ORDER BY created_at DESC`,
+      [req.user.workspace_id]
+    );
+
+    // Transform database records to match frontend WorkRequest interface
+    const workRequests = result.rows.map(r => ({
+      id: r.id,
+      project: r.project_name,
+      professionalRole: r.professional_role,
+      professionalName: r.professional_name,
+      professionalEmail: r.professional_email,
+      professionalPhone: r.professional_phone,
+      eventDate: r.event_date,
+      venue: r.venue,
+      budget: r.budget,
+      status: r.status.charAt(0).toUpperCase() + r.status.slice(1) // Capitalize first letter
+    }));
+
+    return res.json({ success: true, workRequests, count: workRequests.length });
+  } catch (error) {
+    console.error('Error fetching marketplace work requests:', error);
+    return res.status(500).json({ error: 'Failed to fetch marketplace work requests' });
+  }
+});
+
+app.post('/api/marketplace-work-requests', async (req, res) => {
+  const { project_name, professional_role, professional_name, professional_email, professional_phone, event_date, venue, budget, status, notes } = req.body;
+
+  if (!project_name || !professional_role || !professional_name) {
+    return res.status(400).json({ error: 'Project name, professional role, and professional name are required' });
+  }
+
+  try {
+    // Convert status to lowercase for database storage
+    const dbStatus = status ? status.toLowerCase() : 'pending';
+
+    const result = await pool.query(
+      `INSERT INTO marketplace_work_requests (workspace_id, project_name, professional_role, professional_name, professional_email, professional_phone, event_date, venue, budget, status, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [req.user.workspace_id, String(project_name).trim(), String(professional_role).trim(), String(professional_name).trim(), professional_email?.trim() || null, professional_phone?.trim() || null, event_date || null, venue?.trim() || null, budget !== undefined && budget !== null ? Number(budget) : null, dbStatus, notes?.trim() || null]
+    );
+
+    // Transform the response to match frontend interface
+    const workRequest = {
+      id: result.rows[0].id,
+      project: result.rows[0].project_name,
+      professionalRole: result.rows[0].professional_role,
+      professionalName: result.rows[0].professional_name,
+      professionalEmail: result.rows[0].professional_email,
+      professionalPhone: result.rows[0].professional_phone,
+      eventDate: result.rows[0].event_date,
+      venue: result.rows[0].venue,
+      budget: result.rows[0].budget,
+      status: result.rows[0].status.charAt(0).toUpperCase() + result.rows[0].status.slice(1)
+    };
+
+    return res.status(201).json({ success: true, workRequest });
+  } catch (error) {
+    console.error('Error creating marketplace work request:', error);
+    return res.status(500).json({ error: 'Failed to create marketplace work request' });
+  }
+});
+
+app.get('/api/marketplace-work-requests/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM marketplace_work_requests WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Marketplace work request not found' });
+    }
+
+    return res.json({ success: true, workRequest: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching marketplace work request:', error);
+    return res.status(500).json({ error: 'Failed to fetch marketplace work request' });
+  }
+});
+
+app.put('/api/marketplace-work-requests/:id', async (req, res) => {
+  const { project_name, professional_role, professional_name, professional_email, professional_phone, event_date, venue, budget, status, notes } = req.body;
+
+  try {
+    // Convert status to lowercase for database storage
+    const dbStatus = status ? status.toLowerCase() : null;
+
+    const result = await pool.query(
+      `UPDATE marketplace_work_requests
+       SET project_name = COALESCE($1, project_name),
+           professional_role = COALESCE($2, professional_role),
+           professional_name = COALESCE($3, professional_name),
+           professional_email = $4,
+           professional_phone = $5,
+           event_date = $6,
+           venue = $7,
+           budget = $8,
+           status = $9,
+           notes = $10,
+           updated_at = NOW()
+       WHERE id = $11 AND workspace_id = $12
+       RETURNING *`,
+      [project_name?.trim() || null, professional_role?.trim() || null, professional_name?.trim() || null, professional_email?.trim() || null, professional_phone?.trim() || null, event_date || null, venue?.trim() || null, budget !== undefined && budget !== null ? Number(budget) : null, dbStatus, notes?.trim() || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Marketplace work request not found' });
+    }
+
+    // Transform the response to match frontend interface
+    const workRequest = {
+      id: result.rows[0].id,
+      project: result.rows[0].project_name,
+      professionalRole: result.rows[0].professional_role,
+      professionalName: result.rows[0].professional_name,
+      professionalEmail: result.rows[0].professional_email,
+      professionalPhone: result.rows[0].professional_phone,
+      eventDate: result.rows[0].event_date,
+      venue: result.rows[0].venue,
+      budget: result.rows[0].budget,
+      status: result.rows[0].status.charAt(0).toUpperCase() + result.rows[0].status.slice(1)
+    };
+
+    return res.json({ success: true, workRequest });
+  } catch (error) {
+    console.error('Error updating marketplace work request:', error);
+    return res.status(500).json({ error: 'Failed to update marketplace work request' });
+  }
+});
+
+app.delete('/api/marketplace-work-requests/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM marketplace_work_requests WHERE id = $1 AND workspace_id = $2 RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Marketplace work request not found' });
+    }
+
+    return res.json({ success: true, message: 'Marketplace work request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting marketplace work request:', error);
+    return res.status(500).json({ error: 'Failed to delete marketplace work request' });
   }
 });
 
@@ -3403,7 +3682,7 @@ app.post('/api/crew-assignments', async (req, res) => {
     }
 
     const staffCheck = await pool.query(
-      `SELECT id, email, staff_name FROM users WHERE id = $1 AND workspace_id = $2 AND role != 'client'`,
+      `SELECT id, email, name FROM staff WHERE id = $1 AND workspace_id = $2`,
       [staff_id, req.user.workspace_id]
     );
     if (staffCheck.rows.length === 0) {

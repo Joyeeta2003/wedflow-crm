@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { HttpHeaders } from '@angular/common/http';
 
 export interface WorkRequest {
   id: string;
@@ -25,6 +26,8 @@ export interface Booking {
   booking_date: string;
   event_date: string;
   venue: string;
+  status?: string;
+  total_amount?: number;
 }
 
 export interface EventDay {
@@ -84,23 +87,77 @@ export class WorkAssignmentModal {
 
   private http = inject(HttpClient);
 
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+  }
+
   ngOnChanges() {
+    console.log('ngOnChanges called:', { isOpen: this.isOpen, workRequest: this.workRequest });
     if (this.isOpen && this.workRequest) {
-      this.loadBookings();
-      this.assignmentData.assignmentRole = this.workRequest.professionalRole;
+      console.log('Loading bookings for work request:', this.workRequest);
+      // Store workRequest locally to avoid null issues in setTimeout
+      const currentWorkRequest = this.workRequest;
+      // Small delay to ensure modal is fully rendered before loading
+      setTimeout(() => {
+        this.loadBookings();
+        this.loadFreelancerDetails(); // Load freelancer email/phone
+        this.assignmentData.assignmentRole = currentWorkRequest.professionalRole;
+      }, 100);
     }
   }
 
   loadBookings() {
     this.isLoadingBookings = true;
-    this.http.get<{ success: boolean; bookings: Booking[] }>(`${this.apiUrl}/bookings`).subscribe({
+    console.log('Loading bookings...');
+    this.http.get<{ success: boolean; bookings: Booking[] }>(`${this.apiUrl}/bookings`, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
       next: (response) => {
+        console.log('Bookings response:', response);
         this.bookings = response.bookings;
         this.isLoadingBookings = false;
+        console.log('Bookings loaded:', this.bookings.length);
       },
       error: (error) => {
         console.error('Error loading bookings:', error);
         this.isLoadingBookings = false;
+      }
+    });
+  }
+
+  // Load freelancer details to get the actual email/phone
+  loadFreelancerDetails() {
+    if (!this.workRequest?.professionalName) return;
+
+    this.http.get<{ success: boolean; professionals: any[] }>(`${this.apiUrl}/freelancers`, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (response) => {
+        const freelancer = response.professionals.find(p => p.name === this.workRequest?.professionalName);
+        if (freelancer && freelancer.email && this.workRequest) {
+          // Update work request with actual freelancer email by creating a new object
+          const updatedWorkRequest: WorkRequest = {
+            id: this.workRequest.id ?? '',
+            project: this.workRequest.project ?? '',
+            professionalRole: this.workRequest.professionalRole ?? '',
+            professionalName: this.workRequest.professionalName ?? '',
+            professionalEmail: freelancer.email,
+            professionalPhone: freelancer.phone ?? this.workRequest.professionalPhone ?? '',
+            eventDate: this.workRequest.eventDate ?? '',
+            venue: this.workRequest.venue ?? '',
+            budget: this.workRequest.budget ?? 0,
+            status: this.workRequest.status ?? 'Pending'
+          };
+          this.workRequest = updatedWorkRequest;
+          console.log('Updated work request with freelancer email:', freelancer.email);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading freelancer details:', error);
       }
     });
   }
@@ -116,15 +173,19 @@ export class WorkAssignmentModal {
 
   loadEventDays(bookingId: string) {
     this.isLoadingEventDays = true;
-    this.http.get<{ success: boolean; booking: any }>(`${this.apiUrl}/bookings/${bookingId}`).subscribe({
+    this.http.get<{ success: boolean; booking: any }>(`${this.apiUrl}/bookings/${bookingId}`, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
       next: (response) => {
+        console.log('Booking response:', response);
         const eventDays = response.booking.event_days || [];
         this.eventDays = eventDays.map((event: any) => ({
-          id: event.id || `${bookingId}-${event.event_name}`,
+          id: event.id, // Use the actual event ID from the database
           event_name: event.event_name,
           event_date: event.event_date,
           venue: event.venue
-        }));
+        })).filter((event: EventDay) => event.id); // Only include events with valid IDs
+        console.log('Mapped event days:', this.eventDays);
         this.isLoadingEventDays = false;
       },
       error: (error) => {
@@ -142,11 +203,27 @@ export class WorkAssignmentModal {
   onSubmit(form: NgForm) {
     if (form.invalid) return;
 
+    // Validate required fields
+    if (!this.assignmentData.bookingId) {
+      alert('Please select a booking');
+      return;
+    }
+
+    if (!this.assignmentData.eventDayId) {
+      alert('Please select an event day');
+      return;
+    }
+
+    if (!this.assignmentData.reportTime) {
+      alert('Please select a report time');
+      return;
+    }
+
     this.isSubmitting = true;
 
     const staffData = {
       name: this.workRequest?.professionalName,
-      email: this.workRequest?.professionalEmail,
+      email: this.workRequest?.professionalEmail || 'no-email@example.com', // Fallback if no email
       phone: this.workRequest?.professionalPhone,
       role: 'freelancer',
       availability: 'available',
@@ -154,9 +231,21 @@ export class WorkAssignmentModal {
       notes: `Added from marketplace: ${this.workRequest?.project}`
     };
 
-    this.http.post(`${this.apiUrl}/staff`, staffData).subscribe({
+    console.log('Creating staff member:', staffData);
+
+    this.http.post(`${this.apiUrl}/staff`, staffData, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
       next: (staffResponse: any) => {
-        const staffId = staffResponse.member?.id;
+        console.log('Staff response:', staffResponse);
+        const staffId = staffResponse.member?.id || staffResponse.staff?.id;
+
+        if (!staffId) {
+          this.isSubmitting = false;
+          console.error('No staff ID in response:', staffResponse);
+          alert('Failed to get staff ID. Please try again.');
+          return;
+        }
 
         const crewAssignmentData = {
           booking_event_id: this.assignmentData.eventDayId,
@@ -168,8 +257,13 @@ export class WorkAssignmentModal {
           notes: `Assigned from marketplace request: ${this.workRequest?.project}`
         };
 
-        this.http.post(`${this.apiUrl}/crew-assignments`, crewAssignmentData).subscribe({
+        console.log('Creating crew assignment:', crewAssignmentData);
+
+        this.http.post(`${this.apiUrl}/crew-assignments`, crewAssignmentData, {
+          headers: this.getAuthHeaders()
+        }).subscribe({
           next: (assignmentResponse) => {
+            console.log('Assignment response:', assignmentResponse);
             this.isSubmitting = false;
             this.assignmentConfirmed.emit(this.assignmentData);
             this.resetForm();
@@ -179,14 +273,16 @@ export class WorkAssignmentModal {
           error: (assignmentError) => {
             this.isSubmitting = false;
             console.error('Error creating assignment:', assignmentError);
-            alert('Failed to create assignment. Please try again.');
+            console.error('Error details:', assignmentError.error || assignmentError.message);
+            alert(`Failed to create assignment: ${assignmentError.error?.message || assignmentError.message || 'Unknown error'}. Please try again.`);
           }
         });
       },
       error: (staffError) => {
         this.isSubmitting = false;
         console.error('Error creating staff member:', staffError);
-        alert('Failed to create staff member. Please try again.');
+        console.error('Error details:', staffError.error || staffError.message);
+        alert(`Failed to create staff member: ${staffError.error?.message || staffError.message || 'Unknown error'}. Please try again.`);
       }
     });
   }

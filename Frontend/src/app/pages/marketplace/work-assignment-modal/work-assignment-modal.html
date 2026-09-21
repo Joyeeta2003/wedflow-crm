@@ -1,6 +1,6 @@
 <div class="dialog-overlay" *ngIf="isOpen" (click)="onCancel()"></div>
 
-<div class="dialog-content assignment-dialog" role="dialog" *ngIf="isOpen" tabindex="-1">
+<div class="assignment-dialog" role="dialog" *ngIf="isOpen" tabindex="-1" (click)="$event.stopPropagation()">
   <div class="dialog-header">
     <h2 class="dialog-title">Assign work</h2>
     <button type="button" class="dialog-close" (click)="onCancel()">
@@ -42,15 +42,16 @@
 
       <div class="form-group">
         <label class="form-label" for="eventDay">Event day</label>
-        <select 
-          class="form-select" 
-          id="eventDay" 
-          name="eventDay" 
+        <select
+          class="form-select"
+          id="eventDay"
+          name="eventDay"
           [(ngModel)]="assignmentData.eventDayId"
           required
           [disabled]="!assignmentData.bookingId || isLoadingEventDays">
-          <option value="">Main booking date</option>
+          <option value="">Select event day</option>
           <option *ngIf="isLoadingEventDays" value="" disabled>Loading event days...</option>
+          <option *ngIf="!isLoadingEventDays && eventDays.length === 0" value="" disabled>No event days available</option>
           <option *ngFor="let eventDay of eventDays" [value]="eventDay.id">
             {{ eventDay.event_name }} · {{ eventDay.event_date }}
           </option>

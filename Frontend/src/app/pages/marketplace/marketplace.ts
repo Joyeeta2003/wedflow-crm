@@ -1,7 +1,9 @@
-﻿import { Component, signal, computed } from '@angular/core';
+﻿import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WorkAssignmentModal, WorkRequest } from './work-assignment-modal/work-assignment-modal';
+import { MarketplaceService } from '../../services/marketplace.service';
+import type { Professional as ServiceProfessional } from '../../services/marketplace.service';
 
 interface Professional {
   id: string;
@@ -31,8 +33,11 @@ type ServiceFilter =
   | 'live_streaming_team'
   | 'lighting_team'
   | 'other';
-  
-  type TypeFilter = 'all' | 'individual' | 'team';
+
+type TypeFilter = 'all' | 'individual' | 'team';
+
+// Local interface for the component to match the service interface
+interface Professional extends ServiceProfessional {}
 
 @Component({
   selector: 'app-marketplace',
@@ -41,7 +46,7 @@ type ServiceFilter =
   templateUrl: './marketplace.html',
   styleUrl: './marketplace.scss'
 })
-export class Marketplace {
+export class Marketplace implements OnInit {
   activeTab = signal<'browse' | 'requests'>('browse');
 
   searchTerm = signal('');
@@ -54,6 +59,62 @@ export class Marketplace {
 
   showAssignmentModal = signal(false);
   selectedWorkRequest = signal<WorkRequest | null>(null);
+
+  isLoading = signal(false);
+  error = signal<string | null>(null);
+
+  constructor(private marketplaceService: MarketplaceService) {}
+
+  ngOnInit() {
+    this.loadMarketplaceData();
+  }
+
+  loadMarketplaceData() {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    this.marketplaceService.getProfessionals().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.professionals.set(response.professionals);
+        } else {
+          this.error.set('Failed to load professionals');
+        }
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading professionals:', err);
+        this.error.set('Failed to load professionals');
+        this.isLoading.set(false);
+      }
+    });
+
+    this.marketplaceService.getWorkRequests().subscribe({
+      next: (response) => {
+        if (response.success) {
+          const transformedRequests = response.workRequests.map(req => ({
+            id: req.id,
+            project: req.project,
+            professionalRole: req.professionalRole,
+            professionalName: req.professionalName,
+            professionalEmail: req.professionalEmail,
+            professionalPhone: req.professionalPhone,
+            eventDate: req.eventDate,
+            venue: req.venue,
+            budget: req.budget,
+            status: req.status as 'Pending' | 'Accepted' | 'Declined' | 'Completed'
+          }));
+          this.workRequests.set(transformedRequests);
+        } else {
+          this.error.set('Failed to load work requests');
+        }
+      },
+      error: (err) => {
+        console.error('Error loading work requests:', err);
+        this.error.set('Failed to load work requests');
+      }
+    });
+  }
 
  serviceOptions: { value: ServiceFilter; label: string }[] = [
   { value: 'all', label: 'All services' },
@@ -75,69 +136,8 @@ export class Marketplace {
     { value: 'team', label: 'Teams only' }
   ];
 
-  professionals = signal<Professional[]>([
-    {
-      id: 'p1',
-      initials: 'ZP',
-      name: 'Zack P',
-      verified: true,
-      type: 'Individual',
-      experienceYears: 12,
-      city: 'Kolkata',
-      state: 'West Bengal',
-      skills: [
-        'Wedding Photographer',
-        'Cinematographer',
-        'Traditional Videographer',
-        'Drone Operator',
-        'Photo Editor',
-        'Video Editor'
-      ],
-      summary: 'summary of my work, my life,',
-      availableRate: 1500,
-      email: 'zackagarwal@gmail.com',
-      phone: '8296100911'
-    }
-  ]);
-
-  workRequests = signal<WorkRequest[]>([
-    {
-      id: 'wr1',
-      project: 'Wedding coverage for 1L users',
-      professionalRole: 'Wedding Photographer',
-      professionalName: 'Zack P',
-      professionalEmail: 'zackagarwal@gmail.com',
-      professionalPhone: '8296100911',
-      eventDate: '29/6/2026',
-      venue: 'Venue',
-      budget: 20000,
-      status: 'Accepted'
-    },
-    {
-      id: 'wr2',
-      project: 'Corporate event photography',
-      professionalRole: 'Cinematographer',
-      professionalName: 'Rohan Gupta',
-      professionalEmail: 'rohan@example.com',
-      professionalPhone: '9876543210',
-      eventDate: '15/7/2026',
-      venue: 'Taj Bengal',
-      budget: 15000,
-      status: 'Pending'
-    },
-    {
-      id: 'wr3',
-      project: 'Birthday celebration',
-      professionalRole: 'Photo Editor',
-      professionalName: 'Akash Sarkar',
-      professionalEmail: 'akash@example.com',
-      professionalPhone: '8765432109',
-      eventDate: '20/8/2026',
-      venue: 'ITC Sonar',
-      budget: 8000,
-      status: 'Completed'
-    }
-  ]);
+  professionals = signal<Professional[]>([]);
+  workRequests = signal<WorkRequest[]>([]);
 
   statusOptions = [
     { value: 'Pending', label: 'Pending' },
@@ -230,21 +230,49 @@ export class Marketplace {
   }
 
   onStatusChange(request: WorkRequest, newStatus: string) {
-    this.workRequests.update(requests =>
-      requests.map(r => r.id === request.id ? { ...r, status: newStatus as any } : r)
-    );
+    // Convert status to proper case for service
+    const properStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase() as 'Pending' | 'Accepted' | 'Declined' | 'Completed';
+
+    this.marketplaceService.updateWorkRequest(request.id, { status: properStatus }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.workRequests.update(requests =>
+            requests.map(r => r.id === request.id ? { ...r, status: properStatus } : r)
+          );
+        }
+      },
+      error: (err) => {
+        console.error('Error updating work request status:', err);
+        this.error.set('Failed to update work request status');
+      }
+    });
   }
 
   onAssignmentModalClose() {
-    this.showAssignmentModal = signal(false);
+    this.showAssignmentModal.set(false);
     this.selectedWorkRequest.set(null);
   }
 
   onAssignmentConfirmed(data: any) {
-    // Update the work request status or remove it from the list
-    this.workRequests.update(requests =>
-      requests.filter(r => r.id !== this.selectedWorkRequest()?.id)
-    );
-    this.hiredCount.update(count => count + 1);
+    // Update the work request status to 'Accepted' when assignment is confirmed
+    const requestId = this.selectedWorkRequest()?.id;
+    if (requestId) {
+      this.marketplaceService.updateWorkRequest(requestId, { status: 'Accepted' }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.workRequests.update(requests =>
+              requests.map(r => r.id === requestId ? { ...r, status: 'Accepted' } : r)
+            );
+            this.hiredCount.update(count => count + 1);
+          }
+        },
+        error: (err) => {
+          console.error('Error confirming assignment:', err);
+          this.error.set('Failed to confirm assignment');
+        }
+      });
+    }
+    this.showAssignmentModal.set(false);
+    this.selectedWorkRequest.set(null);
   }
 }
